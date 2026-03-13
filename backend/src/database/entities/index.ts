@@ -1,0 +1,17 @@
+export { Allergen } from './allergen.entity';
+export { Article } from './article.entity';
+export { Booking } from './booking.entity';
+export { City } from './city.entity';
+export { Cuisine } from './cuisine.entity';
+export { Dish } from './dish.entity';
+export { District } from './district.entity';
+export { Feature } from './feature.entity';
+export { MenuCategory } from './menu-category.entity';
+export { Photo } from './photo.entity';
+export { Restaurant } from './restaurant.entity';
+export { RestaurantChain } from './restaurant-chain.entity';
+export { RestaurantDish } from './restaurant-dish.entity';
+export { RestaurantLocation } from './restaurant-location.entity';
+export { Review } from './review.entity';
+export { User } from './user.entity';
+export { WorkingHours } from './working-hours.entity';

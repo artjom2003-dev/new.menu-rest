@@ -1,0 +1,125 @@
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,700;0,9..144,900;1,9..144,400&family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Dark theme */
+  --bg: #06060A;
+  --bg2: #0D0D14;
+  --bg3: #14141E;
+  --card: rgba(255,255,255,0.04);
+  --card-border: rgba(255,255,255,0.07);
+  --glass: rgba(255,255,255,0.05);
+  --glass-border: rgba(255,255,255,0.1);
+  --text: #F2F0ED;
+  --text2: #B8B4AE;
+  --text3: #706C66;
+  --text4: #3E3C38;
+  --accent: #FF5C28;
+  --accent2: #FF8C5A;
+  --accent-glow: rgba(255,92,40,0.15);
+  --lime: #BAFF39;
+  --lime-glow: rgba(186,255,57,0.12);
+  --teal: #39FFD1;
+  --teal-glow: rgba(57,255,209,0.1);
+  --gold: #FFD700;
+  --ease: cubic-bezier(.4,0,.2,1);
+}
+
+.light {
+  --bg: #FEFBF7;
+  --bg2: #F8F4EE;
+  --bg3: #F0EBE3;
+  --card: rgba(0,0,0,0.03);
+  --card-border: rgba(0,0,0,0.08);
+  --glass: rgba(255,255,255,0.7);
+  --glass-border: rgba(0,0,0,0.08);
+  --text: #1A1610;
+  --text2: #4A4439;
+  --text3: #8A8377;
+  --text4: #B8B1A5;
+  --accent: #D94E1A;
+  --accent2: #E87040;
+  --accent-glow: rgba(217,78,26,0.1);
+  --lime: #4A8C10;
+  --lime-glow: rgba(74,140,16,0.1);
+  --teal: #0E8A6E;
+  --teal-glow: rgba(14,138,110,0.08);
+  --gold: #B8860B;
+}
+
+html {
+  scroll-behavior: smooth;
+  scrollbar-width: thin;
+  scrollbar-color: var(--accent) var(--bg);
+}
+
+body {
+  font-family: 'Sora', -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text2);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+/* Ambient background */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 900px 700px at 15% 10%, rgba(255,92,40,0.04), transparent),
+    radial-gradient(ellipse 700px 600px at 80% 80%, rgba(57,255,209,0.03), transparent);
+}
+
+/* Film grain overlay */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;
+  opacity: 0.025;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-semibold transition-all duration-300 cursor-pointer border-none font-sans relative overflow-hidden no-underline;
+  }
+
+  .btn-glow {
+    @apply bg-[var(--accent)] text-white;
+    box-shadow: 0 0 20px var(--accent-glow), 0 4px 16px rgba(255,92,40,0.2);
+  }
+  .btn-glow:hover {
+    @apply -translate-y-0.5;
+    box-shadow: 0 0 40px var(--accent-glow), 0 8px 32px rgba(255,92,40,0.3);
+  }
+
+  .btn-glass {
+    @apply bg-[var(--glass)] text-[var(--text2)] border border-[var(--glass-border)];
+    backdrop-filter: blur(8px);
+  }
+  .btn-glass:hover {
+    @apply bg-[var(--card-hover)] text-[var(--text)];
+  }
+
+  .card {
+    @apply bg-[var(--bg2)] border border-[var(--card-border)] rounded-2xl;
+  }
+
+  .ai-tag {
+    @apply inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium;
+  }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}

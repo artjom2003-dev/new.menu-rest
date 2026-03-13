@@ -1,0 +1,41 @@
+# Environment
+.env
+.env.local
+.env.production
+
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Build
+dist/
+.next/
+out/
+build/
+
+# Logs
+*.log
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/settings.json
+*.swp
+
+# TypeScript
+*.tsbuildinfo
+
+# Docker volumes (local dev data)
+pgdata/
+esdata/
+miniodata/
+
+# Pipeline data (large files)
+restaurant_pipeline/data/
+
+# SSL certificates
+nginx/ssl/

@@ -1,0 +1,985 @@
+# Menu-Rest.com — Техническое задание для Claude Code
+
+**Версия:** 1.0  
+**Дата:** 08.03.2026  
+**Целевой домен:** new.menu-rest.com  
+**Репозиторий Legacy:** https://git.nintegra.ru/MenuRest/MenuRestWeb.git  
+**Визуализация:** MenuRest_WOW.html (прототип UI)
+
+---
+
+## 0. Контекст проекта
+
+Menu-Rest.com — агрегатор ресторанов с электронным меню, бронированием и отзывами. Текущий сайт устарел. Необходимо построить новую платформу с нуля, используя данные из legacy-системы, с современной архитектурой, AI-поиском и SEO-оптимизацией.
+
+**Ключевой принцип:** Ресторан — это сущность (entity), а не страница. Сначала строим модель данных, потом поисковый индекс, потом фронт. Не наоборот.
+
+---
+
+## 1. Технологический стек
+
+| Слой | Технология | Обоснование |
+|------|-----------|-------------|
+| Frontend | **Next.js 14+ (App Router)** | SSR/SSG для SEO, metadata API, ISR для каталога |
+| Backend API | **NestJS (Node.js)** | Модульная архитектура, TypeORM/Prisma, Swagger |
+| База данных | **PostgreSQL 16** | Source of truth, отношения, транзакции |
+| Кеш/очереди | **Redis 7** | Кеш, сессии, rate limiting, BullMQ очереди |
+| Поиск | **Elasticsearch 8** | Полнотекстовый, автокомплит, гео, фасеты |
+| AI/NLU | **Gemini 2.0 Flash** | Описание ниже |
+| Хранилище файлов | **S3-compatible (MinIO)** | Фотографии ресторанов и блюд |
+| Контейнеризация | **Docker + Docker Compose** | Для dev и staging |
+| CI/CD | **GitLab CI** (git.nintegra.ru) | Автодеплой на new.menu-rest.com |
+
+### 1.1. Выбор LLM для AI-поиска: Gemini 2.0 Flash
+
+**Почему Gemini 2.0 Flash:**
+
+- Цена: ~$0.10 / 1M input tokens, ~$0.40 / 1M output tokens — в 3-5x дешевле GPT-4o-mini для структурированного извлечения
+- Скорость: latency ~200-400ms для short prompts — достаточно для real-time поиска
+- Качество: отлично справляется с JSON-extraction и intent classification на русском языке
+- 1M token context window — можно передавать расширенный контекст при необходимости
+
+**Архитектура AI-поиска (гибридная, как у Instacart):**
+
+```
+User Query (свободный текст)
+         │
+         ▼
+┌─────────────────────┐
+│  Keyword Extractor   │ ← Regex + словари (быстрый, бесплатный)
+│  (первый проход)     │   Извлекает очевидные сущности
+└─────────┬───────────┘
+          │ Если достаточно → Elasticsearch query
+          │ Если неоднозначно ↓
+┌─────────────────────┐
+│  LLM NLU Layer      │ ← Gemini 2.0 Flash
+│  (второй проход)    │   Structured JSON extraction
+└─────────┬───────────┘
+          ▼
+┌─────────────────────┐
+│  Elasticsearch       │ ← Hybrid: BM25 + geo + filters
+│  Query Builder       │
+└─────────┬───────────┘
+          ▼
+     Ranked Results
+```
+
+**Prompt для NLU (Gemini):**
+```
+Ты — парсер поисковых запросов ресторанного агрегатора Menu-Rest.
+Извлеки структурированные параметры из запроса пользователя.
+Верни ТОЛЬКО JSON без пояснений.
+
+Категории:
+- location: район, улица, станция метро, город
+- cuisine: тип кухни
+- dish: конкретное блюдо
+- dietary: диетические ограничения и аллергены
+- budget: бюджет (на человека или на двоих — уточни)
+- occasion: повод (свидание, день рождения, деловая встреча)
+- atmosphere: атмосфера (уютный, с видом, терраса)
+- venue_type: тип заведения (ресторан, кафе, бар)
+
+Запрос: "{user_query}"
+```
+
+**Кеширование:** Популярные запросы кешируются в Redis (TTL 1 час). При cache-hit LLM не вызывается — ответ мгновенный.
+
+**Fallback:** Если LLM не отвечает за 2 секунды или ошибка API → fallback на keyword extractor.
+
+**Стоимость при 100K запросов/месяц:** ~$5-10/месяц (средний запрос ~100 tokens in + 80 tokens out, с учётом кеша покрываем 60-70% без вызова LLM).
+
+---
+
+## 2. Архитектура: доменные модули
+
+Разделение по ответственности внутри единого NestJS backend (модульный монолит, не микросервисы):
+
+```
+src/
+├── modules/
+│   ├── restaurant/      # Сущность ресторана, локации, часы, галерея
+│   ├── menu/            # Блюда, категории, цены, КБЖУ, аллергены
+│   ├── search/          # Elasticsearch, AI-поиск, автокомплит
+│   ├── content/         # Блог, подборки, SEO-страницы
+│   ├── user/            # Аккаунты, профили, аллерген-профиль
+│   ├── loyalty/         # Баллы, уровни, скидки, ачивки
+│   ├── booking/         # Бронирование столиков
+│   ├── review/          # Отзывы, рейтинги, модерация
+│   ├── budget-calc/     # "Хватит на ужин?" — калькулятор бюджета
+│   └── admin/           # Админка: CRUD, импорт, модерация
+├── common/              # Guards, pipes, interceptors, decorators
+├── config/              # Конфигурация, env
+└── database/            # Миграции, seeds, entities
+```
+
+---
+
+## 3. Модель данных PostgreSQL
+
+### 3.1. Основные таблицы
+
+```sql
+-- ═══ ГОРОДА И РАЙОНЫ ═══
+CREATE TABLE cities (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(100) NOT NULL,
+  slug VARCHAR(100) UNIQUE NOT NULL,
+  country VARCHAR(50) DEFAULT 'Россия',
+  lat DECIMAL(10,7),
+  lng DECIMAL(10,7)
+);
+
+CREATE TABLE districts (
+  id SERIAL PRIMARY KEY,
+  city_id INT REFERENCES cities(id),
+  name VARCHAR(100) NOT NULL,
+  slug VARCHAR(100) NOT NULL
+);
+
+-- ═══ РЕСТОРАНЫ ═══
+CREATE TABLE restaurants (
+  id SERIAL PRIMARY KEY,
+  slug VARCHAR(200) UNIQUE NOT NULL,
+  name VARCHAR(200) NOT NULL,
+  short_description TEXT,
+  long_description TEXT,
+  price_level SMALLINT CHECK (price_level BETWEEN 1 AND 4),  -- ₽ ₽₽ ₽₽₽ ₽₽₽₽
+  average_bill_min INT,
+  average_bill_max INT,
+  rating_aggregate DECIMAL(3,2) DEFAULT 0,
+  review_count INT DEFAULT 0,
+  status VARCHAR(20) DEFAULT 'draft',  -- draft, published, archived, closed
+  is_verified BOOLEAN DEFAULT false,
+  published_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE restaurant_locations (
+  id SERIAL PRIMARY KEY,
+  restaurant_id INT REFERENCES restaurants(id) ON DELETE CASCADE,
+  city_id INT REFERENCES cities(id),
+  district_id INT REFERENCES districts(id),
+  address VARCHAR(300) NOT NULL,
+  lat DECIMAL(10,7),
+  lng DECIMAL(10,7),
+  metro_station VARCHAR(100),
+  phone VARCHAR(50),
+  is_primary BOOLEAN DEFAULT true
+);
+
+CREATE TABLE working_hours (
+  id SERIAL PRIMARY KEY,
+  restaurant_id INT REFERENCES restaurants(id) ON DELETE CASCADE,
+  day_of_week SMALLINT NOT NULL,  -- 0=Mon, 6=Sun
+  open_time TIME,
+  close_time TIME,
+  is_closed BOOLEAN DEFAULT false
+);
+
+-- ═══ СПРАВОЧНИКИ (many-to-many) ═══
+CREATE TABLE cuisines (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(100) NOT NULL,
+  slug VARCHAR(100) UNIQUE NOT NULL,
+  icon VARCHAR(10)  -- emoji
+);
+
+CREATE TABLE restaurant_cuisines (
+  restaurant_id INT REFERENCES restaurants(id) ON DELETE CASCADE,
+  cuisine_id INT REFERENCES cuisines(id) ON DELETE CASCADE,
+  PRIMARY KEY (restaurant_id, cuisine_id)
+);
+
+CREATE TABLE features (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(100) NOT NULL,
+  slug VARCHAR(100) UNIQUE NOT NULL,
+  category VARCHAR(50),  -- atmosphere, service, occasion, dietary, amenity
+  icon VARCHAR(10)
+);
+
+CREATE TABLE restaurant_features (
+  restaurant_id INT REFERENCES restaurants(id) ON DELETE CASCADE,
+  feature_id INT REFERENCES features(id) ON DELETE CASCADE,
+  PRIMARY KEY (restaurant_id, feature_id)
+);
+
+-- ═══ ФОТОГРАФИИ ═══
+CREATE TABLE photos (
+  id SERIAL PRIMARY KEY,
+  restaurant_id INT REFERENCES restaurants(id) ON DELETE CASCADE,
+  url VARCHAR(500) NOT NULL,
+  thumbnail_url VARCHAR(500),
+  alt_text VARCHAR(300),
+  sort_order INT DEFAULT 0,
+  is_cover BOOLEAN DEFAULT false,
+  source VARCHAR(50),  -- owner, user, import
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ═══ МЕНЮ ═══
+CREATE TABLE menu_categories (
+  id SERIAL PRIMARY KEY,
+  restaurant_id INT REFERENCES restaurants(id) ON DELETE CASCADE,
+  name VARCHAR(100) NOT NULL,
+  sort_order INT DEFAULT 0
+);
+
+CREATE TABLE dishes (
+  id SERIAL PRIMARY KEY,
+  restaurant_id INT REFERENCES restaurants(id) ON DELETE CASCADE,
+  category_id INT REFERENCES menu_categories(id),
+  name VARCHAR(200) NOT NULL,
+  description TEXT,
+  price INT NOT NULL,  -- в копейках
+  weight_grams INT,
+  image_url VARCHAR(500),
+  -- КБЖУ
+  calories INT,
+  protein DECIMAL(5,1),
+  fat DECIMAL(5,1),
+  carbs DECIMAL(5,1),
+  is_healthy_choice BOOLEAN DEFAULT false,
+  -- Статус
+  is_available BOOLEAN DEFAULT true,
+  sort_order INT DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ═══ АЛЛЕРГЕНЫ ═══
+CREATE TABLE allergens (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(100) NOT NULL,          -- Глютен, Молоко, Арахис...
+  slug VARCHAR(50) UNIQUE NOT NULL,
+  icon VARCHAR(10),                     -- 🌾, 🥛, 🥜...
+  eu_code VARCHAR(10)                   -- По регламенту ЕС
+);
+
+CREATE TABLE dish_allergens (
+  dish_id INT REFERENCES dishes(id) ON DELETE CASCADE,
+  allergen_id INT REFERENCES allergens(id),
+  severity VARCHAR(20) DEFAULT 'contains',  -- contains, may_contain, free
+  PRIMARY KEY (dish_id, allergen_id)
+);
+
+-- ═══ ПОЛЬЗОВАТЕЛИ ═══
+CREATE TABLE users (
+  id SERIAL PRIMARY KEY,
+  email VARCHAR(200) UNIQUE NOT NULL,
+  password_hash VARCHAR(200),
+  name VARCHAR(100),
+  avatar_url VARCHAR(500),
+  city_id INT REFERENCES cities(id),
+  loyalty_points INT DEFAULT 0,
+  loyalty_level VARCHAR(20) DEFAULT 'bronze',  -- bronze, silver, gold
+  auth_provider VARCHAR(20) DEFAULT 'email',   -- email, vk, telegram
+  auth_provider_id VARCHAR(200),
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE user_allergen_profile (
+  user_id INT REFERENCES users(id) ON DELETE CASCADE,
+  allergen_id INT REFERENCES allergens(id),
+  PRIMARY KEY (user_id, allergen_id)
+);
+
+CREATE TABLE user_dietary_preferences (
+  user_id INT REFERENCES users(id) ON DELETE CASCADE,
+  preference VARCHAR(50),  -- vegan, vegetarian, halal, kosher
+  PRIMARY KEY (user_id, preference)
+);
+
+CREATE TABLE user_favorites (
+  user_id INT REFERENCES users(id) ON DELETE CASCADE,
+  restaurant_id INT REFERENCES restaurants(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  PRIMARY KEY (user_id, restaurant_id)
+);
+
+CREATE TABLE user_favorite_dishes (
+  user_id INT REFERENCES users(id) ON DELETE CASCADE,
+  dish_id INT REFERENCES dishes(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  PRIMARY KEY (user_id, dish_id)
+);
+
+-- ═══ ОТЗЫВЫ ═══
+CREATE TABLE reviews (
+  id SERIAL PRIMARY KEY,
+  user_id INT REFERENCES users(id),
+  restaurant_id INT REFERENCES restaurants(id) ON DELETE CASCADE,
+  rating_food SMALLINT CHECK (rating_food BETWEEN 1 AND 5),
+  rating_service SMALLINT CHECK (rating_service BETWEEN 1 AND 5),
+  rating_atmosphere SMALLINT CHECK (rating_atmosphere BETWEEN 1 AND 5),
+  rating_value SMALLINT CHECK (rating_value BETWEEN 1 AND 5),
+  text TEXT,
+  is_verified BOOLEAN DEFAULT false,  -- подтверждён бронированием
+  status VARCHAR(20) DEFAULT 'pending',  -- pending, approved, rejected
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ═══ БРОНИРОВАНИЯ ═══
+CREATE TABLE bookings (
+  id SERIAL PRIMARY KEY,
+  user_id INT REFERENCES users(id),
+  restaurant_id INT REFERENCES restaurants(id),
+  location_id INT REFERENCES restaurant_locations(id),
+  date DATE NOT NULL,
+  time TIME NOT NULL,
+  guests INT NOT NULL,
+  status VARCHAR(20) DEFAULT 'pending',  -- pending, confirmed, cancelled, completed
+  special_requests TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ═══ БЛОГ ═══
+CREATE TABLE articles (
+  id SERIAL PRIMARY KEY,
+  slug VARCHAR(300) UNIQUE NOT NULL,
+  title VARCHAR(300) NOT NULL,
+  excerpt TEXT,
+  body TEXT NOT NULL,
+  cover_image_url VARCHAR(500),
+  category VARCHAR(50),        -- guide, review, collection, tips
+  city_id INT REFERENCES cities(id),
+  meta_title VARCHAR(200),
+  meta_description VARCHAR(300),
+  status VARCHAR(20) DEFAULT 'draft',
+  author_name VARCHAR(100),
+  views_count INT DEFAULT 0,
+  published_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE article_restaurants (
+  article_id INT REFERENCES articles(id) ON DELETE CASCADE,
+  restaurant_id INT REFERENCES restaurants(id) ON DELETE CASCADE,
+  PRIMARY KEY (article_id, restaurant_id)
+);
+
+-- ═══ ИМПОРТ ДАННЫХ (LEGACY) ═══
+CREATE TABLE import_sources (
+  id SERIAL PRIMARY KEY,
+  source_name VARCHAR(100) NOT NULL,  -- 'legacy_menu_rest', 'manual', 'api_import'
+  source_url VARCHAR(500),
+  last_import_at TIMESTAMPTZ
+);
+
+CREATE TABLE restaurant_source_snapshots (
+  id SERIAL PRIMARY KEY,
+  restaurant_id INT REFERENCES restaurants(id) ON DELETE CASCADE,
+  source_id INT REFERENCES import_sources(id),
+  external_id VARCHAR(200),
+  raw_data JSONB,
+  imported_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+### 3.2. Индексы
+
+```sql
+CREATE INDEX idx_restaurants_status ON restaurants(status);
+CREATE INDEX idx_restaurants_slug ON restaurants(slug);
+CREATE INDEX idx_restaurant_locations_geo ON restaurant_locations USING GIST (
+  ll_to_earth(lat, lng)
+);
+CREATE INDEX idx_dishes_restaurant ON dishes(restaurant_id);
+CREATE INDEX idx_dishes_price ON dishes(price);
+CREATE INDEX idx_articles_status_published ON articles(status, published_at DESC);
+```
+
+---
+
+## 4. SEO-архитектура URL
+
+```
+/                                          # Главная
+/restaurants                               # Каталог
+/restaurants/[slug]                        # Карточка ресторана
+/city/[city]                               # Город
+/city/[city]/restaurants                   # Рестораны города
+/city/[city]/cuisine/[cuisine]             # Город + кухня
+/city/[city]/feature/[feature]             # Город + фича (с террасой, для свидания...)
+/city/[city]/best                          # Лучшие рестораны города
+/blog                                      # Блог
+/blog/[slug]                               # Статья
+/collections/[slug]                        # Подборка
+/profile                                   # Личный кабинет
+/login                                     # Вход
+/register                                  # Регистрация
+```
+
+**Обязательно для каждой страницы:**
+- Уникальные meta title + description
+- Canonical URL
+- Schema.org (Restaurant, Article, BreadcrumbList, FAQPage)
+- OG-теги
+- Sitemap (sitemap index + по сущностям)
+- robots.txt
+
+---
+
+## 5. Elasticsearch: схема индекса
+
+```json
+{
+  "mappings": {
+    "properties": {
+      "id": { "type": "integer" },
+      "name": { "type": "text", "analyzer": "russian" },
+      "slug": { "type": "keyword" },
+      "description": { "type": "text", "analyzer": "russian" },
+      "city": { "type": "keyword" },
+      "district": { "type": "keyword" },
+      "address": { "type": "text" },
+      "location": { "type": "geo_point" },
+      "cuisines": { "type": "keyword" },
+      "features": { "type": "keyword" },
+      "feature_categories": { "type": "keyword" },
+      "price_level": { "type": "integer" },
+      "average_bill_min": { "type": "integer" },
+      "average_bill_max": { "type": "integer" },
+      "rating": { "type": "float" },
+      "review_count": { "type": "integer" },
+      "dishes": {
+        "type": "nested",
+        "properties": {
+          "name": { "type": "text", "analyzer": "russian" },
+          "price": { "type": "integer" },
+          "allergens": { "type": "keyword" },
+          "calories": { "type": "integer" }
+        }
+      },
+      "has_healthy_menu": { "type": "boolean" },
+      "has_allergen_info": { "type": "boolean" },
+      "photo_url": { "type": "keyword" },
+      "status": { "type": "keyword" },
+      "suggest": {
+        "type": "completion",
+        "analyzer": "simple"
+      }
+    }
+  }
+}
+```
+
+---
+
+## 6. Этапы реализации (Backlog для Claude Code)
+
+### ЭТАП 0: Инфраструктура и Legacy-данные (Неделя 1)
+
+**Цель:** Развернуть dev-окружение, исследовать legacy, создать базу.
+
+```
+Задачи:
+0.1  Создать Docker Compose: PostgreSQL 16, Redis 7, Elasticsearch 8, MinIO
+0.2  Инициализировать Next.js проект (App Router, TypeScript, Tailwind)
+0.3  Инициализировать NestJS проект (TypeScript, TypeORM)
+0.4  Склонировать legacy repo (git.nintegra.ru/MenuRest/MenuRestWeb.git)
+0.5  Исследовать legacy БД: вывести схему таблиц, количество записей
+0.6  Написать скрипт миграции данных legacy → новая схема PostgreSQL
+0.7  Создать миграции для всех таблиц из раздела 3
+0.8  Создать seed-файлы: 14 аллергенов, ~20 кухонь, ~30 фич, ~10 городов
+0.9  Настроить nginx reverse proxy: new.menu-rest.com → Next.js
+0.10 Создать .env.example с документацией переменных
+```
+
+**Файлы на выходе:**
+- `docker-compose.yml`
+- `backend/src/database/migrations/*.ts`
+- `backend/src/database/seeds/*.ts`
+- `scripts/legacy-import.ts`
+- `nginx/new-menu-rest.conf`
+
+---
+
+### ЭТАП 1: Backend Core — Модель данных и API (Недели 2-3)
+
+**Цель:** Работающий REST API с CRUD для всех основных сущностей.
+
+```
+Задачи:
+1.1  Module: restaurant — CRUD, связи, валидация
+     POST/GET/PATCH/DELETE /api/restaurants
+     GET /api/restaurants/:slug
+     
+1.2  Module: restaurant-location — адреса, гео
+     Вложенный CRUD внутри restaurant
+     
+1.3  Module: menu — категории + блюда + КБЖУ + аллергены
+     GET /api/restaurants/:id/menu
+     POST /api/restaurants/:id/menu/categories
+     POST /api/restaurants/:id/menu/dishes
+     
+1.4  Module: allergen — справочник + dish_allergens
+     GET /api/allergens
+     
+1.5  Module: cuisine + feature — справочники
+     GET /api/cuisines
+     GET /api/features?category=atmosphere
+     
+1.6  Module: photo — загрузка в MinIO, thumbnails
+     POST /api/restaurants/:id/photos (multipart)
+     
+1.7  Module: auth — JWT, регистрация, вход, VK OAuth, Telegram Login
+     POST /api/auth/register
+     POST /api/auth/login
+     POST /api/auth/vk
+     POST /api/auth/telegram
+     
+1.8  Module: user — профиль, аллерген-профиль, избранное
+     GET /api/users/me
+     PATCH /api/users/me
+     POST /api/users/me/allergens
+     POST /api/users/me/favorites
+     GET /api/users/me/favorites
+     
+1.9  Swagger документация (auto-generated)
+1.10 Rate limiting (Redis-based)
+1.11 Global error handling, logging
+```
+
+**Критерий выполнения:** `curl localhost:3001/api/restaurants` возвращает список ресторанов из PostgreSQL.
+
+---
+
+### ЭТАП 2: Поиск и Elasticsearch (Неделя 4)
+
+**Цель:** Работающий поиск с фильтрами, автокомплитом и геопоиском.
+
+```
+Задачи:
+2.1  Создать Elasticsearch index по схеме из раздела 5
+2.2  Написать синхронизатор PostgreSQL → Elasticsearch (BullMQ worker)
+     При создании/обновлении ресторана — обновить индекс
+2.3  API: GET /api/search?q=...&cuisine=...&city=...&budget=...&near=lat,lng
+2.4  API: GET /api/search/autocomplete?q=...
+2.5  API: POST /api/search/ai — AI-поиск (Gemini 2.0 Flash)
+     - Keyword extractor (первый проход, regex + словари)
+     - LLM NLU (второй проход, если нужно)
+     - Redis cache для популярных запросов
+2.6  API: GET /api/search/suggest — "похожие рестораны"
+2.7  Тесты: 10 типовых запросов на русском
+```
+
+**Критерий:** Запрос `POST /api/search/ai {query: "итальянский ресторан для свидания в центре до 3000"}` возвращает отфильтрованный список.
+
+---
+
+### ЭТАП 3: Frontend — Главная + Каталог + Поиск (Недели 5-6)
+
+**Цель:** Публичный сайт с главной, поиском и каталогом. Дизайн — по прототипу MenuRest_WOW.html.
+
+```
+Задачи:
+3.1  Layout: header (лого, навигация, тема, auth), footer
+3.2  Тёмная/светлая тема (CSS variables + context)
+3.3  Главная страница:
+     - Hero с растянутым заголовком
+     - AI-поиск с цветными тегами разбора запроса
+     - "✨ Спроси menu-rest.AI" лейбл
+     - Примеры запросов (кликабельные)
+     - Фильтры-дропдауны (Airbnb-стиль): локация, кухня, особое меню,
+       тип заведения, повод, атмосфера, средний чек
+     - Сетка карточек ресторанов (3 колонки)
+     - CTA-баннер для рестораторов
+3.4  Карточка ресторана в каталоге:
+     - Фото (cover), название, кухня, рейтинг, цена, бейджи
+     - Hover-эффект с подъёмом и тенью
+3.5  Страница каталога /restaurants — SSR, пагинация, фильтры
+3.6  SSR metadata для каждой страницы
+3.7  Адаптив: mobile-first, 320px → 1400px
+```
+
+---
+
+### ЭТАП 4: Frontend — Карточка ресторана + Меню (Неделя 7)
+
+**Цель:** Полная страница ресторана с описанием, инфо, аллергенами, меню и калькулятором бюджета.
+
+```
+Задачи:
+4.1  /restaurants/[slug] — SSR страница:
+     - Hero-фото заведения
+     - Info-card: название, описание, мета-сетка (адрес, рейтинг, часы,
+       чек, повод, атмосфера), фото, кнопки (бронь, калькулятор)
+     - Блок аллергенов (из профиля пользователя, подсветка опасных)
+     - Меню с табами по категориям
+     - Карточки блюд: фото, КБЖУ, аллергены, цена, кнопка "+"
+4.2  "Хватит на ужин?" — slide-over панель:
+     - Ввод бюджета
+     - Прогресс-бар (зелёный → жёлтый → красный)
+     - Список добавленных блюд с удалением
+     - Суммарный КБЖУ
+     - Итого + чаевые 10%
+     - Кнопки "Поделиться" и "Забронировать"
+4.3  Schema.org: Restaurant + MenuItem + AggregateRating
+4.4  Structured FAQ (если есть данные)
+4.5  Блок "Похожие рестораны" (из Elasticsearch)
+```
+
+---
+
+### ЭТАП 5: Авторизация + Личный кабинет (Неделя 8)
+
+**Цель:** Регистрация, вход, профиль пользователя.
+
+```
+Задачи:
+5.1  Модальное окно входа/регистрации (email, VK, Telegram)
+5.2  JWT + refresh tokens (httpOnly cookies)
+5.3  Страница /profile:
+     - Аватар, имя, email, город, статистика
+     - История посещений (из bookings + completed)
+     - Любимые блюда (user_favorite_dishes)
+     - Избранные рестораны (user_favorites)
+     - Ограничения по питанию (аллергены + dietary preferences)
+     - Кнопка "Выйти"
+5.4  Хедер: переключение "Войти" ↔ "👤 Профиль"
+5.5  Middleware: auth guard для защищённых роутов API
+```
+
+---
+
+### ЭТАП 6: Блог и SEO-контент (Неделя 9)
+
+**Цель:** CMS для блога, SEO-страницы по городам и кухням.
+
+```
+Задачи:
+6.1  Backend: articles CRUD + article_restaurants
+6.2  Frontend: /blog — лента статей, sidebar (популярное, рубрики, рассылка)
+6.3  Frontend: /blog/[slug] — статья, виджеты ресторанов, шаринг
+6.4  SEO-страницы:
+     - /city/[city] — рестораны города
+     - /city/[city]/cuisine/[cuisine] — кухня в городе
+     - /city/[city]/feature/[feature] — фича в городе
+6.5  Sitemap index + sitemaps по сущностям (авто-генерация)
+6.6  robots.txt
+6.7  Breadcrumbs (BreadcrumbList schema)
+```
+
+---
+
+### ЭТАП 7: Бронирование + Отзывы + Лояльность (Недели 10-11)
+
+```
+Задачи:
+7.1  Бронирование:
+     - Форма (дата, время, гости, пожелания)
+     - Подтверждение email
+     - Статусы: pending → confirmed → completed/cancelled
+7.2  Отзывы:
+     - Только для авторизованных
+     - 4 рейтинга: еда, сервис, атмосфера, цена/качество
+     - Модерация (status: pending → approved)
+     - Ответ ресторана (reply)
+7.3  Лояльность:
+     - Начисление баллов за completed booking
+     - Уровни: bronze/silver/gold
+     - Персональные скидки (на основе истории)
+     - Ачивки (JSON-конфиг)
+```
+
+---
+
+### ЭТАП 8: Админка (Неделя 12)
+
+```
+Задачи:
+8.1  /admin — отдельный layout, auth guard (role: admin)
+8.2  Рестораны: список, создание, редактирование, статусы
+8.3  Меню: управление категориями и блюдами
+8.4  Импорт: загрузка CSV, дедупликация, merge дублей
+8.5  Контент: статьи, подборки
+8.6  Модерация: отзывы, фото
+8.7  Справочники: кухни, фичи, аллергены
+8.8  Аналитика: кол-во ресторанов, отзывов, пользователей, популярные запросы
+```
+
+---
+
+### ЭТАП 9: Оптимизация и деплой (Неделя 13)
+
+```
+Задачи:
+9.1  Performance: Core Web Vitals < targets (LCP < 2.5s, CLS < 0.1)
+9.2  Image optimization: WebP, srcset, lazy loading, CDN
+9.3  Кеширование: Redis для API, ISR для Next.js страниц
+9.4  Security: HTTPS, CORS, CSP, rate limiting, input sanitization
+9.5  CI/CD pipeline: GitLab CI → build → test → deploy → new.menu-rest.com
+9.6  Мониторинг: health checks, error logging
+9.7  Документация: README, API docs, deployment guide
+```
+
+---
+
+## 7. Структура файлов проекта
+
+```
+menu-rest/
+├── docker-compose.yml
+├── docker-compose.prod.yml
+├── .env.example
+├── nginx/
+│   └── new-menu-rest.conf
+├── scripts/
+│   ├── legacy-import.ts
+│   ├── seed-allergens.ts
+│   ├── seed-cuisines.ts
+│   └── sync-elasticsearch.ts
+├── backend/
+│   ├── package.json
+│   ├── tsconfig.json
+│   ├── nest-cli.json
+│   ├── src/
+│   │   ├── main.ts
+│   │   ├── app.module.ts
+│   │   ├── config/
+│   │   ├── common/
+│   │   ├── database/
+│   │   │   ├── migrations/
+│   │   │   ├── seeds/
+│   │   │   └── entities/
+│   │   └── modules/
+│   │       ├── restaurant/
+│   │       ├── menu/
+│   │       ├── search/
+│   │       │   ├── search.controller.ts
+│   │       │   ├── search.service.ts
+│   │       │   ├── ai-search.service.ts    ← Gemini NLU
+│   │       │   ├── keyword-extractor.ts     ← Regex первый проход
+│   │       │   └── elasticsearch.service.ts
+│   │       ├── content/
+│   │       ├── user/
+│   │       ├── auth/
+│   │       ├── loyalty/
+│   │       ├── booking/
+│   │       ├── review/
+│   │       ├── budget-calc/
+│   │       └── admin/
+│   └── test/
+├── frontend/
+│   ├── package.json
+│   ├── next.config.ts
+│   ├── tailwind.config.ts
+│   ├── src/
+│   │   ├── app/
+│   │   │   ├── layout.tsx
+│   │   │   ├── page.tsx                    ← Главная
+│   │   │   ├── restaurants/
+│   │   │   │   ├── page.tsx                ← Каталог
+│   │   │   │   └── [slug]/page.tsx         ← Карточка
+│   │   │   ├── blog/
+│   │   │   │   ├── page.tsx
+│   │   │   │   └── [slug]/page.tsx
+│   │   │   ├── city/[city]/
+│   │   │   ├── profile/page.tsx
+│   │   │   ├── login/page.tsx
+│   │   │   └── admin/
+│   │   ├── components/
+│   │   │   ├── layout/
+│   │   │   ├── search/
+│   │   │   │   ├── AISearchBar.tsx
+│   │   │   │   ├── FilterDropdowns.tsx
+│   │   │   │   └── ParsedTags.tsx
+│   │   │   ├── restaurant/
+│   │   │   │   ├── RestaurantCard.tsx
+│   │   │   │   ├── RestaurantGrid.tsx
+│   │   │   │   ├── MenuSection.tsx
+│   │   │   │   ├── DishCard.tsx
+│   │   │   │   └── AllergenBar.tsx
+│   │   │   ├── budget/
+│   │   │   │   └── BudgetCalcPanel.tsx     ← "Хватит на ужин?"
+│   │   │   ├── auth/
+│   │   │   ├── profile/
+│   │   │   └── blog/
+│   │   ├── lib/
+│   │   │   ├── api.ts                      ← API client
+│   │   │   └── utils.ts
+│   │   ├── hooks/
+│   │   ├── stores/                          ← Zustand
+│   │   └── styles/
+│   │       └── globals.css
+│   └── public/
+└── docs/
+    ├── ARCHITECTURE.md
+    ├── API.md
+    └── DEPLOYMENT.md
+```
+
+---
+
+## 8. Инструкции для Claude Code
+
+### Общие правила
+
+1. **Язык кода:** TypeScript строго (strict mode)
+2. **Стиль:** ESLint + Prettier, одинаковый для backend и frontend
+3. **Коммиты:** Conventional Commits (`feat:`, `fix:`, `chore:`, `docs:`)
+4. **Ветки:** `main` → production, `develop` → staging, `feat/*` → задачи
+5. **Переменные окружения:** Никогда не хардкодить. Всё в `.env`
+6. **Пароли/ключи:** Не коммитить. Использовать `.env.example` с плейсхолдерами
+7. **Каждый модуль** должен иметь: controller, service, module, dto, entity, tests
+
+### Как давать задачи Claude Code
+
+Каждый этап разбит на задачи с номерами (0.1, 1.1, 2.3...). Давайте задачи по одной или группами до 5 штук:
+
+```
+Claude Code, выполни задачи 1.1-1.3:
+
+Создай NestJS модуль restaurant со следующим:
+- Entity: Restaurant (TypeORM, поля из раздела 3 ТЗ)
+- Entity: RestaurantLocation
+- DTO: CreateRestaurantDto, UpdateRestaurantDto
+- Service: RestaurantService (CRUD)
+- Controller: /api/restaurants (GET list, GET :slug, POST, PATCH, DELETE)
+- Module: RestaurantModule
+
+Используй схему БД из ТЗ раздел 3.1.
+Стек: NestJS, TypeORM, PostgreSQL.
+```
+
+### Контрольные точки
+
+После каждого этапа — проверка:
+
+| Этап | Проверка |
+|------|----------|
+| 0 | docker compose up запускает все сервисы, legacy данные импортированы |
+| 1 | curl /api/restaurants возвращает JSON, Swagger доступен |
+| 2 | Поиск "итальянский ресторан центр" возвращает релевантные результаты |
+| 3 | new.menu-rest.com показывает главную с поиском и каталогом |
+| 4 | Карточка ресторана с меню, КБЖУ, аллергенами, калькулятором |
+| 5 | Регистрация → профиль → избранное работает |
+| 6 | /blog и /city/moscow/cuisine/italian отдают контент с SSR |
+| 7 | Бронирование → отзыв → баллы начислены |
+| 8 | Админка: создать ресторан → он появляется на сайте |
+| 9 | Lighthouse > 90, деплой на new.menu-rest.com работает |
+
+---
+
+## 9. Миграция данных из Legacy
+
+```
+Скрипт scripts/legacy-import.ts должен:
+
+1. Подключиться к legacy БД (структуру узнать из git.nintegra.ru repo)
+2. Извлечь: рестораны, адреса, меню, блюда, цены, фото
+3. Маппинг:
+   legacy.restaurant → restaurants + restaurant_locations
+   legacy.menu_item → dishes (с попыткой определить категорию)
+   legacy.photo → photos
+4. Сохранить raw_data в restaurant_source_snapshots (для аудита)
+5. Создать slug из названия (transliterate + slugify)
+6. Лог: сколько импортировано, сколько ошибок, дубли
+7. Idempotent: повторный запуск не создаёт дубликатов
+```
+
+---
+
+## 10. Конфигурация Docker Compose
+
+```yaml
+version: '3.8'
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: menurest
+      POSTGRES_USER: menurest
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    ports: ["5432:5432"]
+    volumes: ["pgdata:/var/lib/postgresql/data"]
+
+  redis:
+    image: redis:7-alpine
+    ports: ["6379:6379"]
+
+  elasticsearch:
+    image: elasticsearch:8.12.0
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ports: ["9200:9200"]
+    volumes: ["esdata:/usr/share/elasticsearch/data"]
+
+  minio:
+    image: minio/minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_PASSWORD}
+    ports: ["9000:9000", "9001:9001"]
+    volumes: ["miniodata:/data"]
+
+  backend:
+    build: ./backend
+    depends_on: [postgres, redis, elasticsearch]
+    ports: ["3001:3001"]
+    env_file: .env
+    volumes: ["./backend:/app", "/app/node_modules"]
+
+  frontend:
+    build: ./frontend
+    depends_on: [backend]
+    ports: ["3000:3000"]
+    env_file: .env
+    volumes: ["./frontend:/app", "/app/node_modules"]
+
+volumes:
+  pgdata:
+  esdata:
+  miniodata:
+```
+
+---
+
+## 11. Переменные окружения (.env.example)
+
+```bash
+# Database
+DB_HOST=postgres
+DB_PORT=5432
+DB_NAME=menurest
+DB_USER=menurest
+DB_PASSWORD=CHANGE_ME
+
+# Redis
+REDIS_HOST=redis
+REDIS_PORT=6379
+
+# Elasticsearch
+ES_HOST=http://elasticsearch:9200
+
+# MinIO / S3
+MINIO_ENDPOINT=minio
+MINIO_PORT=9000
+MINIO_USER=minioadmin
+MINIO_PASSWORD=CHANGE_ME
+MINIO_BUCKET=menurest-photos
+
+# Auth
+JWT_SECRET=CHANGE_ME_LONG_RANDOM_STRING
+JWT_EXPIRES_IN=7d
+VK_CLIENT_ID=
+VK_CLIENT_SECRET=
+TELEGRAM_BOT_TOKEN=
+
+# AI Search
+GEMINI_API_KEY=CHANGE_ME
+GEMINI_MODEL=gemini-2.0-flash
+
+# App
+NODE_ENV=development
+BACKEND_URL=http://localhost:3001
+FRONTEND_URL=http://localhost:3000
+PUBLIC_URL=https://new.menu-rest.com
+```

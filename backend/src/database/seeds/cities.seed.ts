@@ -1,0 +1,12 @@
+export const citiesSeed = [
+  { name: 'Москва',         slug: 'moscow',     lat: 55.7558, lng: 37.6173 },
+  { name: 'Санкт-Петербург', slug: 'spb',       lat: 59.9343, lng: 30.3351 },
+  { name: 'Казань',         slug: 'kazan',      lat: 55.8304, lng: 49.0661 },
+  { name: 'Екатеринбург',   slug: 'ekb',        lat: 56.8389, lng: 60.6057 },
+  { name: 'Новосибирск',    slug: 'novosibirsk',lat: 54.9884, lng: 82.9218 },
+  { name: 'Сочи',           slug: 'sochi',      lat: 43.5992, lng: 39.7257 },
+  { name: 'Краснодар',      slug: 'krasnodar',  lat: 45.0448, lng: 38.9760 },
+  { name: 'Нижний Новгород',slug: 'nnov',       lat: 56.2965, lng: 43.9361 },
+  { name: 'Самара',         slug: 'samara',     lat: 53.1959, lng: 50.1002 },
+  { name: 'Уфа',            slug: 'ufa',        lat: 54.7388, lng: 55.9721 },
+];
