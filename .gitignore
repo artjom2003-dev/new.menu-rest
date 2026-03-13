@@ -43,3 +43,6 @@ nginx/ssl/
 # Python cache
 __pycache__/
 *.pyc
+
+# Large SQL dumps
+mr.sql
