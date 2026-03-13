@@ -39,3 +39,7 @@ restaurant_pipeline/data/
 
 # SSL certificates
 nginx/ssl/
+
+# Python cache
+__pycache__/
+*.pyc
