@@ -1,0 +1,103 @@
+{
+  "header": {
+    "restaurants": "Restaurantes",
+    "forGuests": "Para clientes",
+    "loyalty": "Recompensas",
+    "blog": "Blog",
+    "blogArticles": "Artículos",
+    "blogEvents": "Eventos",
+    "blogPromos": "Ofertas",
+    "blogNews": "Noticias",
+    "forBusiness": "Para negocios",
+    "budgetCalc": "¿Alcanza para cenar?",
+    "login": "Iniciar sesión",
+    "profile": "Perfil",
+    "book": "Reservar mesa",
+    "ownerDashboard": "Panel",
+    "ownerCard": "Tarjeta",
+    "ownerPosts": "Publicaciones",
+    "ownerMyRestaurant": "Mi restaurante",
+    "ownerPanel": "Panel de control",
+    "logout": "Cerrar sesión",
+    "ownerAnalytics": "Analítica"
+  },
+  "hero": {
+    "line1": "Encuentra tu",
+    "line2": "lugar perfecto",
+    "line3": "en un minuto",
+    "subtitle": "Busca por platos, filtra alérgenos, calcula calorías y presupuesto — todo en un solo servicio."
+  },
+  "search": {
+    "aiLabel": "Pregunta a",
+    "aiName": "Menu-Rest.AI",
+    "aiDesc": "— solo describe lo que quieres",
+    "placeholder": "Cena romántica con vista, sin gluten, hasta 50€ para dos...",
+    "find": "Buscar",
+    "analyzing": "Analizando tu solicitud",
+    "found": "Encontrado",
+    "showAll": "Ver todo →",
+    "try": "Prueba:",
+    "noResults": "No se encontró nada, intenta otra búsqueda",
+    "error": "Error de búsqueda, inténtalo más tarde",
+    "aiUnavailable": "La búsqueda IA no está disponible temporalmente",
+    "examples": [
+      "Cena de carne en el centro por menos de 40€",
+      "Lugar acogedor para una cita con cocina italiana",
+      "Restaurante con menú infantil y terraza cercano",
+      "Cena vegana sin frutos secos en el centro"
+    ]
+  },
+  "grid": {
+    "recommend": "Recomendados para ti",
+    "all": "Todo →"
+  },
+  "cta": {
+    "title": "¿Tu restaurante\naún no está aquí?",
+    "desc": "Página gratuita con menú, información nutricional,\nreservas online y reseñas de clientes",
+    "button": "Añadir tu restaurante",
+    "free": "Gratis — sin comisiones ni costes ocultos"
+  },
+  "card": {
+    "mixed": "Mixta",
+    "healthy": "Saludable",
+    "allergens": "Alérgenos"
+  },
+  "restaurant": {
+    "address": "Dirección",
+    "rating": "Valoración",
+    "reviews": "reseñas",
+    "schedule": "Horario",
+    "avgBill": "Cuenta media",
+    "occasion": "Ocasión",
+    "atmosphere": "Ambiente",
+    "closed": "Cerrado",
+    "callToCheck": "Llame para confirmar",
+    "notSpecified": "No especificado",
+    "budgetCalc": "¿Alcanza para cenar?",
+    "book": "Reservar mesa",
+    "claimTitle": "¿Es tu restaurante? Obtén acceso para gestionar tu página, menú y reservas.",
+    "claimButton": "Enviar solicitud"
+  },
+  "footer": {
+    "service": "Servicio",
+    "restaurants": "Restaurantes",
+    "blog": "Blog",
+    "loyaltyProgram": "Programa de fidelización",
+    "about": "Sobre nosotros",
+    "forRestaurants": "Para restaurantes",
+    "addRestaurant": "Añadir restaurante",
+    "pricing": "Precios",
+    "analytics": "Analítica",
+    "support": "Soporte",
+    "help": "Ayuda",
+    "contacts": "Contacto",
+    "privacy": "Política de privacidad",
+    "terms": "Términos de uso",
+    "tagline": "Búsqueda inteligente de restaurantes por platos, alérgenos y presupuesto. Búsqueda IA, nutrición, reservas.",
+    "rights": "Todos los derechos reservados.",
+    "madeWith": "Hecho con ❤️ para los amantes de la gastronomía"
+  },
+  "lang": {
+    "label": "ES"
+  }
+}

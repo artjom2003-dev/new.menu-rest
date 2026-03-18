@@ -1,0 +1,103 @@
+{
+  "header": {
+    "restaurants": "Restaurants",
+    "forGuests": "Pour les clients",
+    "loyalty": "Récompenses",
+    "blog": "Blog",
+    "blogArticles": "Articles",
+    "blogEvents": "Événements",
+    "blogPromos": "Offres",
+    "blogNews": "Actualités",
+    "forBusiness": "Pour les pros",
+    "budgetCalc": "Assez pour le dîner ?",
+    "login": "Connexion",
+    "profile": "Profil",
+    "book": "Réserver",
+    "ownerDashboard": "Tableau de bord",
+    "ownerCard": "Fiche",
+    "ownerPosts": "Publications",
+    "ownerMyRestaurant": "Mon restaurant",
+    "ownerPanel": "Panneau de gestion",
+    "logout": "Déconnexion",
+    "ownerAnalytics": "Analytique"
+  },
+  "hero": {
+    "line1": "Trouvez votre",
+    "line2": "lieu idéal",
+    "line3": "en une minute",
+    "subtitle": "Recherchez par plats, filtrez les allergènes, calculez les calories et le budget — tout en un seul service."
+  },
+  "search": {
+    "aiLabel": "Demandez à",
+    "aiName": "Menu-Rest.AI",
+    "aiDesc": "— décrivez simplement ce que vous voulez",
+    "placeholder": "Dîner romantique avec vue, sans gluten, jusqu'à 50€ pour deux...",
+    "find": "Rechercher",
+    "analyzing": "Analyse de votre demande",
+    "found": "Trouvé",
+    "showAll": "Tout afficher →",
+    "try": "Essayez :",
+    "noResults": "Rien trouvé, essayez une autre recherche",
+    "error": "Erreur de recherche, réessayez plus tard",
+    "aiUnavailable": "La recherche IA est temporairement indisponible",
+    "examples": [
+      "Dîner steak au centre-ville sous 40€",
+      "Endroit cosy pour un rendez-vous cuisine italienne",
+      "Restaurant avec menu enfant et terrasse à proximité",
+      "Dîner végétalien sans noix dans le centre"
+    ]
+  },
+  "grid": {
+    "recommend": "Nos recommandations",
+    "all": "Tout →"
+  },
+  "cta": {
+    "title": "Votre restaurant\npas encore ici ?",
+    "desc": "Page restaurant gratuite avec menu, infos nutritionnelles,\nréservation en ligne et avis clients",
+    "button": "Ajouter votre restaurant",
+    "free": "Gratuit — sans commissions ni frais cachés"
+  },
+  "card": {
+    "mixed": "Mixte",
+    "healthy": "Santé",
+    "allergens": "Allergènes"
+  },
+  "restaurant": {
+    "address": "Adresse",
+    "rating": "Note",
+    "reviews": "avis",
+    "schedule": "Horaires",
+    "avgBill": "Addition moyenne",
+    "occasion": "Occasion",
+    "atmosphere": "Ambiance",
+    "closed": "Fermé",
+    "callToCheck": "Appelez pour vérifier",
+    "notSpecified": "Non précisé",
+    "budgetCalc": "Assez pour le dîner ?",
+    "book": "Réserver",
+    "claimTitle": "C'est votre restaurant ? Obtenez l'accès pour gérer votre page, menu et réservations.",
+    "claimButton": "Envoyer une demande"
+  },
+  "footer": {
+    "service": "Service",
+    "restaurants": "Restaurants",
+    "blog": "Blog",
+    "loyaltyProgram": "Programme de fidélité",
+    "about": "À propos",
+    "forRestaurants": "Pour les restaurateurs",
+    "addRestaurant": "Ajouter un restaurant",
+    "pricing": "Tarifs",
+    "analytics": "Analytique",
+    "support": "Support",
+    "help": "Aide",
+    "contacts": "Contact",
+    "privacy": "Politique de confidentialité",
+    "terms": "Conditions d'utilisation",
+    "tagline": "Recherche intelligente de restaurants par plats, allergènes et budget. Recherche IA, nutrition, réservation.",
+    "rights": "Tous droits réservés.",
+    "madeWith": "Fait avec ❤️ pour les gourmets"
+  },
+  "lang": {
+    "label": "FR"
+  }
+}

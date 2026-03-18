@@ -25,6 +25,7 @@ interface SearchState {
   filters: SearchFilters;
   isLoading: boolean;
   results: unknown[];
+  recommendation: string;
 
   setQuery: (q: string) => void;
   setParsedTags: (tags: ParsedTag[]) => void;
@@ -32,6 +33,7 @@ interface SearchState {
   clearFilters: () => void;
   setLoading: (v: boolean) => void;
   setResults: (r: unknown[]) => void;
+  setRecommendation: (text: string) => void;
 }
 
 export const useSearchStore = create<SearchState>((set) => ({
@@ -40,6 +42,7 @@ export const useSearchStore = create<SearchState>((set) => ({
   filters: {},
   isLoading: false,
   results: [],
+  recommendation: '',
 
   setQuery: (query) => set({ query }),
   setParsedTags: (parsedTags) => set({ parsedTags }),
@@ -48,4 +51,5 @@ export const useSearchStore = create<SearchState>((set) => ({
   clearFilters: () => set({ filters: {} }),
   setLoading: (isLoading) => set({ isLoading }),
   setResults: (results) => set({ results }),
+  setRecommendation: (recommendation) => set({ recommendation }),
 }));

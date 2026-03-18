@@ -4,7 +4,7 @@ import { Client } from '@elastic/elasticsearch';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Restaurant } from '@database/entities/restaurant.entity';
-import { AiSearchService } from './ai-search.service';
+import { AiSearchService, AiRecommendation } from './ai-search.service';
 import { ExtractedParams } from './keyword-extractor';
 
 @Injectable()
@@ -23,27 +23,9 @@ export class SearchService {
     this.index = config.get('ES_INDEX_RESTAURANTS', 'restaurants');
   }
 
-  /** AI-поиск: NLU → Elasticsearch */
-  async aiSearch_query(query: string) {
-    const params = await this.aiSearch.parse(query);
-    const esQuery = this.buildEsQuery(params);
-
-    try {
-      const response = await this.es.search({
-        index: this.index,
-        body: esQuery,
-        size: 20,
-      });
-
-      return {
-        params,
-        total: response.hits.total,
-        items: response.hits.hits.map((h) => ({ id: h._id, score: h._score, ...(h._source as object) })),
-      };
-    } catch (err) {
-      this.logger.error('Elasticsearch error:', err);
-      return { params, total: 0, items: [] };
-    }
+  /** AI-ассистент: RAG-поиск с рекомендациями */
+  async aiSearch_query(query: string): Promise<AiRecommendation> {
+    return this.aiSearch.recommend(query);
   }
 
   /** Стандартный поиск с фильтрами */
@@ -291,6 +273,7 @@ export class SearchService {
   }
 
   private buildEsQuery(params: ExtractedParams): Record<string, unknown> {
+    const must: object[] = [];
     const filter: object[] = [{ term: { status: 'published' } }];
 
     if (params.cuisine) filter.push({ term: { cuisines: params.cuisine } });
@@ -307,9 +290,21 @@ export class SearchService {
       filter.push({ range: { average_bill_max: { lte: params.budget.max } } });
     }
 
+    // Text search for dish names or general query terms
+    if (params.dish) {
+      must.push({
+        multi_match: {
+          query: params.dish,
+          fields: ['dishes.name^3', 'description', 'name'],
+          analyzer: 'russian',
+          fuzziness: 'AUTO',
+        },
+      });
+    }
+
     return {
-      query: { bool: { must: [{ match_all: {} }], filter } },
-      sort: [{ rating: { order: 'desc' } }],
+      query: { bool: { must: must.length ? must : [{ match_all: {} }], filter } },
+      sort: must.length ? [{ _score: { order: 'desc' } }, { rating: { order: 'desc' } }] : [{ rating: { order: 'desc' } }],
     };
   }
 }

@@ -31,7 +31,7 @@ export class MenuService {
   async getFullMenu(restaurantId: number) {
     const items = await this.restaurantDishRepo.find({
       where: { restaurantId, isAvailable: true },
-      relations: ['dish'],
+      relations: ['dish', 'dish.allergens'],
       order: { sortOrder: 'ASC' },
     });
 

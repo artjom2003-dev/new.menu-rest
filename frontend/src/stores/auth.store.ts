@@ -8,6 +8,7 @@ interface User {
   avatarUrl?: string;
   loyaltyPoints: number;
   loyaltyLevel: 'bronze' | 'silver' | 'gold';
+  role?: 'user' | 'owner' | 'admin';
   allergenProfile?: Array<{ id: number; name: string; slug: string; icon: string }>;
 }
 

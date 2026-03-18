@@ -9,6 +9,8 @@ import { Feature } from '@database/entities/feature.entity';
 import { Allergen } from '@database/entities/allergen.entity';
 import { RestaurantChain } from '@database/entities/restaurant-chain.entity';
 import { RestaurantDish } from '@database/entities/restaurant-dish.entity';
+import { District } from '@database/entities/district.entity';
+import { RestaurantLocation } from '@database/entities/restaurant-location.entity';
 import { SearchModule } from '@modules/search/search.module';
 import { RestaurantController } from './restaurant.controller';
 import { RestaurantService } from './restaurant.service';
@@ -19,6 +21,7 @@ import { ReferenceController } from './reference.controller';
     TypeOrmModule.forFeature([
       Restaurant, WorkingHours, Photo, Cuisine, City,
       Feature, Allergen, RestaurantChain, RestaurantDish,
+      District, RestaurantLocation,
     ]),
     forwardRef(() => SearchModule),
   ],

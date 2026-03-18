@@ -1,3 +1,7 @@
+import createNextIntlPlugin from 'next-intl/plugin';
+
+const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
@@ -13,6 +17,8 @@ const nextConfig = {
       { protocol: 'https', hostname: 'img.restoclub.ru' },
       { protocol: 'https', hostname: 'i2.photo.2gis.com' },
       { protocol: 'https', hostname: 'cdn1.flamp.ru' },
+      { protocol: 'https', hostname: '*.rl0.ru' },
+      { protocol: 'https', hostname: '*.afisha.ru' },
     ],
   },
   async rewrites() {
@@ -25,4 +31,4 @@ const nextConfig = {
   },
 };
 
-export default nextConfig;
+export default withNextIntl(nextConfig);

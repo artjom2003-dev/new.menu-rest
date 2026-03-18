@@ -14,7 +14,7 @@
  */
 
 import { Pool } from 'pg';
-import * as Database from 'better-sqlite3';
+import Database = require('better-sqlite3');
 import * as dotenv from 'dotenv';
 import * as path from 'path';
 
@@ -678,7 +678,7 @@ async function main() {
 
   let sqlite: Database.Database;
   try {
-    sqlite = new (Database as unknown as typeof Database.default)(PIPELINE_DB_PATH, { readonly: true });
+    sqlite = new Database(PIPELINE_DB_PATH, { readonly: true });
   } catch (err) {
     console.error(`❌ Не удалось открыть pipeline.db: ${err}`);
     console.error(`   Путь: ${PIPELINE_DB_PATH}`);

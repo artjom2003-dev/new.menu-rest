@@ -5,6 +5,7 @@ import {
 import { City } from './city.entity';
 import { Restaurant } from './restaurant.entity';
 
+export type UserRole = 'user' | 'owner' | 'admin';
 export type LoyaltyLevel = 'bronze' | 'silver' | 'gold';
 export type AuthProvider = 'email' | 'vk' | 'telegram';
 
@@ -38,6 +39,9 @@ export class User {
 
   @Column({ name: 'loyalty_level', length: 20, default: 'bronze' })
   loyaltyLevel: LoyaltyLevel;
+
+  @Column({ length: 20, default: 'user' })
+  role: UserRole;
 
   @Column({ name: 'auth_provider', length: 20, default: 'email' })
   authProvider: AuthProvider;

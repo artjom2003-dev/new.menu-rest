@@ -1,5 +1,7 @@
 'use client';
 
+import { useState } from 'react';
+import Image from 'next/image';
 import { useAuthStore } from '@/stores/auth.store';
 import { useBudgetStore } from '@/stores/budget.store';
 
@@ -7,11 +9,15 @@ interface Dish {
   id: number;
   name: string;
   description?: string;
-  price: number; // в копейках
+  composition?: string;
+  price: number;
   calories?: number;
   protein?: number;
   fat?: number;
   carbs?: number;
+  weightGrams?: number;
+  volumeMl?: number;
+  imageUrl?: string;
   isHealthyChoice?: boolean;
   allergens?: Array<{ slug: string; icon: string; name: string }>;
 }
@@ -35,9 +41,14 @@ function getDishEmoji(name: string): string {
 export function DishCard({ dish }: { dish: Dish }) {
   const { user } = useAuthStore();
   const { addItem, open } = useBudgetStore();
+  const [imgError, setImgError] = useState(false);
+  const [expanded, setExpanded] = useState(false);
 
   const userAllergenSlugs = user?.allergenProfile?.map((a) => a.slug) || [];
-  const priceRub = Math.round(dish.price / 100);
+  const priceRub = dish.price < 100 ? dish.price : Math.round(dish.price / 100);
+  const hasImage = dish.imageUrl && /^https?:\/\//.test(dish.imageUrl) && !imgError;
+  const hasKbzhu = dish.calories || dish.protein || dish.fat || dish.carbs;
+  const hasDetails = dish.composition || (hasKbzhu && dish.composition);
 
   const handleAdd = () => {
     addItem({
@@ -56,70 +67,100 @@ export function DishCard({ dish }: { dish: Dish }) {
     <div
       className="flex gap-4 p-[18px] border rounded-[16px] cursor-pointer relative overflow-hidden group transition-all duration-[350ms]"
       style={{ background: 'var(--bg2)', borderColor: 'var(--card-border)' }}
+      onClick={() => hasDetails && setExpanded(!expanded)}
       onMouseEnter={(e) => {
-        (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,92,40,0.2)';
-        (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px)';
-        (e.currentTarget as HTMLElement).style.boxShadow = '0 16px 48px rgba(0,0,0,0.3)';
+        e.currentTarget.style.borderColor = 'rgba(255,92,40,0.2)';
+        e.currentTarget.style.transform = 'translateY(-2px)';
+        e.currentTarget.style.boxShadow = '0 16px 48px rgba(0,0,0,0.3)';
       }}
       onMouseLeave={(e) => {
-        (e.currentTarget as HTMLElement).style.borderColor = '';
-        (e.currentTarget as HTMLElement).style.transform = '';
-        (e.currentTarget as HTMLElement).style.boxShadow = '';
+        e.currentTarget.style.borderColor = '';
+        e.currentTarget.style.transform = '';
+        e.currentTarget.style.boxShadow = '';
       }}>
 
       {/* Hover gradient */}
       <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-[400ms]"
         style={{ background: 'linear-gradient(135deg, var(--accent-glow), transparent)' }} />
 
-      {/* Emoji thumb */}
-      <div className="w-[90px] h-[90px] rounded-[12px] flex-shrink-0 flex items-center justify-center text-[36px] relative z-10"
+      {/* Image / Emoji thumb */}
+      <div className="w-[90px] h-[90px] rounded-[12px] flex-shrink-0 relative z-10 overflow-hidden"
         style={{ background: 'var(--bg3)' }}>
-        {getDishEmoji(dish.name)}
+        {hasImage ? (
+          <Image src={dish.imageUrl!} alt={dish.name} fill className="object-cover"
+            onError={() => setImgError(true)} />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-[36px]">
+            {getDishEmoji(dish.name)}
+          </div>
+        )}
+        {/* Healthy badge */}
+        {dish.isHealthyChoice && (
+          <div className="absolute top-1 left-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold"
+            style={{ background: 'rgba(57,255,100,0.2)', color: '#4ade80', backdropFilter: 'blur(4px)' }}>
+            🌿 ЗОЖ
+          </div>
+        )}
       </div>
 
       {/* Content */}
       <div className="flex-1 relative z-10 min-w-0">
-        <div className="text-[14px] font-semibold text-[var(--text)] mb-0.5">{dish.name}</div>
+        <div className="flex items-start justify-between gap-2">
+          <div className="text-[14px] font-semibold text-[var(--text)] mb-0.5">{dish.name}</div>
+          {(dish.weightGrams || dish.volumeMl) && (
+            <span className="text-[10px] text-[var(--text3)] flex-shrink-0 whitespace-nowrap mt-0.5">
+              {dish.weightGrams ? `${dish.weightGrams} г` : `${dish.volumeMl} мл`}
+            </span>
+          )}
+        </div>
 
         {dish.description && (
-          <div className="text-[11px] text-[var(--text3)] leading-[1.5] mb-2 overflow-hidden"
-            style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+          <div className="text-[11px] text-[var(--text3)] leading-[1.5] mb-1.5 overflow-hidden"
+            style={{ display: '-webkit-box', WebkitLineClamp: expanded ? 10 : 2, WebkitBoxOrient: 'vertical' }}>
             {dish.description}
+          </div>
+        )}
+
+        {/* Composition — expanded */}
+        {expanded && dish.composition && (
+          <div className="text-[11px] text-[var(--text3)] leading-[1.5] mb-2 px-2.5 py-2 rounded-lg border"
+            style={{ background: 'rgba(255,255,255,0.02)', borderColor: 'var(--card-border)' }}>
+            <span className="text-[10px] uppercase tracking-wider text-[var(--text3)] opacity-60">Состав: </span>
+            {dish.composition}
           </div>
         )}
 
         {/* Allergens */}
         {dish.allergens && dish.allergens.length > 0 && (
-          <div className="flex gap-0.5 mb-2">
+          <div className="flex gap-0.5 mb-1.5 flex-wrap">
             {dish.allergens.map((a) => {
               const isDanger = userAllergenSlugs.includes(a.slug);
               return (
-                <span
-                  key={a.slug}
-                  title={a.name}
-                  className="w-5 h-5 rounded-[5px] text-[9px] flex items-center justify-center border"
+                <span key={a.slug} title={a.name}
+                  className="h-5 px-1.5 rounded-[5px] text-[9px] flex items-center justify-center gap-0.5 border"
                   style={{
-                    border: isDanger ? '1px solid rgba(255,70,70,0.3)' : '1px solid var(--card-border)',
-                    background: isDanger ? 'rgba(255,70,70,0.08)' : 'var(--card)',
+                    border: isDanger ? '1px solid rgba(255,70,70,0.4)' : '1px solid var(--card-border)',
+                    background: isDanger ? 'rgba(255,70,70,0.1)' : 'var(--bg3)',
+                    color: isDanger ? '#ff6b6b' : 'var(--text3)',
                   }}>
-                  {a.icon}
+                  {a.icon} {a.name}
                 </span>
               );
             })}
           </div>
         )}
 
-        {/* Footer */}
-        <div className="flex items-center justify-between">
+        {/* Footer: Price + KBZHU */}
+        <div className="flex items-center justify-between mt-1">
           <div className="text-[16px] font-bold text-[var(--text)]">
-            {priceRub.toLocaleString()} ₽
+            {priceRub > 0 ? `${priceRub.toLocaleString()} ₽` : ''}
           </div>
-          {(dish.calories || dish.protein) && (
+          {hasKbzhu && (
             <div className="flex gap-2 text-[9px] text-[var(--text3)] font-mono">
-              {dish.calories && <span><em className="not-italic text-[11px] font-medium text-[var(--text2)]">{dish.calories}</em> ккал</span>}
-              {dish.protein && <span><em className="not-italic text-[11px] font-medium text-[var(--text2)]">{dish.protein}</em>Б</span>}
-              {dish.fat && <span><em className="not-italic text-[11px] font-medium text-[var(--text2)]">{dish.fat}</em>Ж</span>}
-              {dish.carbs && <span><em className="not-italic text-[11px] font-medium text-[var(--text2)]">{dish.carbs}</em>У</span>}
+              {dish.calories ? <span><em className="not-italic text-[11px] font-medium text-[var(--text2)]">{dish.calories}</em> ккал</span> : null}
+              {dish.protein ? <span><em className="not-italic text-[11px] font-medium text-[var(--text2)]">{Number(dish.protein).toFixed(0)}</em>Б</span> : null}
+              {dish.fat ? <span><em className="not-italic text-[11px] font-medium text-[var(--text2)]">{Number(dish.fat).toFixed(0)}</em>Ж</span> : null}
+              {dish.carbs ? <span><em className="not-italic text-[11px] font-medium text-[var(--text2)]">{Number(dish.carbs).toFixed(0)}</em>У</span> : null}
             </div>
           )}
         </div>
@@ -127,7 +168,7 @@ export function DishCard({ dish }: { dish: Dish }) {
 
       {/* Add button */}
       <button
-        onClick={handleAdd}
+        onClick={(e) => { e.stopPropagation(); handleAdd(); }}
         className="absolute bottom-4 right-4 z-10 w-[34px] h-[34px] rounded-full text-white text-[18px] flex items-center justify-center border-none transition-all duration-200 cursor-pointer"
         style={{ background: 'var(--accent)', boxShadow: '0 4px 16px rgba(255,92,40,0.3)' }}
         onMouseEnter={(e) => (e.currentTarget as HTMLElement).style.transform = 'scale(1.15)'}

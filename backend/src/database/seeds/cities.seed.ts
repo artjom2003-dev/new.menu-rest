@@ -9,4 +9,7 @@ export const citiesSeed = [
   { name: 'Нижний Новгород',slug: 'nnov',       lat: 56.2965, lng: 43.9361 },
   { name: 'Самара',         slug: 'samara',     lat: 53.1959, lng: 50.1002 },
   { name: 'Уфа',            slug: 'ufa',        lat: 54.7388, lng: 55.9721 },
+  { name: 'Ростов-на-Дону', slug: 'rostov',     lat: 47.2357, lng: 39.7015 },
+  { name: 'Воронеж',        slug: 'voronezh',   lat: 51.6720, lng: 39.1843 },
+  { name: 'Красноярск',     slug: 'krasnoyarsk',lat: 56.0153, lng: 92.8932 },
 ];

@@ -1,0 +1,103 @@
+{
+  "header": {
+    "restaurants": "레스토랑",
+    "forGuests": "고객 서비스",
+    "loyalty": "보상",
+    "blog": "블로그",
+    "blogArticles": "기사",
+    "blogEvents": "이벤트",
+    "blogPromos": "프로모션",
+    "blogNews": "뉴스",
+    "forBusiness": "비즈니스",
+    "budgetCalc": "예산이 충분할까요?",
+    "login": "로그인",
+    "profile": "프로필",
+    "book": "예약하기",
+    "ownerDashboard": "대시보드",
+    "ownerCard": "카드",
+    "ownerPosts": "게시물",
+    "ownerMyRestaurant": "내 레스토랑",
+    "ownerPanel": "관리 패널",
+    "logout": "로그아웃",
+    "ownerAnalytics": "분석"
+  },
+  "hero": {
+    "line1": "나만의",
+    "line2": "완벽한 레스토랑",
+    "line3": "1분 만에 찾기",
+    "subtitle": "요리로 검색하고, 알레르기 필터링, 칼로리와 예산을 계산하세요 — 올인원 서비스."
+  },
+  "search": {
+    "aiLabel": "물어보세요",
+    "aiName": "Menu-Rest.AI",
+    "aiDesc": "— 원하는 것을 설명해 주세요",
+    "placeholder": "전망 좋은 로맨틱 디너, 글루텐 프리, 2인 3000루블 이하...",
+    "find": "검색",
+    "analyzing": "요청을 분석 중입니다",
+    "found": "검색 결과",
+    "showAll": "전체 보기 →",
+    "try": "추천 검색어:",
+    "noResults": "결과가 없습니다. 다른 검색어를 시도해 보세요",
+    "error": "검색 오류, 나중에 다시 시도해 주세요",
+    "aiUnavailable": "AI 검색을 일시적으로 사용할 수 없습니다",
+    "examples": [
+      "시내 중심부 2500루블 이하 스테이크 디너",
+      "이탈리안 레스토랑에서 데이트",
+      "테라스가 있는 키즈 메뉴 레스토랑",
+      "시내 중심부 견과류 없는 비건 디너"
+    ]
+  },
+  "grid": {
+    "recommend": "추천 레스토랑",
+    "all": "전체 →"
+  },
+  "cta": {
+    "title": "당신의 레스토랑이\n아직 없나요?",
+    "desc": "메뉴, 영양 정보, 온라인 예약,\n고객 리뷰가 포함된 무료 레스토랑 페이지",
+    "button": "레스토랑 등록하기",
+    "free": "무료 — 수수료 없음, 숨겨진 비용 없음"
+  },
+  "card": {
+    "mixed": "혼합",
+    "healthy": "건강식",
+    "allergens": "알레르겐"
+  },
+  "restaurant": {
+    "address": "주소",
+    "rating": "평점",
+    "reviews": "리뷰",
+    "schedule": "영업시간",
+    "avgBill": "평균 가격",
+    "occasion": "목적",
+    "atmosphere": "분위기",
+    "closed": "영업 종료",
+    "callToCheck": "전화로 확인해 주세요",
+    "notSpecified": "미정",
+    "budgetCalc": "예산이 충분할까요?",
+    "book": "예약하기",
+    "claimTitle": "이 레스토랑의 오너인가요? 페이지, 메뉴 및 예약 관리 권한을 받으세요.",
+    "claimButton": "신청하기"
+  },
+  "footer": {
+    "service": "서비스",
+    "restaurants": "레스토랑",
+    "blog": "블로그",
+    "loyaltyProgram": "로열티 프로그램",
+    "about": "소개",
+    "forRestaurants": "레스토랑 파트너",
+    "addRestaurant": "레스토랑 등록",
+    "pricing": "요금제",
+    "analytics": "분석",
+    "support": "지원",
+    "help": "도움말",
+    "contacts": "연락처",
+    "privacy": "개인정보 처리방침",
+    "terms": "이용약관",
+    "tagline": "요리, 알레르겐 및 예산별 스마트 레스토랑 검색. AI 검색, 영양 정보, 예약.",
+    "rights": "모든 권리 보유.",
+    "madeWith": "미식가를 위해 ❤️로 제작"
+  },
+  "lang": {
+    "label": "한국어"
+  }
+}

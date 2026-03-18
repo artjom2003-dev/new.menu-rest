@@ -6,6 +6,7 @@ import { AllergenBar } from '@/components/restaurant/AllergenBar';
 import { MenuSection } from '@/components/restaurant/MenuSection';
 import { ReviewSection } from '@/components/restaurant/ReviewSection';
 import { RestaurantActions } from '@/components/restaurant/RestaurantActions';
+import { BudgetRestaurantContext } from '@/components/budget/BudgetRestaurantContext';
 
 const API_BASE = process.env.BACKEND_URL || 'http://localhost:3001';
 
@@ -72,18 +73,24 @@ export default async function RestaurantPage({ params }: { params: { slug: strin
         id: dish.id || item.id || 0,
         name: dish.name || item.name || 'Без названия',
         description: dish.description || item.description,
+        composition: dish.composition,
         price: Number(item.price || dish.price || 0),
         calories: dish.calories ? Number(dish.calories) : undefined,
         protein: dish.protein ? Number(dish.protein) : undefined,
         fat: dish.fat ? Number(dish.fat) : undefined,
         carbs: dish.carbs ? Number(dish.carbs) : undefined,
-        allergens: dish.allergens || [],
+        weightGrams: dish.weightGrams ? Number(dish.weightGrams) : undefined,
+        volumeMl: dish.volumeMl ? Number(dish.volumeMl) : undefined,
+        imageUrl: dish.imageUrl,
+        isHealthyChoice: dish.isHealthyChoice || false,
+        allergens: (dish.allergens as Array<{ slug: string; icon: string; name: string }>) || [],
       };
     }),
   }));
 
   return (
     <>
+      <BudgetRestaurantContext name={restaurant.name} slug={params.slug} menu={menu} />
       <RestaurantHero restaurant={restaurant} />
       <div className="max-w-[1400px] mx-auto px-10 pb-24">
         <RestaurantInfoCard restaurant={restaurant} />

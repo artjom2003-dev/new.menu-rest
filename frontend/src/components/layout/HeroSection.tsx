@@ -1,10 +1,13 @@
 'use client';
 
 import { AISearchBar } from '@/components/search/AISearchBar';
+import { useTranslations } from 'next-intl';
 
 export function HeroSection() {
+  const t = useTranslations('hero');
+
   return (
-    <section className="flex items-center px-10 py-16 relative overflow-hidden">
+    <section className="flex items-center px-10 pt-16 pb-8 relative overflow-hidden">
       {/* Ambient orbs */}
       <div
         className="absolute rounded-full pointer-events-none animate-orb-float"
@@ -27,19 +30,12 @@ export function HeroSection() {
       />
 
       <div className="max-w-[1400px] mx-auto w-full relative z-10">
-        {/* Badge */}
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-8 border animate-fade-up"
-          style={{ background: 'var(--glass)', borderColor: 'var(--glass-border)', backdropFilter: 'blur(10px)' }}>
-          <span className="w-2 h-2 rounded-full bg-[var(--lime)] animate-pulse-dot" />
-          <span className="text-xs font-medium text-[var(--text2)]">Умный поиск по блюдам</span>
-        </div>
-
         {/* Title */}
         <div className="font-serif font-black leading-[0.92] tracking-[-0.04em] text-[var(--text)] mb-7 animate-fade-up"
           style={{ animationDelay: '0.1s' }}>
           <span className="block w-full text-justify"
             style={{ fontSize: 'clamp(52px,7.5vw,105px)' }}>
-            Найди свое
+            {t('line1')}
           </span>
           <span
             className="block w-full text-justify animate-shimmer"
@@ -50,22 +46,22 @@ export function HeroSection() {
               WebkitTextFillColor: 'transparent',
               backgroundSize: '200% auto',
             }}>
-            идеальное место
+            {t('line2')}
           </span>
           <span className="block w-full text-justify text-[var(--text3)]"
             style={{ fontSize: 'clamp(40px,5.5vw,80px)' }}>
-            за минуту
+            {t('line3')}
           </span>
         </div>
 
         {/* Subtitle */}
         <p className="text-[17px] text-[var(--text2)] leading-[1.75] mb-9 animate-fade-up"
           style={{ animationDelay: '0.2s' }}>
-          Ищи по блюдам, фильтруй аллергены, считай КБЖУ и&nbsp;бюджет — всё в&nbsp;одном сервисе.
+          {t('subtitle')}
         </p>
 
         {/* Search */}
-        <div className="animate-fade-up" style={{ animationDelay: '0.3s' }}>
+        <div id="ai-search" className="animate-fade-up" style={{ animationDelay: '0.3s' }}>
           <AISearchBar />
         </div>
 

@@ -15,6 +15,7 @@ import { ContentModule } from '@modules/content/content.module';
 import { LoyaltyModule } from '@modules/loyalty/loyalty.module';
 import { AdminModule } from '@modules/admin/admin.module';
 import { BudgetCalcModule } from '@modules/budget-calc/budget-calc.module';
+import { RestaurantRequestModule } from '@modules/restaurant-request/restaurant-request.module';
 import { CommonModule } from '@common/common.module';
 
 @Module({
@@ -52,16 +53,17 @@ import { CommonModule } from '@common/common.module';
     }),
 
     // Queue (BullMQ)
-    BullModule.forRootAsync({
-      inject: [ConfigService],
-      useFactory: (config: ConfigService) => ({
-        redis: {
-          host: config.get('REDIS_HOST', 'localhost'),
-          port: config.get<number>('REDIS_PORT', 6379),
-          password: config.get('REDIS_PASSWORD') || undefined,
-        },
-      }),
-    }),
+    // BullModule disabled — Redis not available in dev
+    // BullModule.forRootAsync({
+    //   inject: [ConfigService],
+    //   useFactory: (config: ConfigService) => ({
+    //     redis: {
+    //       host: config.get('REDIS_HOST', 'localhost'),
+    //       port: config.get<number>('REDIS_PORT', 6379),
+    //       password: config.get('REDIS_PASSWORD') || undefined,
+    //     },
+    //   }),
+    // }),
 
     // Common (StorageService, etc.)
     CommonModule,
@@ -78,6 +80,7 @@ import { CommonModule } from '@common/common.module';
     LoyaltyModule,
     AdminModule,
     BudgetCalcModule,
+    RestaurantRequestModule,
   ],
 })
 export class AppModule {}

@@ -27,15 +27,16 @@ export class RestaurantService {
   ) {}
 
   async findAll(query: QueryRestaurantDto) {
-    const { page = 1, limit = 20, city, cuisine, priceLevel, priceLevelMin, priceLevelMax, sortBy = 'rating', status = 'published', search, features } = query;
+    const { page = 1, limit = 20, city, cuisine, priceLevel, priceLevelMin, priceLevelMax, sortBy = 'rating', status = 'published', search, features, hasMenu, metro, district, venueType, lat, lng, radius = 10 } = query;
 
     const qb = this.restaurantRepo
       .createQueryBuilder('r')
       .leftJoinAndSelect('r.cuisines', 'c')
       .leftJoinAndSelect('r.city', 'city')
       .leftJoinAndSelect('r.photos', 'photo', 'photo.is_cover = true')
-      .where('r.status = :status', { status })
-      .andWhere(`EXISTS (SELECT 1 FROM photos p WHERE p.restaurant_id = r.id AND p.url LIKE 'http%')`);
+      .where('r.status = :status', { status });
+
+    // Photos filter removed — show all published restaurants including those without photos
 
     if (search) {
       qb.andWhere('(r.name ILIKE :search OR r.description ILIKE :search OR c.name ILIKE :search)', { search: `%${search}%` });
@@ -60,12 +61,68 @@ export class RestaurantService {
       qb.andWhere('r.priceLevel <= :priceLevelMax', { priceLevelMax });
     }
 
+    if (hasMenu === 'true') {
+      qb.andWhere(`EXISTS (SELECT 1 FROM restaurant_dishes rd WHERE rd.restaurant_id = r.id)`);
+    }
+
+    if (metro) {
+      qb.andWhere('r.metro_station = :metro', { metro });
+    }
+
+    if (district) {
+      // Match all slug variants: "arbat", "arbat-rayon", "rayon-arbat", "akademicheskiy", "akademicheskiy-rayon"
+      qb.andWhere(`EXISTS (SELECT 1 FROM restaurant_locations rl JOIN districts d ON d.id = rl.district_id WHERE rl.restaurant_id = r.id AND (d.slug = :district OR d.slug = :districtRayon OR d.slug = :rayonDistrict))`, { district, districtRayon: `${district}-rayon`, rayonDistrict: `rayon-${district}` });
+    }
+
+    if (venueType) {
+      qb.andWhere('r.venue_type = :venueType', { venueType });
+    }
+
     if (features) {
       const featureSlugs = features.split(',').map(s => s.trim()).filter(Boolean);
       if (featureSlugs.length) {
         qb.leftJoin('r.features', 'feat')
           .andWhere('feat.slug IN (:...featureSlugs)', { featureSlugs });
       }
+    }
+
+    // Geo-distance filter & sort
+    if (lat && lng) {
+      qb.andWhere('r.lat IS NOT NULL AND r.lng IS NOT NULL');
+      qb.andWhere(
+        `(6371 * acos(LEAST(1.0, cos(radians(:lat)) * cos(radians(r.lat)) * cos(radians(r.lng) - radians(:lng)) + sin(radians(:lat)) * sin(radians(r.lat))))) <= :radius`,
+        { lat, lng, radius },
+      );
+    }
+
+    if (lat && lng) {
+      // Can't use addSelect+orderBy for distance with JOINs (causes duplicates)
+      // So: get entities normally, compute distance in JS, sort
+      const [entities, total] = await qb
+        .orderBy('r.rating', 'DESC')
+        .skip((page - 1) * limit)
+        .take(limit)
+        .getManyAndCount();
+
+      const haversine = (lat1: number, lng1: number, lat2: number, lng2: number) => {
+        const R = 6371;
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLng = (lng2 - lng1) * Math.PI / 180;
+        const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
+        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      };
+
+      const items = entities
+        .map(e => ({
+          ...e,
+          distanceKm: e.lat && e.lng ? Math.round(haversine(lat, lng, Number(e.lat), Number(e.lng)) * 10) / 10 : undefined,
+        }))
+        .sort((a, b) => (a.distanceKm ?? 9999) - (b.distanceKm ?? 9999));
+
+      return {
+        items,
+        meta: { total, page, limit, pages: Math.ceil(total / limit) },
+      };
     }
 
     if (sortBy === 'rating') {
@@ -90,7 +147,7 @@ export class RestaurantService {
   async findBySlug(slug: string): Promise<Restaurant> {
     const restaurant = await this.restaurantRepo.findOne({
       where: { slug },
-      relations: ['cuisines', 'city', 'photos', 'workingHours', 'chain'],
+      relations: ['cuisines', 'city', 'photos', 'workingHours', 'chain', 'features', 'locations', 'locations.district'],
     });
 
     if (!restaurant) {

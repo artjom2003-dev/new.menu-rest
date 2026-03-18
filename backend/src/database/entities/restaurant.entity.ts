@@ -4,6 +4,7 @@ import {
   OneToMany, Index,
 } from 'typeorm';
 import { City } from './city.entity';
+import { User } from './user.entity';
 import { RestaurantChain } from './restaurant-chain.entity';
 import { Cuisine } from './cuisine.entity';
 import { Feature } from './feature.entity';
@@ -96,11 +97,37 @@ export class Restaurant {
   @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz' })
   updatedAt: Date;
 
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  instagram: string | null;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  vk: string | null;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  facebook: string | null;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  youtube: string | null;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  email: string | null;
+
+  @Index()
+  @Column({ name: 'venue_type', type: 'varchar', length: 50, nullable: true })
+  venueType: string | null;
+
   @Column({ name: 'legacy_id', type: 'int', nullable: true, unique: true })
   legacyId: number | null;
 
   @Column({ name: 'external_2gis_id', type: 'varchar', length: 255, nullable: true })
   external2gisId: string | null;
+
+  @ManyToOne(() => User, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'owner_id' })
+  owner: User | null;
+
+  @Column({ name: 'owner_id', type: 'int', nullable: true })
+  ownerId: number | null;
 
   // Relations
   @ManyToMany(() => Cuisine)

@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import { ThemeProvider } from 'next-themes';
+import { NextIntlClientProvider } from 'next-intl';
+import { getLocale, getMessages } from 'next-intl/server';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { BudgetCalcPanel } from '@/components/budget/BudgetCalcPanel';
@@ -26,23 +28,28 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const locale = await getLocale();
+  const messages = await getMessages();
+
   return (
-    <html lang="ru" suppressHydrationWarning>
+    <html lang={locale} suppressHydrationWarning>
       <head />
       <body suppressHydrationWarning>
-        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
-          <ToastProvider>
-            <Header />
-            <main className="pt-[72px]">{children}</main>
-            <BudgetCalcPanel />
-            <Footer />
-          </ToastProvider>
-        </ThemeProvider>
+        <NextIntlClientProvider messages={messages}>
+          <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
+            <ToastProvider>
+              <Header />
+              <main className="pt-[72px]">{children}</main>
+              <BudgetCalcPanel />
+              <Footer />
+            </ToastProvider>
+          </ThemeProvider>
+        </NextIntlClientProvider>
       </body>
     </html>
   );

@@ -1,4 +1,4 @@
-import { IsOptional, IsString, IsInt, Min, Max, IsEnum } from 'class-validator';
+import { IsOptional, IsString, IsInt, IsNumber, Min, Max, IsEnum, IsBooleanString } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 
@@ -71,4 +71,44 @@ export class QueryRestaurantDto {
   @IsOptional()
   @IsEnum(['draft', 'published', 'archived', 'closed'])
   status?: string = 'published';
+
+  @ApiPropertyOptional({ example: 'true', description: 'Only restaurants that have menu dishes' })
+  @IsOptional()
+  @IsBooleanString()
+  hasMenu?: string;
+
+  @ApiPropertyOptional({ example: 'Арбатская', description: 'Metro station name' })
+  @IsOptional()
+  @IsString()
+  metro?: string;
+
+  @ApiPropertyOptional({ example: 'arbat', description: 'District slug' })
+  @IsOptional()
+  @IsString()
+  district?: string;
+
+  @ApiPropertyOptional({ example: 'restaurant', description: 'Venue type (restaurant, cafe, bar, etc.)' })
+  @IsOptional()
+  @IsString()
+  venueType?: string;
+
+  @ApiPropertyOptional({ example: 55.7558, description: 'User latitude for nearby sorting' })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  lat?: number;
+
+  @ApiPropertyOptional({ example: 37.6173, description: 'User longitude for nearby sorting' })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  lng?: number;
+
+  @ApiPropertyOptional({ example: 5, description: 'Max radius in km (default 10)' })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0.5)
+  @Max(50)
+  radius?: number;
 }

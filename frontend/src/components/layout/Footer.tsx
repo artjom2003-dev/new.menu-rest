@@ -1,37 +1,40 @@
 'use client';
 
 import Link from 'next/link';
-
-const NAV = [
-  {
-    title: 'Сервис',
-    links: [
-      { href: '/', label: 'Рестораны' },
-      { href: '/blog', label: 'Журнал' },
-      { href: '/loyalty', label: 'Программа лояльности' },
-      { href: '/about', label: 'О нас' },
-    ],
-  },
-  {
-    title: 'Рестораторам',
-    links: [
-      { href: '/for-business', label: 'Разместить ресторан' },
-      { href: '/for-business#pricing', label: 'Тарифы' },
-      { href: '/for-business#analytics', label: 'Аналитика' },
-    ],
-  },
-  {
-    title: 'Поддержка',
-    links: [
-      { href: '/help', label: 'Помощь' },
-      { href: '/contacts', label: 'Контакты' },
-      { href: '/privacy', label: 'Политика конфиденциальности' },
-      { href: '/terms', label: 'Условия использования' },
-    ],
-  },
-];
+import { useTranslations } from 'next-intl';
 
 export function Footer() {
+  const t = useTranslations('footer');
+
+  const NAV = [
+    {
+      title: t('service'),
+      links: [
+        { href: '/', label: t('restaurants') },
+        { href: '/blog', label: t('blog') },
+        { href: '/loyalty', label: t('loyaltyProgram') },
+        { href: '/about', label: t('about') },
+      ],
+    },
+    {
+      title: t('forRestaurants'),
+      links: [
+        { href: '/for-business', label: t('addRestaurant') },
+        { href: '/for-business#pricing', label: t('pricing') },
+        { href: '/for-business#analytics', label: t('analytics') },
+      ],
+    },
+    {
+      title: t('support'),
+      links: [
+        { href: '/help', label: t('help') },
+        { href: '/contacts', label: t('contacts') },
+        { href: '/privacy', label: t('privacy') },
+        { href: '/terms', label: t('terms') },
+      ],
+    },
+  ];
+
   return (
     <footer
       className="border-t mt-24"
@@ -41,10 +44,10 @@ export function Footer() {
           {/* Brand */}
           <div>
             <Link href="/" className="font-serif text-[22px] font-bold text-[var(--text)] no-underline tracking-[-0.03em] block mb-3">
-              menu<b style={{ color: 'var(--accent)', fontWeight: 900 }}>rest</b>
+              <span>Menu-<b style={{ color: 'var(--accent)', fontWeight: 900 }}>Rest</b></span>
             </Link>
             <p className="text-[12px] text-[var(--text3)] leading-[1.7] mb-5">
-              Умный поиск ресторанов по блюдам, аллергенам и бюджету. AI-поиск, КБЖУ, бронирование.
+              {t('tagline')}
             </p>
             <div className="flex gap-2">
               {[
@@ -94,8 +97,8 @@ export function Footer() {
         <div
           className="flex items-center justify-between pt-8 mt-10 border-t text-[11px] text-[var(--text3)] max-sm:flex-col max-sm:gap-2 max-sm:text-center"
           style={{ borderColor: 'var(--card-border)' }}>
-          <span>© {new Date().getFullYear()} Menu-Rest. Все права защищены.</span>
-          <span>Сделано с ❤️ для гурманов России</span>
+          <span>© {new Date().getFullYear()} Menu-Rest. {t('rights')}</span>
+          <span>{t('madeWith')}</span>
         </div>
       </div>
     </footer>

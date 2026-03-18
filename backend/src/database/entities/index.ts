@@ -12,6 +12,7 @@ export { Restaurant } from './restaurant.entity';
 export { RestaurantChain } from './restaurant-chain.entity';
 export { RestaurantDish } from './restaurant-dish.entity';
 export { RestaurantLocation } from './restaurant-location.entity';
+export { RestaurantRequest } from './restaurant-request.entity';
 export { Review } from './review.entity';
 export { User } from './user.entity';
 export { WorkingHours } from './working-hours.entity';

@@ -1,12 +1,17 @@
-import { Controller, Get, Post, Body, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query, UseGuards, Res } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '@common/guards/jwt-auth.guard';
+import { Response } from 'express';
 import { SearchService } from './search.service';
+import { AiSearchService } from './ai-search.service';
 
 @ApiTags('search')
 @Controller('search')
 export class SearchController {
-  constructor(private readonly service: SearchService) {}
+  constructor(
+    private readonly service: SearchService,
+    private readonly aiSearchService: AiSearchService,
+  ) {}
 
   @Get()
   @ApiOperation({ summary: 'Поиск ресторанов с фильтрами' })
@@ -35,10 +40,38 @@ export class SearchController {
     return this.service.autocomplete(q || '');
   }
 
+  @Post('ai-stream')
+  @ApiOperation({ summary: 'AI-поиск со стримингом (SSE)' })
+  async aiSearchStream(@Body() body: { query: string; lat?: number; lng?: number }, @Res() res: Response) {
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('X-Accel-Buffering', 'no');
+    res.flushHeaders();
+
+    try {
+      for await (const chunk of this.aiSearchService.recommendStream(body.query || '', body.lat, body.lng)) {
+        res.write(`data: ${chunk}\n\n`);
+      }
+    } catch (err) {
+      res.write(`data: ${JSON.stringify({ type: 'error', message: 'Stream failed' })}\n\n`);
+    }
+
+    res.end();
+  }
+
   @Post('ai')
-  @ApiOperation({ summary: 'AI-поиск (Gemini NLU → Elasticsearch)' })
-  aiSearch(@Body('query') query: string) {
-    return this.service.aiSearch_query(query);
+  @ApiOperation({ summary: 'AI-поиск (Ollama NLU → ES/DB)' })
+  async aiSearch(@Body('query') query: string) {
+    console.log(`[SearchController] AI search request: "${query}"`);
+    try {
+      return await Promise.race([
+        this.service.aiSearch_query(query),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('AI search timeout')), 25000)),
+      ]);
+    } catch {
+      return { recommendation: '', restaurants: [], params: {}, source: 'timeout' };
+    }
   }
 
   @Post('reindex')

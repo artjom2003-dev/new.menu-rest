@@ -1,0 +1,103 @@
+{
+  "header": {
+    "restaurants": "Restaurants",
+    "forGuests": "Für Gäste",
+    "loyalty": "Prämien",
+    "blog": "Blog",
+    "blogArticles": "Artikel",
+    "blogEvents": "Events",
+    "blogPromos": "Angebote",
+    "blogNews": "Nachrichten",
+    "forBusiness": "Für Unternehmen",
+    "budgetCalc": "Reicht das Budget?",
+    "login": "Anmelden",
+    "profile": "Profil",
+    "book": "Tisch reservieren",
+    "ownerDashboard": "Übersicht",
+    "ownerCard": "Visitenkarte",
+    "ownerPosts": "Beiträge",
+    "ownerMyRestaurant": "Mein Restaurant",
+    "ownerPanel": "Verwaltung",
+    "logout": "Abmelden",
+    "ownerAnalytics": "Analytik"
+  },
+  "hero": {
+    "line1": "Finde deinen",
+    "line2": "perfekten Ort",
+    "line3": "in einer Minute",
+    "subtitle": "Suche nach Gerichten, filtere Allergene, berechne Kalorien & Budget — alles in einem Service."
+  },
+  "search": {
+    "aiLabel": "Frag",
+    "aiName": "Menu-Rest.AI",
+    "aiDesc": "— beschreibe einfach, was du willst",
+    "placeholder": "Romantisches Abendessen mit Aussicht, glutenfrei, bis 50€ für zwei...",
+    "find": "Suchen",
+    "analyzing": "Anfrage wird analysiert",
+    "found": "Gefunden",
+    "showAll": "Alle anzeigen →",
+    "try": "Probiere:",
+    "noResults": "Nichts gefunden, versuche eine andere Anfrage",
+    "error": "Suchfehler, bitte versuche es später",
+    "aiUnavailable": "AI-Suche ist vorübergehend nicht verfügbar",
+    "examples": [
+      "Steak-Dinner im Zentrum unter 40€",
+      "Gemütlicher Ort für ein Date mit italienischer Küche",
+      "Restaurant mit Kindermenü und Terrasse in der Nähe",
+      "Veganes Abendessen ohne Nüsse im Zentrum"
+    ]
+  },
+  "grid": {
+    "recommend": "Empfohlen für Sie",
+    "all": "Alle →"
+  },
+  "cta": {
+    "title": "Ihr Restaurant\nnoch nicht dabei?",
+    "desc": "Kostenlose Restaurantseite mit Menü, Nährwertinfos,\nOnline-Reservierung und Gästebewertungen",
+    "button": "Restaurant hinzufügen",
+    "free": "Kostenlos — keine Provisionen oder versteckte Gebühren"
+  },
+  "card": {
+    "mixed": "Gemischt",
+    "healthy": "Gesund",
+    "allergens": "Allergene"
+  },
+  "restaurant": {
+    "address": "Adresse",
+    "rating": "Bewertung",
+    "reviews": "Bewertungen",
+    "schedule": "Öffnungszeiten",
+    "avgBill": "Durchschnittspreis",
+    "occasion": "Anlass",
+    "atmosphere": "Atmosphäre",
+    "closed": "Geschlossen",
+    "callToCheck": "Bitte telefonisch bestätigen",
+    "notSpecified": "Nicht angegeben",
+    "budgetCalc": "Reicht das Budget?",
+    "book": "Tisch reservieren",
+    "claimTitle": "Ist das Ihr Restaurant? Erhalten Sie Zugang zur Verwaltung Ihrer Seite, Speisekarte und Reservierungen.",
+    "claimButton": "Anfrage senden"
+  },
+  "footer": {
+    "service": "Service",
+    "restaurants": "Restaurants",
+    "blog": "Blog",
+    "loyaltyProgram": "Treueprogramm",
+    "about": "Über uns",
+    "forRestaurants": "Für Restaurants",
+    "addRestaurant": "Restaurant hinzufügen",
+    "pricing": "Preise",
+    "analytics": "Analytik",
+    "support": "Support",
+    "help": "Hilfe",
+    "contacts": "Kontakt",
+    "privacy": "Datenschutzrichtlinie",
+    "terms": "Nutzungsbedingungen",
+    "tagline": "Intelligente Restaurantsuche nach Gerichten, Allergenen und Budget. AI-Suche, Nährwertinfos, Reservierung.",
+    "rights": "Alle Rechte vorbehalten.",
+    "madeWith": "Mit ❤️ für Feinschmecker gemacht"
+  },
+  "lang": {
+    "label": "DE"
+  }
+}

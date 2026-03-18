@@ -1,5 +1,6 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany, ManyToMany, JoinTable } from 'typeorm';
 import { RestaurantDish } from './restaurant-dish.entity';
+import { Allergen } from './allergen.entity';
 
 @Entity('dishes')
 export class Dish {
@@ -50,4 +51,12 @@ export class Dish {
 
   @OneToMany(() => RestaurantDish, (rd) => rd.dish)
   restaurantDishes: RestaurantDish[];
+
+  @ManyToMany(() => Allergen)
+  @JoinTable({
+    name: 'dish_allergens',
+    joinColumn: { name: 'dish_id' },
+    inverseJoinColumn: { name: 'allergen_id' },
+  })
+  allergens: Allergen[];
 }

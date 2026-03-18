@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useSearchStore } from '@/stores/search.store';
+import { useGeoStore } from '@/stores/geo.store';
 import { referenceApi } from '@/lib/api';
 
 interface FilterOption {
@@ -334,6 +335,26 @@ function ActiveTags({ tags, onRemove, onClear }: {
   );
 }
 
+/* ─── Nearby button ─── */
+function NearbyButton({ active, onToggle }: { active: boolean; onToggle: () => void }) {
+  const isRequesting = useGeoStore(s => s.status) === 'requesting';
+
+  return (
+    <button
+      onClick={onToggle}
+      disabled={isRequesting}
+      className="flex items-center gap-1.5 px-4 py-2 rounded-full text-[13px] font-medium cursor-pointer transition-all whitespace-nowrap font-sans border"
+      style={{
+        background: active ? 'var(--accent-glow)' : 'var(--bg3)',
+        borderColor: active ? 'rgba(255,92,40,0.3)' : 'var(--card-border)',
+        color: active ? 'var(--accent)' : 'var(--text2)',
+        opacity: isRequesting ? 0.6 : 1,
+      }}>
+      {isRequesting ? '📡' : '📍'} {isRequesting ? 'Определяем...' : active ? 'Рядом ✓' : 'Рядом со мной'}
+    </button>
+  );
+}
+
 /* ─── Main FiltersBar ─── */
 function FiltersBarInner() {
   const router = useRouter();
@@ -343,12 +364,34 @@ function FiltersBarInner() {
   const [cuisines, setCuisines] = useState<FilterOption[]>([]);
   const [occasions, setOccasions] = useState<FilterOption[]>([]);
   const [atmospheres, setAtmospheres] = useState<FilterOption[]>([]);
+  const [metroStations, setMetroStations] = useState<FilterOption[]>([]);
+  const [districts, setDistricts] = useState<FilterOption[]>([]);
+  const [venueTypes, setVenueTypes] = useState<FilterOption[]>([]);
 
-  // Local state for occasion, atmosphere, price range
+  // Local state for occasion, atmosphere, price range, metro, district, venue
   const [selectedOccasion, setSelectedOccasion] = useState<string | undefined>();
   const [selectedAtmosphere, setSelectedAtmosphere] = useState<string | undefined>();
   const [priceMin, setPriceMin] = useState<number | undefined>();
   const [priceMax, setPriceMax] = useState<number | undefined>();
+  const [selectedMetro, setSelectedMetro] = useState<string | undefined>();
+  const [selectedDistrict, setSelectedDistrict] = useState<string | undefined>();
+  const [selectedVenue, setSelectedVenue] = useState<string | undefined>();
+  const [nearbyActive, setNearbyActive] = useState(false);
+  const geoStatus = useGeoStore(s => s.status);
+  const geoLat = useGeoStore(s => s.lat);
+  const geoLng = useGeoStore(s => s.lng);
+
+  // When geo permission is granted, auto-activate nearby filter
+  useEffect(() => {
+    if (geoStatus === 'granted' && geoLat && geoLng && !nearbyActive) {
+      setNearbyActive(true);
+      const params = new URLSearchParams(searchParams.toString());
+      params.set('lat', String(geoLat));
+      params.set('lng', String(geoLng));
+      params.set('page', '1');
+      router.push(`/restaurants?${params.toString()}`);
+    }
+  }, [geoStatus, geoLat, geoLng]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     Promise.all([
@@ -356,13 +399,34 @@ function FiltersBarInner() {
       referenceApi.getCuisines().catch(() => ({ data: [] })),
       referenceApi.getFeatures('occasion').catch(() => ({ data: [] })),
       referenceApi.getFeatures('atmosphere').catch(() => ({ data: [] })),
-    ]).then(([citiesRes, cuisinesRes, occasionsRes, atmospheresRes]) => {
+      referenceApi.getVenueTypes().catch(() => ({ data: [] })),
+    ]).then(([citiesRes, cuisinesRes, occasionsRes, atmospheresRes, venueRes]) => {
       setCities((citiesRes.data || []).map((c: { name: string; slug: string }) => ({ label: c.name, value: c.slug })));
       setCuisines((cuisinesRes.data || []).map((c: { name: string; slug: string }) => ({ label: c.name, value: c.slug })));
       setOccasions((occasionsRes.data || []).map((f: { name: string; slug: string; icon?: string }) => ({ label: f.name, value: f.slug, icon: f.icon })));
       setAtmospheres((atmospheresRes.data || []).map((f: { name: string; slug: string; icon?: string }) => ({ label: f.name, value: f.slug, icon: f.icon })));
+      setVenueTypes((venueRes.data || []).map((v: { slug: string; name: string }) => ({ label: v.name, value: v.slug })));
     });
   }, []);
+
+  // Load metro stations and districts when city changes
+  useEffect(() => {
+    const citySlug = filters.city;
+    if (!citySlug) {
+      setMetroStations([]);
+      setDistricts([]);
+      setSelectedMetro(undefined);
+      setSelectedDistrict(undefined);
+      return;
+    }
+    Promise.all([
+      referenceApi.getMetroStations(citySlug).catch(() => ({ data: [] })),
+      referenceApi.getDistricts(citySlug).catch(() => ({ data: [] })),
+    ]).then(([metroRes, distRes]) => {
+      setMetroStations((metroRes.data || []).map((m: { name: string }) => ({ label: m.name, value: m.name })));
+      setDistricts((distRes.data || []).map((d: { name: string; slug: string }) => ({ label: d.name, value: d.slug })));
+    });
+  }, [filters.city]);
 
   useEffect(() => {
     const city = searchParams.get('city');
@@ -370,10 +434,19 @@ function FiltersBarInner() {
     const pMin = searchParams.get('priceLevelMin');
     const pMax = searchParams.get('priceLevelMax');
     const features = searchParams.get('features');
+    const metro = searchParams.get('metro');
+    const district = searchParams.get('district');
+    const venueType = searchParams.get('venueType');
+    const urlLat = searchParams.get('lat');
+    const urlLng = searchParams.get('lng');
+    if (urlLat && urlLng) setNearbyActive(true);
     if (city) setFilter('city', city);
     if (cuisine) setFilter('cuisine', cuisine.split(','));
     if (pMin) setPriceMin(Number(pMin));
     if (pMax) setPriceMax(Number(pMax));
+    if (metro) setSelectedMetro(metro);
+    if (district) setSelectedDistrict(district);
+    if (venueType) setSelectedVenue(venueType);
     if (features) {
       const slugs = features.split(',');
       // We'll restore occasion/atmosphere from URL after options load
@@ -412,15 +485,27 @@ function FiltersBarInner() {
     if (pmx) params.set('priceLevelMax', String(pmx));
     const feat = featuresOverride !== undefined ? featuresOverride : buildFeaturesParam();
     if (feat) params.set('features', feat);
+    const metroVal = overrides.metro !== undefined ? overrides.metro as string | undefined : selectedMetro;
+    const districtVal = overrides.district !== undefined ? overrides.district as string | undefined : selectedDistrict;
+    const venueVal = overrides.venueType !== undefined ? overrides.venueType as string | undefined : selectedVenue;
+    if (metroVal) params.set('metro', metroVal);
+    if (districtVal) params.set('district', districtVal);
+    if (venueVal) params.set('venueType', venueVal);
+    // Geo: pass lat/lng from overrides or from active nearby filter
+    const latVal = overrides.lat !== undefined ? overrides.lat as number | undefined : (nearbyActive && geoLat ? geoLat : undefined);
+    const lngVal = overrides.lng !== undefined ? overrides.lng as number | undefined : (nearbyActive && geoLng ? geoLng : undefined);
+    if (latVal && lngVal) { params.set('lat', String(latVal)); params.set('lng', String(lngVal)); }
     const search = searchParams.get('search');
     if (search) params.set('search', search);
     const qs = params.toString();
     router.push(`/restaurants${qs ? `?${qs}` : ''}`);
-  }, [router, searchParams, buildFeaturesParam]);
+  }, [router, searchParams, buildFeaturesParam, selectedMetro, selectedDistrict, selectedVenue, nearbyActive, geoLat, geoLng]);
 
   const handleCityChange = (v: string | undefined) => {
     setFilter('city', v);
-    pushFilters({ city: v });
+    setSelectedMetro(undefined);
+    setSelectedDistrict(undefined);
+    pushFilters({ city: v, metro: undefined, district: undefined });
   };
 
   const handleCuisineToggle = (slug: string) => {
@@ -448,6 +533,43 @@ function FiltersBarInner() {
     pushFilters({}, feat);
   };
 
+  const handleMetroChange = (v: string | undefined) => {
+    setSelectedMetro(v);
+    pushFilters({ metro: v });
+  };
+
+  const handleDistrictChange = (v: string | undefined) => {
+    setSelectedDistrict(v);
+    pushFilters({ district: v });
+  };
+
+  const handleVenueChange = (v: string | undefined) => {
+    setSelectedVenue(v);
+    pushFilters({ venueType: v });
+  };
+
+  const handleNearbyToggle = () => {
+    if (nearbyActive) {
+      setNearbyActive(false);
+      // Remove lat/lng from URL
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete('lat');
+      params.delete('lng');
+      params.set('page', '1');
+      router.push(`/restaurants?${params.toString()}`);
+    } else if (geoLat && geoLng) {
+      setNearbyActive(true);
+      const params = new URLSearchParams(searchParams.toString());
+      params.set('lat', String(geoLat));
+      params.set('lng', String(geoLng));
+      params.set('page', '1');
+      router.push(`/restaurants?${params.toString()}`);
+    } else {
+      // Request geolocation — effect will handle activation
+      useGeoStore.getState().requestLocation();
+    }
+  };
+
   // Active tags
   const activeTags: Array<{ key: string; label: string }> = [];
   if (filters.city) {
@@ -470,6 +592,20 @@ function FiltersBarInner() {
     const a = atmospheres.find(a => a.value === selectedAtmosphere);
     if (a) activeTags.push({ key: `atmosphere:${a.value}`, label: `${a.icon || ''} ${a.label}`.trim() });
   }
+  if (selectedMetro) {
+    activeTags.push({ key: `metro:${selectedMetro}`, label: `🚇 ${selectedMetro}` });
+  }
+  if (selectedDistrict) {
+    const d = districts.find(d => d.value === selectedDistrict);
+    if (d) activeTags.push({ key: `district:${d.value}`, label: `🏘 ${d.label}` });
+  }
+  if (selectedVenue) {
+    const v = venueTypes.find(v => v.value === selectedVenue);
+    if (v) activeTags.push({ key: `venue:${v.value}`, label: v.label });
+  }
+  if (nearbyActive) {
+    activeTags.push({ key: 'nearby', label: '📍 Рядом со мной' });
+  }
 
   const handleRemoveTag = (key: string) => {
     if (key === 'price') return handlePriceRangeChange(undefined, undefined);
@@ -477,6 +613,10 @@ function FiltersBarInner() {
     if (key.startsWith('cuisine:')) return handleCuisineToggle(key.split(':')[1]);
     if (key.startsWith('occasion:')) return handleOccasionChange(undefined);
     if (key.startsWith('atmosphere:')) return handleAtmosphereChange(undefined);
+    if (key.startsWith('metro:')) return handleMetroChange(undefined);
+    if (key.startsWith('district:')) return handleDistrictChange(undefined);
+    if (key.startsWith('venue:')) return handleVenueChange(undefined);
+    if (key === 'nearby') return handleNearbyToggle();
   };
 
   const handleClearAll = () => {
@@ -486,6 +626,10 @@ function FiltersBarInner() {
     setPriceMax(undefined);
     setSelectedOccasion(undefined);
     setSelectedAtmosphere(undefined);
+    setSelectedMetro(undefined);
+    setSelectedDistrict(undefined);
+    setSelectedVenue(undefined);
+    setNearbyActive(false);
     const params = new URLSearchParams();
     const search = searchParams.get('search');
     if (search) params.set('search', search);
@@ -498,9 +642,17 @@ function FiltersBarInner() {
       {/* Row 1: Dropdowns + Price + active tags */}
       <div className="flex items-center gap-3 flex-wrap">
         <CitySearch options={cities} value={filters.city} onChange={handleCityChange} />
+        {metroStations.length > 0 && (
+          <MiniDropdown icon="🚇" label="Метро" options={metroStations} value={selectedMetro} onChange={handleMetroChange} searchable />
+        )}
+        {districts.length > 0 && (
+          <MiniDropdown icon="🏘" label="Район" options={districts} value={selectedDistrict} onChange={handleDistrictChange} searchable />
+        )}
+        <MiniDropdown icon="🏠" label="Тип заведения" options={venueTypes} value={selectedVenue} onChange={handleVenueChange} searchable />
         <MiniDropdown icon="🎉" label="Повод" options={occasions} value={selectedOccasion} onChange={handleOccasionChange} />
         <MiniDropdown icon="✨" label="Атмосфера" options={atmospheres} value={selectedAtmosphere} onChange={handleAtmosphereChange} />
         <PriceRangeSelector minVal={priceMin} maxVal={priceMax} onChange={handlePriceRangeChange} />
+        <NearbyButton active={nearbyActive} onToggle={handleNearbyToggle} />
         {activeTags.length > 0 && (
           <>
             <div className="w-px h-7" style={{ background: 'var(--card-border)' }} />

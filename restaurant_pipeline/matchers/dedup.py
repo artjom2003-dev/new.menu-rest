@@ -69,7 +69,11 @@ def find_duplicates(conn: sqlite3.Connection) -> list[tuple[int, int, float, flo
     print(f"  {len(rows)} ресторанов в {len(by_city)} городах")
 
     # Приоритет источников (меньше = лучше)
-    source_priority = {'legacy': 0, 'merged': 1, 'osm': 2, '2gis': 3, 'google': 4}
+    # legacy/merged богаче данными, afisha/restoclub имеют рейтинги и фото
+    source_priority = {
+        'legacy': 0, 'merged': 1, 'afisha': 2, 'restoclub': 3,
+        'osm': 4, '2gis': 5, 'google': 6,
+    }
     duplicates = []
 
     # Размер ячейки geohash (~200м = 0.002 градуса)

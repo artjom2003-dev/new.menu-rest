@@ -1,0 +1,104 @@
+{
+  "header": {
+    "restaurants": "Restaurants",
+    "forGuests": "For Guests",
+    "loyalty": "Rewards",
+    "blog": "Blog",
+    "blogArticles": "Articles",
+    "blogEvents": "Events",
+    "blogPromos": "Deals",
+    "blogNews": "News",
+    "forBusiness": "For Business",
+    "budgetCalc": "Enough for dinner?",
+    "login": "Sign in",
+    "profile": "Profile",
+    "book": "Book a table",
+    "ownerDashboard": "Dashboard",
+    "ownerCard": "My Card",
+    "ownerPosts": "Posts",
+    "ownerMyRestaurant": "My Restaurant",
+    "ownerPanel": "Control Panel",
+    "logout": "Log out",
+    "ownerAnalytics": "Analytics",
+    "ownerServices": "Services"
+  },
+  "hero": {
+    "line1": "Find your",
+    "line2": "perfect place",
+    "line3": "in a minute",
+    "subtitle": "Search by dishes, filter allergens, count calories & budget — all in one service."
+  },
+  "search": {
+    "aiLabel": "Ask",
+    "aiName": "Menu-Rest.AI",
+    "aiDesc": "— just describe what you want",
+    "placeholder": "Romantic dinner with a view, gluten-free, up to $50 for two...",
+    "find": "Search",
+    "analyzing": "Analyzing your request",
+    "found": "Found",
+    "showAll": "Show all →",
+    "try": "Try:",
+    "noResults": "Nothing found, try a different query",
+    "error": "Search error, please try later",
+    "aiUnavailable": "AI search is temporarily unavailable",
+    "examples": [
+      "Steak dinner near the center under $40",
+      "Cozy place for a date with Italian cuisine",
+      "Restaurant with kids menu and terrace nearby",
+      "Vegan dinner without nuts in the center"
+    ]
+  },
+  "grid": {
+    "recommend": "Recommended for you",
+    "all": "All →"
+  },
+  "cta": {
+    "title": "Your restaurant\nnot here yet?",
+    "desc": "Free restaurant listing with menu, nutrition facts,\nonline booking and guest reviews",
+    "button": "Add your restaurant",
+    "free": "Free — no commissions or hidden fees"
+  },
+  "card": {
+    "mixed": "Mixed",
+    "healthy": "Healthy",
+    "allergens": "Allergens"
+  },
+  "restaurant": {
+    "address": "Address",
+    "rating": "Rating",
+    "reviews": "reviews",
+    "schedule": "Hours",
+    "avgBill": "Average bill",
+    "occasion": "Occasion",
+    "atmosphere": "Atmosphere",
+    "closed": "Closed",
+    "callToCheck": "Call to check",
+    "notSpecified": "Not specified",
+    "budgetCalc": "Enough for dinner?",
+    "book": "Book a table",
+    "claimTitle": "Is this your restaurant? Get access to manage your listing, menu and bookings.",
+    "claimButton": "Submit a request"
+  },
+  "footer": {
+    "service": "Service",
+    "restaurants": "Restaurants",
+    "blog": "Blog",
+    "loyaltyProgram": "Loyalty program",
+    "about": "About us",
+    "forRestaurants": "For Restaurants",
+    "addRestaurant": "Add your restaurant",
+    "pricing": "Pricing",
+    "analytics": "Analytics",
+    "support": "Support",
+    "help": "Help",
+    "contacts": "Contacts",
+    "privacy": "Privacy policy",
+    "terms": "Terms of service",
+    "tagline": "Smart restaurant search by dishes, allergens and budget. AI search, nutrition, booking.",
+    "rights": "All rights reserved.",
+    "madeWith": "Made with ❤️ for foodies"
+  },
+  "lang": {
+    "label": "EN"
+  }
+}

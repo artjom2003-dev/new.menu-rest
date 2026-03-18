@@ -22,6 +22,11 @@ Menu-Rest Restaurant Pipeline — точка входа.
     python main.py --step healthy     # Определение здоровых блюд
     python main.py --step restoclub   # Парсинг restoclub.ru (~17K ресторанов)
     python main.py --step afisha      # Парсинг afisha.ru (467 городов)
+    python main.py --step tripadvisor # Парсинг tripadvisor.ru (Москва + СПб)
+    python main.py --step menus       # Извлечение меню (JSON + PDF) и описаний
+    python main.py --step menus-json  # Только JSON-меню из restoclub
+    python main.py --step menus-pdf   # Только PDF-меню (afisha + restoclub)
+    python main.py --step menus-desc  # Только обновление описаний
     python main.py --city Москва      # Pipeline для одного города
 """
 import sys
@@ -55,8 +60,10 @@ from enrichment.description_generator import run_description_generator
 from enrichment.district_extractor import run_district_extractor
 from enrichment.district_geo_matcher import run_district_geo_matcher
 from enrichment.healthy_choice_detector import run_healthy_choice_detector
+from enrichment.menu_extractor import run_menu_extraction
 from scrapers.restoclub import run as run_restoclub
 from scrapers.afisha import run as run_afisha
+from scrapers.tripadvisor import run as run_tripadvisor
 
 
 def run_phase1(osm_priority: str = 'all'):
@@ -161,7 +168,9 @@ def main():
                                  'dedup', 'closed', 'export', 'stats', 'init',
                                  'hours', 'features', 'osm-tags', 'kbzhu',
                                  'allergens', 'descriptions', 'districts',
-                                 'districts-geo', 'healthy', 'restoclub', 'afisha'],
+                                 'districts-geo', 'healthy',
+                                 'menus', 'menus-json', 'menus-pdf', 'menus-desc',
+                                 'restoclub', 'afisha', 'tripadvisor'],
                         help='Запустить отдельный шаг')
     parser.add_argument('--city', type=str,
                         help='Запустить pipeline для одного города')
@@ -215,12 +224,23 @@ def main():
         run_district_geo_matcher()
     elif args.step == 'healthy':
         run_healthy_choice_detector()
+    elif args.step == 'menus':
+        run_menu_extraction()
+    elif args.step == 'menus-json':
+        run_menu_extraction(step='json')
+    elif args.step == 'menus-pdf':
+        run_menu_extraction(step='pdf')
+    elif args.step == 'menus-desc':
+        run_menu_extraction(step='desc')
     elif args.step == 'restoclub':
         init_db()
         run_restoclub(resume=True)
     elif args.step == 'afisha':
         init_db()
         run_afisha(resume=True)
+    elif args.step == 'tripadvisor':
+        init_db()
+        run_tripadvisor(resume=True)
     else:
         parser.print_help()
         print("\nПримеры:")

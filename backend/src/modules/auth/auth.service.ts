@@ -61,7 +61,7 @@ export class AuthService {
   async login(dto: LoginDto) {
     const user = await this.userRepo.findOne({
       where: { email: dto.email },
-      select: ['id', 'email', 'name', 'passwordHash', 'loyaltyLevel', 'loyaltyPoints', 'avatarUrl'],
+      select: ['id', 'email', 'name', 'passwordHash', 'loyaltyLevel', 'loyaltyPoints', 'avatarUrl', 'role'],
     });
 
     if (!user || !user.passwordHash) {
@@ -109,7 +109,7 @@ export class AuthService {
   }
 
   private issueTokens(user: User) {
-    const payload = { sub: user.id, email: user.email };
+    const payload = { sub: user.id, email: user.email, role: user.role || 'user' };
 
     const accessToken = this.jwtService.sign(payload, {
       expiresIn: this.config.get('JWT_EXPIRES_IN', '7d'),
@@ -124,6 +124,7 @@ export class AuthService {
         avatarUrl: user.avatarUrl,
         loyaltyLevel: user.loyaltyLevel,
         loyaltyPoints: user.loyaltyPoints,
+        role: user.role || 'user',
       },
     };
   }

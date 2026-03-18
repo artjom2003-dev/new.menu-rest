@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { useAuthStore } from '@/stores/auth.store';
 import { useFavoritesStore } from '@/stores/favorites.store';
 
@@ -10,6 +11,7 @@ interface Restaurant {
   id?: number;
   slug: string;
   name: string;
+  description?: string;
   cuisines?: Array<{ name: string }>;
   locations?: Array<{ city?: { name: string }; district?: { name: string } }>;
   ratingAggregate: number;
@@ -18,9 +20,29 @@ interface Restaurant {
   averageBill?: number;
   photos?: Array<{ url: string; isCover: boolean }>;
   features?: Array<{ slug: string; name: string }>;
+  distanceKm?: number;
 }
 
 const PRICE_SYMBOLS = ['', '₽', '₽₽', '₽₽₽', '₽₽₽₽'];
+
+// Национальные кухни — показываем только их в превью
+const NATIONAL_CUISINES = new Set([
+  'Итальянская', 'Японская', 'Грузинская', 'Русская', 'Французская',
+  'Узбекская', 'Китайская', 'Индийская', 'Американская', 'Мексиканская',
+  'Средиземноморская', 'Турецкая', 'Кавказская', 'Европейская', 'Паназиатская',
+  'Корейская', 'Тайская', 'Вьетнамская', 'Испанская', 'Греческая',
+  'Арабская', 'Марокканская', 'Перуанская', 'Бразильская', 'Немецкая',
+  'Австрийская', 'Чешская', 'Польская', 'Армянская', 'Азербайджанская',
+  'Татарская', 'Украинская', 'Белорусская', 'Скандинавская', 'Британская',
+  'Ирландская', 'Португальская', 'Балканская', 'Ливанская', 'Израильская',
+  'Азиатская', 'Восточная',
+]);
+
+function isNationalCuisine(name: string): boolean {
+  if (NATIONAL_CUISINES.has(name)) return true;
+  // Любое прилагательное на -ская/-ский (напр. "Тибетская", "Сингапурский")
+  return /ская$|ский$|ское$/i.test(name);
+}
 
 const CUISINE_EMOJI: Record<string, string> = {
   'Итальянская': '🍝', 'Японская': '🍣', 'Грузинская': '🫓', 'Русская': '🥘',
@@ -65,6 +87,7 @@ function FavoriteButton({ restaurantId }: { restaurantId?: number }) {
   const isFav = useFavoritesStore(s => restaurantId ? s.ids.has(restaurantId) : false);
   const toggle = useFavoritesStore(s => s.toggle);
   const [animating, setAnimating] = useState(false);
+  const [hovered, setHovered] = useState(false);
 
   const handleClick = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -78,13 +101,15 @@ function FavoriteButton({ restaurantId }: { restaurantId?: number }) {
   return (
     <button
       onClick={handleClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
       className="absolute top-3.5 right-3.5 z-10 w-9 h-9 rounded-full flex items-center justify-center text-[15px] transition-all duration-300"
       style={{
-        background: isFav ? 'rgba(255,60,60,0.7)' : 'rgba(0,0,0,0.4)',
+        background: isFav ? 'rgba(255,60,60,0.7)' : hovered ? 'rgba(255,80,120,0.45)' : 'rgba(0,0,0,0.4)',
         backdropFilter: 'blur(8px)',
         border: '1px solid rgba(255,255,255,0.08)',
-        color: isFav ? '#fff' : 'var(--text2)',
-        transform: animating ? 'scale(1.3)' : 'scale(1)',
+        color: isFav ? '#fff' : hovered ? '#ffb0c8' : 'var(--text2)',
+        transform: animating ? 'scale(1.3)' : hovered ? 'scale(1.1)' : 'scale(1)',
       }}>
       {isFav ? '♥' : '♡'}
     </button>
@@ -92,13 +117,18 @@ function FavoriteButton({ restaurantId }: { restaurantId?: number }) {
 }
 
 export function RestaurantCard({ restaurant }: { restaurant: Restaurant }) {
+  const t = useTranslations('card');
   const cover = (restaurant.photos?.find((p) => p.isCover) || restaurant.photos?.[0])?.url;
   const [imgError, setImgError] = useState(false);
   const location = restaurant.locations?.[0];
-  const locationLabel = [
-    location?.city?.name,
-    location?.district?.name,
-  ].filter(Boolean).join(' • ');
+  const city = location?.city?.name;
+  const district = location?.district?.name;
+  const locationLine = [city, district].filter(Boolean).join(', ');
+
+  const nationalCuisines = restaurant.cuisines?.filter(c => isNationalCuisine(c.name)) || [];
+  const cuisineLabel = nationalCuisines.length
+    ? nationalCuisines.map((c) => c.name).join(', ')
+    : t('mixed');
 
   const isHealthy = restaurant.features?.some((f) =>
     ['vegan', 'healthy', 'vegetarian', 'gluten-free'].includes(f.slug)
@@ -110,59 +140,83 @@ export function RestaurantCard({ restaurant }: { restaurant: Restaurant }) {
   return (
     <Link href={`/restaurants/${restaurant.slug}`}>
       <article
-        className="bg-[var(--bg2)] border border-[var(--card-border)] rounded-[20px] overflow-hidden cursor-pointer transition-all duration-[450ms]"
+        className="bg-[var(--bg2)] border border-[var(--card-border)] rounded-[20px] overflow-hidden cursor-pointer"
         style={{ transition: 'transform 0.45s, border-color 0.45s, box-shadow 0.45s' }}
         onMouseEnter={(e) => {
-          (e.currentTarget as HTMLElement).style.transform = 'translateY(-8px) scale(1.01)';
-          (e.currentTarget as HTMLElement).style.boxShadow = '0 32px 80px rgba(0,0,0,0.4)';
+          (e.currentTarget as HTMLElement).style.transform = 'translateY(-6px) scale(1.01)';
+          (e.currentTarget as HTMLElement).style.boxShadow = '0 24px 60px rgba(0,0,0,0.35)';
           (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.1)';
         }}
         onMouseLeave={(e) => {
-          (e.currentTarget as HTMLElement).style.transform = '';
-          (e.currentTarget as HTMLElement).style.boxShadow = '';
-          (e.currentTarget as HTMLElement).style.borderColor = '';
+          (e.currentTarget as HTMLElement).style.transform = 'none';
+          (e.currentTarget as HTMLElement).style.boxShadow = 'none';
+          (e.currentTarget as HTMLElement).style.borderColor = 'var(--card-border)';
         }}>
         {/* Image */}
-        <div className="h-[200px] relative bg-[var(--bg3)]">
+        <div className="h-[210px] relative bg-[var(--bg3)] flex-shrink-0">
           {showImage ? (
             <Image src={cover} alt={restaurant.name} fill className="object-cover" onError={() => setImgError(true)} />
           ) : (
             <GeneratedCover name={restaurant.name} cuisines={restaurant.cuisines} />
           )}
           <div className="absolute inset-0"
-            style={{ background: 'linear-gradient(to top, var(--bg2), transparent 60%)' }} />
+            style={{ background: 'linear-gradient(to top, var(--bg2), transparent 50%)' }} />
 
           {/* Badges */}
-          {isHealthy && (
-            <span className="absolute top-3.5 left-3.5 z-10 px-3 py-1 rounded-full text-[11px] font-semibold text-[var(--lime)]"
-              style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.08)' }}>
-              🌿 ЗОЖ
-            </span>
-          )}
-          {hasAllergenInfo && (
-            <span className="absolute top-3.5 left-3.5 z-10 px-3 py-1 rounded-full text-[11px] font-semibold text-[var(--teal)]"
-              style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.08)' }}>
-              🛡️ Аллергены
-            </span>
-          )}
+          <div className="absolute top-3.5 left-3.5 z-10 flex gap-1.5">
+            {isHealthy && (
+              <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold text-[var(--lime)]"
+                style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                🌿 {t('healthy')}
+              </span>
+            )}
+            {hasAllergenInfo && (
+              <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold text-[var(--teal)]"
+                style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                🛡️ {t('allergens')}
+              </span>
+            )}
+          </div>
 
           {/* Favorite button */}
           <FavoriteButton restaurantId={restaurant.id} />
+
+          {/* Rating badge on image */}
+          <div className="absolute bottom-3 left-4 z-10 flex items-center gap-2">
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full"
+              style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(8px)' }}>
+              <span className="text-[12px] font-semibold text-[var(--gold)]">
+                ⭐ {Number(restaurant.ratingAggregate).toFixed(1)}
+              </span>
+              <span className="text-[11px] text-white/50">({restaurant.reviewCount})</span>
+            </div>
+            {restaurant.distanceKm != null && (
+              <div className="flex items-center gap-1 px-2.5 py-1 rounded-full"
+                style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(8px)' }}>
+                <span className="text-[12px] font-semibold text-[var(--teal)]">
+                  📍 {restaurant.distanceKm < 1
+                    ? `${Math.round(restaurant.distanceKm * 1000)} м`
+                    : `${restaurant.distanceKm} км`}
+                </span>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Body */}
-        <div className="px-5 py-[18px] relative z-[2]">
-          <div className="text-[17px] font-semibold text-[var(--text)] mb-1">{restaurant.name}</div>
-          <div className="text-[13px] text-[var(--text3)] mb-3">
-            {restaurant.cuisines?.map((c) => c.name).join(', ')}
-            {locationLabel ? ` • ${locationLabel}` : ''}
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-[13px] font-semibold text-[var(--gold)]">
-              ⭐ {Number(restaurant.ratingAggregate).toFixed(1)}{' '}
-              <span className="text-[var(--text3)] font-normal">({restaurant.reviewCount})</span>
-            </span>
-            <span className="text-[13px] text-[var(--text3)]">
+        <div className="px-4 pt-3 pb-4 relative z-[2]">
+          <h3 className="text-[16px] font-semibold text-[var(--text)] leading-tight truncate">{restaurant.name}</h3>
+          {locationLine && (
+            <p className="text-[12px] text-[var(--text3)] mt-1 truncate">{locationLine}</p>
+          )}
+          {restaurant.description && (
+            <p className="text-[11px] text-[var(--text3)] mt-1.5 leading-[1.5] line-clamp-2 opacity-70">
+              {restaurant.description}
+            </p>
+          )}
+          <div className="flex items-center justify-between mt-2">
+            <span className="text-[12px] text-[var(--text3)] truncate">{cuisineLabel}</span>
+            <span className="text-[12px] text-[var(--text3)] flex-shrink-0 ml-2">
               {restaurant.averageBill
                 ? `~${restaurant.averageBill.toLocaleString('ru-RU')} ₽`
                 : PRICE_SYMBOLS[restaurant.priceLevel || 2]}

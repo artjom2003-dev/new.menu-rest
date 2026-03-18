@@ -1,0 +1,103 @@
+{
+  "header": {
+    "restaurants": "餐厅",
+    "forGuests": "宾客服务",
+    "loyalty": "奖励",
+    "blog": "博客",
+    "blogArticles": "文章",
+    "blogEvents": "活动",
+    "blogPromos": "优惠",
+    "blogNews": "新闻",
+    "forBusiness": "商家合作",
+    "budgetCalc": "预算够吗？",
+    "login": "登录",
+    "profile": "个人中心",
+    "book": "预订餐位",
+    "ownerDashboard": "概览",
+    "ownerCard": "名片",
+    "ownerPosts": "发布",
+    "ownerMyRestaurant": "我的餐厅",
+    "ownerPanel": "控制面板",
+    "logout": "退出",
+    "ownerAnalytics": "分析"
+  },
+  "hero": {
+    "line1": "找到你的",
+    "line2": "理想餐厅",
+    "line3": "只需一分钟",
+    "subtitle": "按菜品搜索，过滤过敏原，计算热量和预算——一站式服务。"
+  },
+  "search": {
+    "aiLabel": "问问",
+    "aiName": "Menu-Rest.AI",
+    "aiDesc": "——描述你想要的",
+    "placeholder": "浪漫晚餐，有景观，无麸质，两人3000卢布以内...",
+    "find": "搜索",
+    "analyzing": "正在分析您的请求",
+    "found": "找到",
+    "showAll": "查看全部 →",
+    "try": "试试：",
+    "noResults": "未找到结果，请尝试其他查询",
+    "error": "搜索出错，请稍后再试",
+    "aiUnavailable": "AI搜索暂时不可用",
+    "examples": [
+      "市中心2500卢布以内的牛排晚餐",
+      "适合约会的意大利餐厅",
+      "有儿童菜单和露台的餐厅",
+      "市中心不含坚果的素食晚餐"
+    ]
+  },
+  "grid": {
+    "recommend": "为您推荐",
+    "all": "全部 →"
+  },
+  "cta": {
+    "title": "您的餐厅\n还不在这里？",
+    "desc": "免费餐厅页面，含菜单、营养信息、\n在线预订和顾客评价",
+    "button": "添加您的餐厅",
+    "free": "免费——无佣金，无隐藏费用"
+  },
+  "card": {
+    "mixed": "混合",
+    "healthy": "健康",
+    "allergens": "过敏原"
+  },
+  "restaurant": {
+    "address": "地址",
+    "rating": "评分",
+    "reviews": "条评价",
+    "schedule": "营业时间",
+    "avgBill": "人均消费",
+    "occasion": "场合",
+    "atmosphere": "氛围",
+    "closed": "已关门",
+    "callToCheck": "请致电确认",
+    "notSpecified": "未注明",
+    "budgetCalc": "预算够吗？",
+    "book": "预订餐位",
+    "claimTitle": "这是您的餐厅吗？获取管理页面、菜单和预订的权限。",
+    "claimButton": "提交申请"
+  },
+  "footer": {
+    "service": "服务",
+    "restaurants": "餐厅",
+    "blog": "博客",
+    "loyaltyProgram": "会员计划",
+    "about": "关于我们",
+    "forRestaurants": "餐厅合作",
+    "addRestaurant": "添加餐厅",
+    "pricing": "价格",
+    "analytics": "分析",
+    "support": "支持",
+    "help": "帮助",
+    "contacts": "联系我们",
+    "privacy": "隐私政策",
+    "terms": "使用条款",
+    "tagline": "通过菜品、过敏原和预算智能搜索餐厅。AI搜索、营养信息、预订。",
+    "rights": "版权所有。",
+    "madeWith": "用 ❤️ 为美食爱好者制作"
+  },
+  "lang": {
+    "label": "中文"
+  }
+}

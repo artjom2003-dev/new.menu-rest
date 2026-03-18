@@ -1,0 +1,103 @@
+{
+  "header": {
+    "restaurants": "レストラン",
+    "forGuests": "ゲスト向け",
+    "loyalty": "リワード",
+    "blog": "ブログ",
+    "blogArticles": "記事",
+    "blogEvents": "イベント",
+    "blogPromos": "キャンペーン",
+    "blogNews": "ニュース",
+    "forBusiness": "ビジネス向け",
+    "budgetCalc": "予算は足りる？",
+    "login": "ログイン",
+    "profile": "プロフィール",
+    "book": "予約する",
+    "ownerDashboard": "ダッシュボード",
+    "ownerCard": "カード",
+    "ownerPosts": "投稿",
+    "ownerMyRestaurant": "マイレストラン",
+    "ownerPanel": "管理パネル",
+    "logout": "ログアウト",
+    "ownerAnalytics": "分析"
+  },
+  "hero": {
+    "line1": "あなたの",
+    "line2": "理想のお店を",
+    "line3": "1分で見つけよう",
+    "subtitle": "料理で検索、アレルゲンをフィルタリング、カロリーと予算を計算——すべてひとつのサービスで。"
+  },
+  "search": {
+    "aiLabel": "聞いてみて",
+    "aiName": "Menu-Rest.AI",
+    "aiDesc": "——欲しいものを説明するだけ",
+    "placeholder": "眺めの良いロマンチックなディナー、グルテンフリー、2人で3000ルーブル以内...",
+    "find": "検索",
+    "analyzing": "リクエストを分析中",
+    "found": "検索結果",
+    "showAll": "すべて表示 →",
+    "try": "お試し：",
+    "noResults": "見つかりませんでした。別のキーワードをお試しください",
+    "error": "検索エラーです。後でもう一度お試しください",
+    "aiUnavailable": "AI検索は一時的に利用できません",
+    "examples": [
+      "中心部で2500ルーブル以内のステーキディナー",
+      "イタリアンレストランでデート",
+      "テラス付きキッズメニューのあるレストラン",
+      "中心部でナッツフリーのヴィーガンディナー"
+    ]
+  },
+  "grid": {
+    "recommend": "おすすめレストラン",
+    "all": "すべて →"
+  },
+  "cta": {
+    "title": "あなたのレストラン\nまだ掲載されていない？",
+    "desc": "メニュー、栄養情報、オンライン予約、\nゲストレビュー付きの無料レストランページ",
+    "button": "レストランを登録",
+    "free": "無料——手数料なし、隠れた費用なし"
+  },
+  "card": {
+    "mixed": "ミックス",
+    "healthy": "ヘルシー",
+    "allergens": "アレルゲン"
+  },
+  "restaurant": {
+    "address": "住所",
+    "rating": "評価",
+    "reviews": "件のレビュー",
+    "schedule": "営業時間",
+    "avgBill": "平均予算",
+    "occasion": "シーン",
+    "atmosphere": "雰囲気",
+    "closed": "閉店",
+    "callToCheck": "お電話でご確認ください",
+    "notSpecified": "未設定",
+    "budgetCalc": "予算は足りる？",
+    "book": "予約する",
+    "claimTitle": "あなたのレストランですか？ページ、メニュー、予約の管理権限を取得しましょう。",
+    "claimButton": "申請する"
+  },
+  "footer": {
+    "service": "サービス",
+    "restaurants": "レストラン",
+    "blog": "ブログ",
+    "loyaltyProgram": "ロイヤルティプログラム",
+    "about": "私たちについて",
+    "forRestaurants": "レストランパートナー",
+    "addRestaurant": "レストランを追加",
+    "pricing": "料金プラン",
+    "analytics": "分析",
+    "support": "サポート",
+    "help": "ヘルプ",
+    "contacts": "お問い合わせ",
+    "privacy": "プライバシーポリシー",
+    "terms": "利用規約",
+    "tagline": "料理、アレルゲン、予算でスマートにレストラン検索。AI検索、栄養情報、予約。",
+    "rights": "全著作権所有。",
+    "madeWith": "グルメのために ❤️ を込めて"
+  },
+  "lang": {
+    "label": "日本語"
+  }
+}

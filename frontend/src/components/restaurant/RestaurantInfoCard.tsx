@@ -1,19 +1,38 @@
 'use client';
 
+import { useState, useCallback } from 'react';
 import Image from 'next/image';
+import { useTranslations } from 'next-intl';
+import { useAuthStore } from '@/stores/auth.store';
 import { useBudgetStore } from '@/stores/budget.store';
+import { AddRestaurantModal } from './AddRestaurantModal';
 
 interface Restaurant {
+  id?: number;
+  ownerId?: number | null;
   name: string;
+  description?: string;
   shortDescription?: string;
   longDescription?: string;
+  address?: string;
+  metroStation?: string;
+  phone?: string;
+  website?: string;
+  email?: string;
+  instagram?: string;
+  vk?: string;
+  facebook?: string;
+  youtube?: string;
+  venueType?: string;
+  city?: { name: string };
   ratingAggregate: number;
   reviewCount: number;
-  averageBillMin?: number;
-  averageBillMax?: number;
+  averageBill?: number;
   priceLevel?: number;
+  hasWifi?: boolean;
+  hasDelivery?: boolean;
   cuisines?: Array<{ name: string }>;
-  features?: Array<{ name: string; slug: string; category: string }>;
+  features?: Array<{ name: string; slug: string; category: string; icon?: string }>;
   locations?: Array<{
     address: string;
     metroStation?: string;
@@ -30,102 +49,315 @@ interface Restaurant {
   photos?: Array<{ url: string; isCover: boolean }>;
 }
 
-const DAY_NAMES = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+const CUISINE_EMOJI: Record<string, string> = {
+  'Итальянская': '🍝', 'Японская': '🍣', 'Грузинская': '🫓', 'Русская': '🥘',
+  'Французская': '🥐', 'Узбекская': '🍲', 'Китайская': '🥡', 'Индийская': '🍛',
+  'Американская': '🍔', 'Мексиканская': '🌮', 'Средиземноморская': '🫒',
+  'Стейкхаус': '🥩', 'Морепродукты': '🦞', 'Кавказская': '🍢', 'Авторская': '👨‍🍳',
+  'Европейская': '🍷', 'Паназиатская': '🥢', 'Вегетарианская': '🥗', 'Фьюжн': '✨',
+};
 
-function getTodayHours(workingHours?: Restaurant['workingHours']) {
+function hashColor(str: string) {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
+  const h = ((hash % 360) + 360) % 360;
+  return { h, s: 55 + (hash % 20), l: 18 + (hash % 8) };
+}
+
+function GeneratedCover({ name, cuisines }: { name: string; cuisines?: Array<{ name: string }> }) {
+  const { h, s, l } = hashColor(name);
+  const emoji = cuisines?.map(c => CUISINE_EMOJI[c.name]).find(Boolean) || '🍽️';
+  return (
+    <div className="w-full h-full flex items-center justify-center relative overflow-hidden rounded-[16px]"
+      style={{ background: `linear-gradient(135deg, hsl(${h},${s}%,${l}%) 0%, hsl(${(h + 40) % 360},${s - 10}%,${l + 5}%) 100%)` }}>
+      <div className="absolute rounded-full opacity-10" style={{ width: 250, height: 250, top: -50, right: -40, background: `hsl(${h},${s}%,${l + 20}%)` }} />
+      <span className="text-[72px] opacity-80 relative z-10 select-none" style={{ filter: 'drop-shadow(0 4px 16px rgba(0,0,0,0.3))' }}>{emoji}</span>
+    </div>
+  );
+}
+
+function PhotoSlider({ photos, name, cuisines }: {
+  photos: Array<{ url: string; isCover: boolean }>;
+  name: string;
+  cuisines?: Array<{ name: string }>;
+}) {
+  const validPhotos = photos.filter(p => /^https?:\/\//.test(p.url));
+  const sorted = [
+    ...validPhotos.filter(p => p.isCover),
+    ...validPhotos.filter(p => !p.isCover),
+  ];
+
+  const [current, setCurrent] = useState(0);
+  const [errors, setErrors] = useState<Set<number>>(new Set());
+
+  const visible = sorted.filter((_, i) => !errors.has(i));
+  const total = visible.length;
+  const hasPhotos = total > 0;
+  const realIndex = hasPhotos ? sorted.indexOf(visible[current % total]) : 0;
+  const displayIndex = hasPhotos ? (current % total) : 0;
+
+  const go = useCallback((dir: 1 | -1) => {
+    setCurrent(prev => {
+      const next = prev + dir;
+      if (next < 0) return total - 1;
+      if (next >= total) return 0;
+      return next;
+    });
+  }, [total]);
+
+  if (!hasPhotos) {
+    return <GeneratedCover name={name} cuisines={cuisines} />;
+  }
+
+  return (
+    <div className="w-full h-full relative overflow-hidden rounded-[16px] bg-[var(--bg3)] group/photo">
+      <Image
+        key={realIndex}
+        src={sorted[realIndex].url}
+        alt={`${name} — фото ${displayIndex + 1}`}
+        fill
+        className="object-cover"
+        priority={displayIndex === 0}
+        onError={() => setErrors(prev => new Set(prev).add(realIndex))}
+      />
+      {total > 1 && (
+        <>
+          <button onClick={() => go(-1)}
+            className="absolute left-3 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full flex items-center justify-center text-white text-[16px] opacity-0 group-hover/photo:opacity-100 transition-opacity duration-200"
+            style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(6px)' }}>‹</button>
+          <button onClick={() => go(1)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full flex items-center justify-center text-white text-[16px] opacity-0 group-hover/photo:opacity-100 transition-opacity duration-200"
+            style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(6px)' }}>›</button>
+        </>
+      )}
+      {total > 1 && (
+        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2 px-3 py-1.5 rounded-full"
+          style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(8px)' }}>
+          <div className="flex gap-1.5">
+            {Array.from({ length: Math.min(total, 7) }).map((_, i) => (
+              <button key={i} onClick={() => setCurrent(i)}
+                className="rounded-full transition-all duration-200 border-none cursor-pointer"
+                style={{ width: i === displayIndex ? 16 : 6, height: 6, background: i === displayIndex ? 'white' : 'rgba(255,255,255,0.4)' }} />
+            ))}
+          </div>
+          <span className="text-[11px] text-white/60 ml-1">{displayIndex + 1}/{total}</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function getTodayHours(workingHours?: Restaurant['workingHours'], closedLabel?: string) {
   if (!workingHours?.length) return null;
-  const today = (new Date().getDay() + 6) % 7; // 0=Mon
+  const today = (new Date().getDay() + 6) % 7;
   const wh = workingHours.find((h) => h.dayOfWeek === today);
-  if (!wh || wh.isClosed) return 'Закрыто';
+  if (!wh || wh.isClosed) return closedLabel || 'Closed';
   return `${wh.openTime?.slice(0, 5)} – ${wh.closeTime?.slice(0, 5)}`;
+}
+
+/* ─── Feature chips by category ─── */
+function FeatureChips({ features }: { features: Restaurant['features'] }) {
+  if (!features?.length) return null;
+
+  const CATEGORY_LABELS: Record<string, string> = {
+    specialization: 'Специализация',
+    amenity: 'Удобства',
+    atmosphere: 'Атмосфера',
+    dietary: 'Диета',
+    occasion: 'Повод',
+    service: 'Сервис',
+  };
+
+  const grouped: Record<string, typeof features> = {};
+  for (const f of features) {
+    const cat = f.category || 'other';
+    if (!grouped[cat]) grouped[cat] = [];
+    grouped[cat].push(f);
+  }
+
+  return (
+    <div className="mt-4 space-y-2">
+      {Object.entries(grouped).map(([cat, items]) => (
+        <div key={cat} className="flex items-center gap-2 flex-wrap">
+          <span className="text-[10px] uppercase tracking-[0.08em] text-[var(--text3)] w-[70px] flex-shrink-0">
+            {CATEGORY_LABELS[cat] || cat}
+          </span>
+          {items.map(f => (
+            <span key={f.slug}
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium border"
+              style={{ background: 'var(--bg3)', borderColor: 'var(--card-border)', color: 'var(--text2)' }}>
+              {f.icon && <span className="text-[12px]">{f.icon}</span>}
+              {f.name}
+            </span>
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ─── Social links ─── */
+function SocialLinks({ restaurant }: { restaurant: Restaurant }) {
+  const links: Array<{ icon: string; label: string; url: string }> = [];
+
+  if (restaurant.phone) links.push({ icon: '📞', label: restaurant.phone, url: `tel:${restaurant.phone}` });
+  if (restaurant.email) links.push({ icon: '✉️', label: restaurant.email, url: `mailto:${restaurant.email}` });
+  if (restaurant.website) {
+    const display = restaurant.website.replace(/^https?:\/\//, '').replace(/\/$/, '');
+    links.push({ icon: '🌐', label: display, url: restaurant.website.startsWith('http') ? restaurant.website : `https://${restaurant.website}` });
+  }
+  if (restaurant.instagram) links.push({ icon: '📸', label: 'Instagram', url: restaurant.instagram.startsWith('http') ? restaurant.instagram : `https://instagram.com/${restaurant.instagram}` });
+  if (restaurant.vk) links.push({ icon: '💬', label: 'VK', url: restaurant.vk.startsWith('http') ? restaurant.vk : `https://vk.com/${restaurant.vk}` });
+  if (restaurant.facebook) links.push({ icon: '📘', label: 'Facebook', url: restaurant.facebook.startsWith('http') ? restaurant.facebook : `https://facebook.com/${restaurant.facebook}` });
+  if (restaurant.youtube) links.push({ icon: '▶️', label: 'YouTube', url: restaurant.youtube.startsWith('http') ? restaurant.youtube : `https://youtube.com/${restaurant.youtube}` });
+
+  if (links.length === 0) return null;
+
+  return (
+    <div className="mt-4 flex flex-wrap gap-2">
+      {links.map((link) => (
+        <a key={link.label} href={link.url} target="_blank" rel="noopener noreferrer"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-medium border no-underline transition-all"
+          style={{ background: 'var(--bg3)', borderColor: 'var(--card-border)', color: 'var(--text2)' }}
+          onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.color = 'var(--accent)'; }}
+          onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--card-border)'; e.currentTarget.style.color = 'var(--text2)'; }}>
+          <span className="text-[13px]">{link.icon}</span>
+          {link.label}
+        </a>
+      ))}
+    </div>
+  );
 }
 
 export function RestaurantInfoCard({ restaurant }: { restaurant: Restaurant }) {
   const { open: openCalc } = useBudgetStore();
+  const { user } = useAuthStore();
+  const [claimOpen, setClaimOpen] = useState(false);
+  const t = useTranslations('restaurant');
+  const isOwnerAccount = user?.role === 'owner' || user?.role === 'admin';
+  const isMyRestaurant = isOwnerAccount && restaurant.ownerId && user.id === restaurant.ownerId;
+
   const location = restaurant.locations?.[0];
-  const todayHours = getTodayHours(restaurant.workingHours);
-  const secondPhoto = restaurant.photos?.filter((p) => !p.isCover)[0];
+  const addressLine = restaurant.address || location?.address;
+  const cityName = restaurant.city?.name || location?.city?.name;
+  const districtName = location?.district?.name;
+  const metroStation = restaurant.metroStation || location?.metroStation;
+  const fullAddress = [addressLine, districtName, cityName].filter(Boolean).join(', ');
+  const todayHours = getTodayHours(restaurant.workingHours, t('closed'));
 
   const metaItems = [
-    { icon: '📍', label: 'Адрес', value: location?.address },
-    { icon: '⭐', label: 'Рейтинг', value: `${Number(restaurant.ratingAggregate).toFixed(1)} (${restaurant.reviewCount} отзывов)` },
-    { icon: '🕐', label: 'Режим', value: todayHours || 'Уточните по телефону' },
+    { icon: '📍', label: t('address'), value: fullAddress || undefined },
+    ...(metroStation ? [{ icon: '🚇', label: 'Метро', value: metroStation }] : []),
+    { icon: '⭐', label: t('rating'), value: `${Number(restaurant.ratingAggregate).toFixed(1)} (${restaurant.reviewCount} ${t('reviews')})` },
+    { icon: '🕐', label: t('schedule'), value: todayHours || t('callToCheck') },
     {
-      icon: '💰', label: 'Средний чек',
-      value: restaurant.averageBillMin && restaurant.averageBillMax
-        ? `${restaurant.averageBillMin.toLocaleString()} – ${restaurant.averageBillMax.toLocaleString()} ₽`
-        : 'Не указан',
+      icon: '💰', label: t('avgBill'),
+      value: restaurant.averageBill
+        ? `~${restaurant.averageBill.toLocaleString('ru-RU')} ₽`
+        : t('notSpecified'),
     },
     {
-      icon: '🎯', label: 'Повод',
-      value: restaurant.features?.filter((f) => f.category === 'occasion').map((f) => f.name).join(', ') || '—',
+      icon: '🎯', label: t('occasion'),
+      value: restaurant.features?.filter(f => f.category === 'occasion').map(f => `${f.icon || ''} ${f.name}`.trim()).join(', ') || undefined,
     },
     {
-      icon: '✨', label: 'Атмосфера',
-      value: restaurant.features?.filter((f) => f.category === 'atmosphere').map((f) => f.name).join(', ') || '—',
+      icon: '✨', label: t('atmosphere'),
+      value: restaurant.features?.filter(f => f.category === 'atmosphere').map(f => `${f.icon || ''} ${f.name}`.trim()).join(', ') || undefined,
     },
   ].filter((item) => item.value);
 
   return (
-    <div className="border rounded-[24px] p-9 mb-9 grid grid-cols-2 gap-9 max-lg:grid-cols-1"
+    <div className="border rounded-[24px] p-6 mb-9 flex gap-7 max-lg:flex-col"
       style={{ background: 'var(--bg2)', borderColor: 'var(--card-border)' }}>
 
-      {/* Left */}
-      <div>
-        <h1 className="font-serif text-[42px] font-black text-[var(--text)] tracking-[-0.03em] mb-2">
-          {restaurant.name}
-        </h1>
+      {/* Left — Photo slider */}
+      <div className="w-[45%] max-lg:w-full flex-shrink-0 min-h-[380px] max-lg:min-h-[280px]">
+        <PhotoSlider photos={restaurant.photos || []} name={restaurant.name} cuisines={restaurant.cuisines} />
+      </div>
 
-        {restaurant.cuisines?.length && (
-          <span className="inline-block text-[12px] font-semibold text-[var(--accent)] px-3 py-1 rounded-full mb-3.5"
-            style={{ background: 'var(--accent-glow)' }}>
-            {restaurant.cuisines.map((c) => c.name).join(' • ')}
-          </span>
-        )}
+      {/* Right — Info */}
+      <div className="flex-1 flex flex-col justify-between min-w-0">
+        <div>
+          <h1 className="font-serif text-[38px] font-black text-[var(--text)] tracking-[-0.03em] mb-2 leading-[1.1]">
+            {restaurant.name}
+          </h1>
 
-        {restaurant.longDescription || restaurant.shortDescription ? (
-          <p className="text-[14px] text-[var(--text2)] leading-[1.7] mb-5">
-            {restaurant.longDescription || restaurant.shortDescription}
-          </p>
+          {restaurant.cuisines?.length ? (
+            <span className="inline-block text-[12px] font-semibold text-[var(--accent)] px-3 py-1 rounded-full mb-3"
+              style={{ background: 'var(--accent-glow)' }}>
+              {restaurant.cuisines.map((c) => c.name).join(' • ')}
+            </span>
+          ) : null}
+
+          {(restaurant.description || restaurant.longDescription || restaurant.shortDescription) && (
+            <p className="text-[14px] text-[var(--text2)] leading-[1.7] mb-4">
+              {restaurant.description || restaurant.longDescription || restaurant.shortDescription}
+            </p>
+          )}
+
+          {/* Meta grid */}
+          <div className="grid grid-cols-2 gap-2 max-sm:grid-cols-1">
+            {metaItems.map((item) => (
+              <div key={item.label}
+                className="flex items-center gap-2.5 p-2.5 rounded-[12px] border"
+                style={{ background: 'var(--bg3)', borderColor: 'var(--card-border)' }}>
+                <span className="text-[16px]">{item.icon}</span>
+                <div className="min-w-0">
+                  <div className="text-[10px] uppercase tracking-[0.08em] text-[var(--text3)]">{item.label}</div>
+                  <div className="text-[12px] font-semibold text-[var(--text)] truncate">{item.value}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Features / tags */}
+          <FeatureChips features={restaurant.features} />
+
+          {/* Social links, contacts */}
+          <SocialLinks restaurant={restaurant} />
+        </div>
+
+        {/* Actions — different for owner vs guest */}
+        {isMyRestaurant ? (
+          <div className="flex gap-2.5 mt-5">
+            <a href="/profile?tab=edit"
+              className="flex-1 flex items-center justify-center gap-2 px-5 py-3 rounded-full text-[13px] font-semibold text-white no-underline transition-all"
+              style={{ background: 'var(--teal-dark, #0d9488)', boxShadow: '0 0 20px rgba(57,255,209,0.2)' }}>
+              ✏️ Редактировать профиль
+            </a>
+          </div>
+        ) : !isOwnerAccount ? (
+          <div className="flex gap-2.5 mt-5">
+            <button onClick={openCalc}
+              className="flex-1 flex items-center justify-center gap-2 px-5 py-3 rounded-full text-[13px] font-semibold border transition-all"
+              style={{ background: 'var(--glass)', color: 'var(--text2)', borderColor: 'var(--glass-border)', backdropFilter: 'blur(8px)' }}>
+              🍽️ {t('budgetCalc')}
+            </button>
+            <button
+              className="flex-1 flex items-center justify-center gap-2 px-5 py-3 rounded-full text-[13px] font-semibold text-white transition-all"
+              style={{ background: 'var(--accent)', boxShadow: '0 0 20px var(--accent-glow)' }}>
+              {t('book')}
+            </button>
+          </div>
         ) : null}
 
-        {/* Meta grid */}
-        <div className="grid grid-cols-2 gap-2.5">
-          {metaItems.map((item) => (
-            <div key={item.label}
-              className="flex items-center gap-2.5 p-3 rounded-[12px] border"
-              style={{ background: 'var(--bg3)', borderColor: 'var(--card-border)' }}>
-              <span className="text-[18px]">{item.icon}</span>
-              <div>
-                <div className="text-[10px] uppercase tracking-[0.08em] text-[var(--text3)]">{item.label}</div>
-                <div className="text-[13px] font-semibold text-[var(--text)]">{item.value}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Right */}
-      <div className="flex flex-col gap-3.5">
-        {secondPhoto && (
-          <div className="flex-1 rounded-[16px] overflow-hidden relative min-h-[200px]">
-            <Image src={secondPhoto.url} alt={restaurant.name} fill className="object-cover" />
+        {/* Owner claim */}
+        {!isOwnerAccount && (
+          <div className="mt-4 px-4 py-3 rounded-2xl border flex items-center justify-between gap-3"
+            style={{ background: 'rgba(255,255,255,0.02)', borderColor: 'rgba(255,255,255,0.06)' }}>
+            <p className="text-[12px] text-[var(--text3)] leading-relaxed">{t('claimTitle')}</p>
+            <button onClick={() => setClaimOpen(true)}
+              className="flex-shrink-0 px-4 py-2 rounded-full text-[12px] font-semibold border transition-all cursor-pointer"
+              style={{ color: 'var(--accent)', borderColor: 'rgba(255,92,40,0.25)', background: 'rgba(255,92,40,0.06)' }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,92,40,0.12)'; e.currentTarget.style.borderColor = 'var(--accent)'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,92,40,0.06)'; e.currentTarget.style.borderColor = 'rgba(255,92,40,0.25)'; }}>
+              {t('claimButton')}
+            </button>
           </div>
         )}
-        <div className="flex gap-2.5">
-          <button
-            onClick={openCalc}
-            className="flex-1 flex items-center justify-center gap-2 px-5 py-3 rounded-full text-[13px] font-semibold border transition-all"
-            style={{ background: 'var(--glass)', color: 'var(--text2)', borderColor: 'var(--glass-border)', backdropFilter: 'blur(8px)' }}>
-            🍽️ Хватит на ужин?
-          </button>
-          <button
-            className="flex-1 flex items-center justify-center gap-2 px-5 py-3 rounded-full text-[13px] font-semibold text-white transition-all"
-            style={{ background: 'var(--accent)', boxShadow: '0 0 20px var(--accent-glow)' }}>
-            Забронировать
-          </button>
-        </div>
       </div>
+
+      <AddRestaurantModal open={claimOpen} onClose={() => setClaimOpen(false)} />
     </div>
   );
 }

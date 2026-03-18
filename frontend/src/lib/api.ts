@@ -89,6 +89,15 @@ export const userApi = {
     api.put('/users/me/allergens', { allergenIds }),
 };
 
+// ─── Owner: My Restaurant ────────────────────────────────
+export const ownerApi = {
+  getMyRestaurant: () => api.get('/users/me/restaurant'),
+  updateMyRestaurant: (data: Record<string, unknown>) => api.patch('/users/me/restaurant', data),
+  getPosts: () => api.get('/users/me/restaurant/posts'),
+  createPost: (data: { title: string; body: string; category: string }) =>
+    api.post('/users/me/restaurant/posts', data),
+};
+
 // ─── Menu ─────────────────────────────────────────────────
 export const menuApi = {
   getMenu: (restaurantId: number) =>
@@ -130,6 +139,11 @@ export const referenceApi = {
     api.get('/features', { params: category ? { category } : {} }),
   getAllergens: () => api.get('/allergens'),
   getCities: () => api.get('/cities'),
+  getMetroStations: (city: string) =>
+    api.get('/metro-stations', { params: { city } }),
+  getDistricts: (city: string) =>
+    api.get('/districts', { params: { city } }),
+  getVenueTypes: () => api.get('/venue-types'),
 };
 
 export default api;
