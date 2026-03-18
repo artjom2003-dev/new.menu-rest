@@ -4,14 +4,15 @@ const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: 'standalone',
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: 'images.unsplash.com' },
       { protocol: 'http', hostname: 'localhost' },
       { protocol: 'https', hostname: 'new.menu-rest.com' },
-      // MinIO S3 storage
-      { protocol: 'http', hostname: 'localhost', port: '9000' },
-      { protocol: 'http', hostname: 'minio', port: '9000' },
+      // S3 storage (Garage)
+      { protocol: 'http', hostname: 'localhost', port: '3900' },
+      { protocol: 'http', hostname: 'garage', port: '3900' },
       { protocol: 'https', hostname: '*.menu-rest.com' },
       // External photo sources
       { protocol: 'https', hostname: 'img.restoclub.ru' },

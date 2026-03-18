@@ -96,28 +96,26 @@ export class RestaurantService {
     }
 
     if (lat && lng) {
-      // Can't use addSelect+orderBy for distance with JOINs (causes duplicates)
-      // So: get entities normally, compute distance in JS, sort
-      const [entities, total] = await qb
-        .orderBy('r.rating', 'DESC')
+      const distanceExpr = `(6371 * acos(LEAST(1.0, cos(radians(:lat)) * cos(radians(r.lat)) * cos(radians(r.lng) - radians(:lng)) + sin(radians(:lat)) * sin(radians(r.lat)))))`;
+      qb.addSelect(`${distanceExpr}`, 'distance_km');
+      qb.orderBy(distanceExpr, 'ASC');
+
+      const { entities, raw } = await qb
         .skip((page - 1) * limit)
         .take(limit)
-        .getManyAndCount();
+        .getRawAndEntities();
 
-      const haversine = (lat1: number, lng1: number, lat2: number, lng2: number) => {
-        const R = 6371;
-        const dLat = (lat2 - lat1) * Math.PI / 180;
-        const dLng = (lng2 - lng1) * Math.PI / 180;
-        const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
-        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-      };
+      const total = await qb.getCount();
 
-      const items = entities
-        .map(e => ({
-          ...e,
-          distanceKm: e.lat && e.lng ? Math.round(haversine(lat, lng, Number(e.lat), Number(e.lng)) * 10) / 10 : undefined,
-        }))
-        .sort((a, b) => (a.distanceKm ?? 9999) - (b.distanceKm ?? 9999));
+      const distanceMap = new Map<number, number>();
+      for (const r of raw) {
+        distanceMap.set(r.r_id, Math.round(parseFloat(r.distance_km) * 10) / 10);
+      }
+
+      const items = entities.map(e => ({
+        ...e,
+        distanceKm: distanceMap.get(e.id) ?? undefined,
+      }));
 
       return {
         items,

@@ -54,6 +54,7 @@ export class SearchController {
         res.write(`data: ${chunk}\n\n`);
       }
     } catch (err) {
+      console.error('[AI-Stream] Error:', (err as Error).message, (err as Error).stack);
       res.write(`data: ${JSON.stringify({ type: 'error', message: 'Stream failed' })}\n\n`);
     }
 

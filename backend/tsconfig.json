@@ -24,5 +24,5 @@
       "@database/*": ["src/database/*"]
     }
   },
-  "exclude": ["scripts"]
+  "exclude": ["scripts", "src/database/seeds/import-*.ts", "src/database/seeds/find-*.ts"]
 }
