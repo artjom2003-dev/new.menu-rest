@@ -6,7 +6,7 @@ import { ConfigService } from '@nestjs/config';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { Response } from 'express';
 import * as crypto from 'crypto';
-import { AuthService, RegisterDto, LoginDto } from './auth.service';
+import { AuthService, RegisterDto, LoginDto, ForgotPasswordDto, ResetPasswordDto } from './auth.service';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -27,6 +27,22 @@ export class AuthController {
   @ApiOperation({ summary: 'Вход (email + password)' })
   login(@Body() dto: LoginDto) {
     return this.service.login(dto);
+  }
+
+  // ─── Forgot / Reset Password ──────────────────────
+
+  @Post('forgot-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Запрос кода сброса пароля на email' })
+  forgotPassword(@Body() dto: ForgotPasswordDto) {
+    return this.service.forgotPassword(dto);
+  }
+
+  @Post('reset-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Сброс пароля по коду из email' })
+  resetPassword(@Body() dto: ResetPasswordDto) {
+    return this.service.resetPassword(dto);
   }
 
   // ─── VK OAuth ──────────────────────────────────────

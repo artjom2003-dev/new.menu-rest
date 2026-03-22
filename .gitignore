@@ -46,3 +46,13 @@ __pycache__/
 
 # Large SQL dumps
 mr.sql
+
+# SSL certs (root level)
+*.pem
+
+# Temporary data files
+anomalies*.csv
+menu_scrape_*.json
+menu_scrape_*.csv
+menu_verification.csv
+restaurants_to_check.json

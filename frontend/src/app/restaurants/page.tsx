@@ -6,6 +6,7 @@ import { restaurantApi } from '@/lib/api';
 import { RestaurantCard } from '@/components/restaurant/RestaurantCard';
 import { FiltersBar } from '@/components/search/FilterDropdowns';
 import { AddRestaurantModal } from '@/components/restaurant/AddRestaurantModal';
+import { RestaurantQuizModal } from '@/components/quiz/RestaurantQuizModal';
 
 interface RestaurantListItem {
   slug: string;
@@ -52,6 +53,7 @@ function RestaurantsPageInner() {
   const lng = searchParams.get('lng') || undefined;
   const [searchInput, setSearchInput] = useState(search || '');
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showQuiz, setShowQuiz] = useState(false);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -94,28 +96,14 @@ function RestaurantsPageInner() {
   return (
     <>
       <AddRestaurantModal open={showAddModal} onClose={() => setShowAddModal(false)} />
+      <RestaurantQuizModal open={showQuiz} onClose={() => setShowQuiz(false)} />
 
       <div className="max-w-[1400px] mx-auto px-10 pt-10 pb-4">
-        <div className="flex items-start justify-between mb-2">
-          <div>
-            <h1 className="font-serif text-[42px] font-bold text-[var(--text)]">Рестораны</h1>
-            <p className="text-[14px] text-[var(--text3)] mb-6">
-              {meta ? `${meta.total} заведений` : 'Загрузка...'}
-            </p>
-          </div>
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="mt-2 group flex items-center gap-2.5 px-5 py-3 rounded-full text-[13px] font-semibold cursor-pointer transition-all"
-            style={{
-              background: 'linear-gradient(135deg, var(--accent), #ff8c42)',
-              color: '#fff',
-              border: 'none',
-              boxShadow: '0 0 24px var(--accent-glow)',
-            }}
-          >
-            <span className="text-[16px] transition-transform group-hover:rotate-90" style={{ display: 'inline-block', transitionDuration: '300ms' }}>+</span>
-            Добавить ресторан
-          </button>
+        <div className="mb-2">
+          <h1 className="font-serif text-[42px] font-bold text-[var(--text)]">Рестораны</h1>
+          <p className="text-[14px] text-[var(--text3)] mb-6">
+            {meta ? `${meta.total} заведений` : 'Загрузка...'}
+          </p>
         </div>
 
         {/* Search */}
@@ -222,29 +210,75 @@ function RestaurantsPageInner() {
         </button>
       </div>
 
-      {loading ? (
-        <div className="max-w-[1400px] mx-auto px-10 pb-20">
-          <div className="grid grid-cols-3 gap-5 max-lg:grid-cols-2 max-sm:grid-cols-1">
-            {Array.from({ length: 12 }).map((_, i) => (
-              <div key={i} className="h-[300px] rounded-[20px] animate-pulse" style={{ background: 'var(--bg3)' }} />
-            ))}
+      <div className="max-w-[1400px] mx-auto px-10 pb-10">
+        <div className="flex gap-6 items-start">
+          {/* Main content */}
+          <div className="flex-1 min-w-0">
+            {loading ? (
+              <div className="grid grid-cols-3 gap-5 max-lg:grid-cols-2 max-sm:grid-cols-1">
+                {Array.from({ length: 12 }).map((_, i) => (
+                  <div key={i} className="h-[300px] rounded-[20px] animate-pulse" style={{ background: 'var(--bg3)' }} />
+                ))}
+              </div>
+            ) : restaurants.length === 0 ? (
+              <div className="text-center py-20">
+                <div className="text-6xl mb-4">🍽️</div>
+                <p className="text-[18px] text-[var(--text2)] font-semibold mb-2">Ресторанов не найдено</p>
+                <p className="text-[13px] text-[var(--text3)]">Попробуйте изменить фильтры</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-3 gap-5 max-lg:grid-cols-2 max-sm:grid-cols-1">
+                {restaurants.map((r) => (
+                  <RestaurantCard key={r.slug} restaurant={adaptRestaurant(r)} />
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Quiz sidebar card */}
+          <div className="w-[220px] shrink-0 sticky top-[88px] max-lg:hidden">
+            <button
+              onClick={() => setShowQuiz(true)}
+              className="group w-full relative overflow-hidden rounded-2xl p-5 cursor-pointer transition-all border text-center"
+              style={{
+                background: 'linear-gradient(180deg, rgba(255,92,40,0.08) 0%, rgba(186,255,57,0.04) 50%, rgba(57,255,209,0.03) 100%)',
+                borderColor: 'rgba(255,92,40,0.2)',
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.borderColor = 'rgba(255,92,40,0.5)';
+                e.currentTarget.style.boxShadow = '0 0 40px var(--accent-glow)';
+                e.currentTarget.style.transform = 'translateY(-4px)';
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.borderColor = 'rgba(255,92,40,0.2)';
+                e.currentTarget.style.boxShadow = 'none';
+                e.currentTarget.style.transform = '';
+              }}>
+              <div className="absolute -top-8 -right-8 w-24 h-24 rounded-full opacity-20 blur-3xl"
+                style={{ background: 'var(--accent)' }} />
+              <div className="absolute -bottom-6 -left-6 w-20 h-20 rounded-full opacity-15 blur-3xl"
+                style={{ background: 'var(--teal)' }} />
+              <span className="text-[44px] block mb-3 relative z-10 transition-transform group-hover:scale-110" style={{ transitionDuration: '300ms' }}>
+                🧭
+              </span>
+              <p className="font-serif text-[16px] font-bold text-[var(--text)] mb-1.5 relative z-10 leading-tight">
+                Не определились?
+              </p>
+              <p className="text-[12px] text-[var(--text3)] mb-4 relative z-10 leading-snug">
+                Пройдите тест из 5 вопросов — подберём ресторан для вас
+              </p>
+              <div
+                className="relative z-10 w-full py-2.5 rounded-full text-[13px] font-bold text-white transition-all"
+                style={{
+                  background: 'linear-gradient(135deg, var(--accent), #ff8c42)',
+                  boxShadow: '0 4px 20px var(--accent-glow)',
+                }}>
+                Пройти тест
+              </div>
+            </button>
           </div>
         </div>
-      ) : restaurants.length === 0 ? (
-        <div className="max-w-[1400px] mx-auto px-10 pb-20 text-center py-20">
-          <div className="text-6xl mb-4">🍽️</div>
-          <p className="text-[18px] text-[var(--text2)] font-semibold mb-2">Ресторанов не найдено</p>
-          <p className="text-[13px] text-[var(--text3)]">Попробуйте изменить фильтры</p>
-        </div>
-      ) : (
-        <div className="max-w-[1400px] mx-auto px-10 pb-10">
-          <div className="grid grid-cols-3 gap-5 max-lg:grid-cols-2 max-sm:grid-cols-1">
-            {restaurants.map((r) => (
-              <RestaurantCard key={r.slug} restaurant={adaptRestaurant(r)} />
-            ))}
-          </div>
-        </div>
-      )}
+      </div>
 
       {/* CTA Banner */}
       <div className="max-w-[1400px] mx-auto px-10 pb-8">

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuthStore } from '@/stores/auth.store';
 import { authApi } from '@/lib/api';
 
@@ -9,34 +9,107 @@ interface AuthModalProps {
   onClose: () => void;
 }
 
+type Mode = 'login' | 'register' | 'forgot' | 'reset';
+
 export function AuthModal({ open, onClose }: AuthModalProps) {
-  const [mode, setMode] = useState<'login' | 'register'>('login');
+  const [mode, setMode] = useState<Mode>('login');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const { setUser } = useAuthStore();
 
-  const [form, setForm] = useState({ name: '', email: '', password: '', city: '' });
+  const [form, setForm] = useState({ name: '', email: '', password: '', code: '', newPassword: '' });
+
+  // Подхватываем реферальный код из URL (?ref=XXXX)
+  const [refCode, setRefCode] = useState('');
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const ref = params.get('ref');
+    if (ref) setRefCode(ref);
+  }, []);
 
   if (!open) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setSuccess('');
     setLoading(true);
 
     try {
-      const res = mode === 'login'
-        ? await authApi.login(form.email, form.password)
-        : await authApi.register({ name: form.name, email: form.email, password: form.password });
-
-      setUser(res.data.user, res.data.accessToken);
-      onClose();
+      if (mode === 'login') {
+        const res = await authApi.login(form.email, form.password);
+        setUser(res.data.user, res.data.accessToken);
+        onClose();
+      } else if (mode === 'register') {
+        const res = await authApi.register({ name: form.name, email: form.email, password: form.password, ...(refCode ? { referralCode: refCode } : {}) });
+        setUser(res.data.user, res.data.accessToken);
+        onClose();
+      } else if (mode === 'forgot') {
+        await authApi.forgotPassword(form.email);
+        setSuccess('Код отправлен на почту');
+        setMode('reset');
+      } else if (mode === 'reset') {
+        const res = await authApi.resetPassword({ email: form.email, code: form.code, newPassword: form.newPassword });
+        setUser(res.data.user, res.data.accessToken);
+        onClose();
+      }
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      setError(Array.isArray(msg) ? msg[0] : msg || 'Ошибка входа');
+      setError(Array.isArray(msg) ? msg[0] : msg || 'Произошла ошибка');
     } finally {
       setLoading(false);
     }
+  };
+
+  const inputClass = "w-full px-4 py-3 rounded-[10px] text-[14px] font-sans text-[var(--text)] outline-none transition-all border";
+
+  const renderInput = (
+    label: string,
+    type: string,
+    value: string,
+    onChange: (v: string) => void,
+    placeholder: string,
+    extra?: { required?: boolean; minLength?: number; maxLength?: number; inputMode?: string },
+  ) => (
+    <div className="mb-3.5">
+      <label className="text-[11px] font-semibold text-[var(--text2)] block mb-1.5">{label}</label>
+      <input
+        type={type}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        required={extra?.required !== false}
+        minLength={extra?.minLength}
+        maxLength={extra?.maxLength}
+        inputMode={extra?.inputMode as React.HTMLAttributes<HTMLInputElement>['inputMode']}
+        className={inputClass}
+        style={{ background: 'var(--bg3)', borderColor: 'var(--card-border)' }}
+        onFocus={(e) => (e.currentTarget.style.borderColor = 'var(--accent)')}
+        onBlur={(e) => (e.currentTarget.style.borderColor = '')}
+      />
+    </div>
+  );
+
+  const titles: Record<Mode, string> = {
+    login: 'Вход',
+    register: 'Регистрация',
+    forgot: 'Восстановление пароля',
+    reset: 'Новый пароль',
+  };
+
+  const subtitles: Record<Mode, string> = {
+    login: 'Войдите, чтобы копить бонусы и сохранять избранное',
+    register: 'Создайте аккаунт для бонусов и рекомендаций',
+    forgot: 'Введите email, и мы отправим код для сброса пароля',
+    reset: 'Введите код из письма и придумайте новый пароль',
+  };
+
+  const buttonLabels: Record<Mode, string> = {
+    login: 'Войти',
+    register: 'Создать аккаунт',
+    forgot: 'Отправить код',
+    reset: 'Сменить пароль',
   };
 
   return (
@@ -56,105 +129,135 @@ export function AuthModal({ open, onClose }: AuthModalProps) {
         </button>
 
         <h2 className="font-serif text-[26px] font-black text-[var(--text)] mb-1">
-          {mode === 'login' ? 'Вход' : 'Регистрация'}
+          {titles[mode]}
         </h2>
         <p className="text-[13px] text-[var(--text3)] mb-6">
-          {mode === 'login'
-            ? 'Войдите, чтобы копить бонусы и сохранять избранное'
-            : 'Создайте аккаунт для бонусов и рекомендаций'}
+          {subtitles[mode]}
         </p>
 
         <form onSubmit={handleSubmit}>
-          {mode === 'register' && (
-            <div className="mb-3.5">
-              <label className="text-[11px] font-semibold text-[var(--text2)] block mb-1.5">Имя</label>
-              <input
-                value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
-                placeholder="Александр"
-                className="w-full px-4 py-3 rounded-[10px] text-[14px] font-sans text-[var(--text)] outline-none transition-all border"
-                style={{ background: 'var(--bg3)', borderColor: 'var(--card-border)' }}
-                onFocus={(e) => (e.currentTarget.style.borderColor = 'var(--accent)')}
-                onBlur={(e) => (e.currentTarget.style.borderColor = '')}
-              />
-            </div>
+          {/* Имя — только регистрация */}
+          {mode === 'register' && renderInput(
+            'Имя', 'text', form.name,
+            (v) => setForm({ ...form, name: v }),
+            'Александр',
           )}
 
-          <div className="mb-3.5">
-            <label className="text-[11px] font-semibold text-[var(--text2)] block mb-1.5">Email</label>
-            <input
-              type="email"
-              value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value })}
-              placeholder="your@email.com"
-              required
-              className="w-full px-4 py-3 rounded-[10px] text-[14px] font-sans text-[var(--text)] outline-none transition-all border"
-              style={{ background: 'var(--bg3)', borderColor: 'var(--card-border)' }}
-              onFocus={(e) => (e.currentTarget.style.borderColor = 'var(--accent)')}
-              onBlur={(e) => (e.currentTarget.style.borderColor = '')}
-            />
-          </div>
+          {/* Email — логин, регистрация, forgot */}
+          {(mode === 'login' || mode === 'register' || mode === 'forgot') && renderInput(
+            'Email', 'email', form.email,
+            (v) => setForm({ ...form, email: v }),
+            'your@email.com',
+          )}
 
-          <div className="mb-3.5">
-            <label className="text-[11px] font-semibold text-[var(--text2)] block mb-1.5">Пароль</label>
-            <input
-              type="password"
-              value={form.password}
-              onChange={(e) => setForm({ ...form, password: e.target.value })}
-              placeholder="••••••••"
-              required
-              minLength={8}
-              className="w-full px-4 py-3 rounded-[10px] text-[14px] font-sans text-[var(--text)] outline-none transition-all border"
-              style={{ background: 'var(--bg3)', borderColor: 'var(--card-border)' }}
-              onFocus={(e) => (e.currentTarget.style.borderColor = 'var(--accent)')}
-              onBlur={(e) => (e.currentTarget.style.borderColor = '')}
-            />
-          </div>
+          {/* Пароль — логин, регистрация */}
+          {(mode === 'login' || mode === 'register') && renderInput(
+            'Пароль', 'password', form.password,
+            (v) => setForm({ ...form, password: v }),
+            'Минимум 8 символов',
+            { minLength: 8 },
+          )}
+
+          {/* Код из письма — reset */}
+          {mode === 'reset' && renderInput(
+            'Код из письма', 'text', form.code,
+            (v) => setForm({ ...form, code: v.replace(/\D/g, '').slice(0, 6) }),
+            '000000',
+            { maxLength: 6, minLength: 6, inputMode: 'numeric' },
+          )}
+
+          {/* Новый пароль — reset */}
+          {mode === 'reset' && renderInput(
+            'Новый пароль', 'password', form.newPassword,
+            (v) => setForm({ ...form, newPassword: v }),
+            'Минимум 8 символов',
+            { minLength: 8 },
+          )}
 
           {error && <p className="text-[12px] text-red-400 mb-3">{error}</p>}
+          {success && <p className="text-[12px] text-green-400 mb-3">{success}</p>}
 
           <button
             type="submit"
             disabled={loading}
             className="w-full flex items-center justify-center py-3.5 rounded-full text-[13px] font-semibold text-white border-none cursor-pointer transition-all mt-1.5 disabled:opacity-60"
             style={{ background: 'var(--accent)', boxShadow: '0 0 20px var(--accent-glow)' }}>
-            {loading ? '...' : mode === 'login' ? 'Войти' : 'Создать аккаунт'}
+            {loading ? '...' : buttonLabels[mode]}
           </button>
         </form>
 
-        {/* Divider */}
-        <div className="relative text-center text-[11px] text-[var(--text3)] my-3.5">
-          <span className="relative z-10 px-2" style={{ background: 'var(--bg2)' }}>или</span>
-          <div className="absolute inset-y-1/2 left-0 right-0 h-px" style={{ background: 'var(--card-border)' }} />
-        </div>
+        {/* Забыли пароль — только на экране логина */}
+        {mode === 'login' && (
+          <p className="text-center text-[12px] text-[var(--text3)] mt-3">
+            <button
+              onClick={() => { setMode('forgot'); setError(''); setSuccess(''); }}
+              className="text-[var(--accent)] font-semibold cursor-pointer bg-none border-none">
+              Забыли пароль?
+            </button>
+          </p>
+        )}
 
-        {/* Social */}
-        <div className="flex flex-col gap-2">
-          <button
-            onClick={() => { window.location.href = `${process.env.NEXT_PUBLIC_API_URL || '/api'}/auth/vk`; }}
-            className="w-full flex items-center justify-center gap-2 py-3 rounded-full text-[13px] font-semibold border cursor-pointer transition-all"
-            style={{ background: 'var(--glass)', color: 'var(--text2)', borderColor: 'var(--glass-border)' }}>
-            🔵 Войти через VK
-          </button>
-          <button
-            onClick={() => {
-              const botName = 'menurest_bot';
-              const redirectUrl = encodeURIComponent(window.location.origin + '/login?provider=telegram');
-              window.location.href = `https://oauth.telegram.org/auth?bot_id=${botName}&origin=${window.location.origin}&embed=0&request_access=write&return_to=${redirectUrl}`;
-            }}
-            className="w-full flex items-center justify-center gap-2 py-3 rounded-full text-[13px] font-semibold border cursor-pointer transition-all"
-            style={{ background: 'var(--glass)', color: 'var(--text2)', borderColor: 'var(--glass-border)' }}>
-            📱 Войти через Telegram
-          </button>
-        </div>
+        {/* Вернуться к вводу email — на экране reset */}
+        {mode === 'reset' && (
+          <p className="text-center text-[12px] text-[var(--text3)] mt-3">
+            <button
+              onClick={() => { setMode('forgot'); setError(''); setSuccess(''); }}
+              className="text-[var(--accent)] font-semibold cursor-pointer bg-none border-none">
+              Отправить код повторно
+            </button>
+          </p>
+        )}
 
-        <p className="text-center text-[12px] text-[var(--text3)] mt-4">
-          {mode === 'login' ? (
-            <>Нет аккаунта? <button onClick={() => setMode('register')} className="text-[var(--accent)] font-semibold cursor-pointer bg-none border-none">Регистрация</button></>
-          ) : (
-            <>Уже есть аккаунт? <button onClick={() => setMode('login')} className="text-[var(--accent)] font-semibold cursor-pointer bg-none border-none">Войти</button></>
-          )}
-        </p>
+        {/* Divider + Social — только логин и регистрация */}
+        {(mode === 'login' || mode === 'register') && (
+          <>
+            <div className="relative text-center text-[11px] text-[var(--text3)] my-3.5">
+              <span className="relative z-10 px-2" style={{ background: 'var(--bg2)' }}>или</span>
+              <div className="absolute inset-y-1/2 left-0 right-0 h-px" style={{ background: 'var(--card-border)' }} />
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={() => { window.location.href = `${process.env.NEXT_PUBLIC_API_URL || '/api'}/auth/vk`; }}
+                className="w-full flex items-center justify-center gap-2 py-3 rounded-full text-[13px] font-semibold border cursor-pointer transition-all"
+                style={{ background: 'var(--glass)', color: 'var(--text2)', borderColor: 'var(--glass-border)' }}>
+                Войти через VK
+              </button>
+              <button
+                onClick={() => {
+                  const botName = 'menurest_bot';
+                  const redirectUrl = encodeURIComponent(window.location.origin + '/login?provider=telegram');
+                  window.location.href = `https://oauth.telegram.org/auth?bot_id=${botName}&origin=${window.location.origin}&embed=0&request_access=write&return_to=${redirectUrl}`;
+                }}
+                className="w-full flex items-center justify-center gap-2 py-3 rounded-full text-[13px] font-semibold border cursor-pointer transition-all"
+                style={{ background: 'var(--glass)', color: 'var(--text2)', borderColor: 'var(--glass-border)' }}>
+                Войти через Telegram
+              </button>
+            </div>
+          </>
+        )}
+
+        {/* Переключение login/register */}
+        {(mode === 'login' || mode === 'register') && (
+          <p className="text-center text-[12px] text-[var(--text3)] mt-4">
+            {mode === 'login' ? (
+              <>Нет аккаунта? <button onClick={() => { setMode('register'); setError(''); }} className="text-[var(--accent)] font-semibold cursor-pointer bg-none border-none">Регистрация</button></>
+            ) : (
+              <>Уже есть аккаунт? <button onClick={() => { setMode('login'); setError(''); }} className="text-[var(--accent)] font-semibold cursor-pointer bg-none border-none">Войти</button></>
+            )}
+          </p>
+        )}
+
+        {/* Назад к логину — из forgot/reset */}
+        {(mode === 'forgot' || mode === 'reset') && (
+          <p className="text-center text-[12px] text-[var(--text3)] mt-4">
+            <button
+              onClick={() => { setMode('login'); setError(''); setSuccess(''); }}
+              className="text-[var(--accent)] font-semibold cursor-pointer bg-none border-none">
+              Назад к входу
+            </button>
+          </p>
+        )}
       </div>
     </div>
   );

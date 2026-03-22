@@ -364,13 +364,15 @@ function FiltersBarInner() {
   const [cuisines, setCuisines] = useState<FilterOption[]>([]);
   const [occasions, setOccasions] = useState<FilterOption[]>([]);
   const [atmospheres, setAtmospheres] = useState<FilterOption[]>([]);
+  const [entertainments, setEntertainments] = useState<FilterOption[]>([]);
   const [metroStations, setMetroStations] = useState<FilterOption[]>([]);
   const [districts, setDistricts] = useState<FilterOption[]>([]);
   const [venueTypes, setVenueTypes] = useState<FilterOption[]>([]);
 
-  // Local state for occasion, atmosphere, price range, metro, district, venue
+  // Local state for occasion, atmosphere, entertainment, price range, metro, district, venue
   const [selectedOccasion, setSelectedOccasion] = useState<string | undefined>();
   const [selectedAtmosphere, setSelectedAtmosphere] = useState<string | undefined>();
+  const [selectedEntertainment, setSelectedEntertainment] = useState<string | undefined>();
   const [priceMin, setPriceMin] = useState<number | undefined>();
   const [priceMax, setPriceMax] = useState<number | undefined>();
   const [selectedMetro, setSelectedMetro] = useState<string | undefined>();
@@ -381,17 +383,7 @@ function FiltersBarInner() {
   const geoLat = useGeoStore(s => s.lat);
   const geoLng = useGeoStore(s => s.lng);
 
-  // When geo permission is granted, auto-activate nearby filter
-  useEffect(() => {
-    if (geoStatus === 'granted' && geoLat && geoLng && !nearbyActive) {
-      setNearbyActive(true);
-      const params = new URLSearchParams(searchParams.toString());
-      params.set('lat', String(geoLat));
-      params.set('lng', String(geoLng));
-      params.set('page', '1');
-      router.push(`/restaurants?${params.toString()}`);
-    }
-  }, [geoStatus, geoLat, geoLng]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Geo is ready but NOT auto-activated — user must click "Рядом" manually
 
   useEffect(() => {
     Promise.all([
@@ -399,12 +391,14 @@ function FiltersBarInner() {
       referenceApi.getCuisines().catch(() => ({ data: [] })),
       referenceApi.getFeatures('occasion').catch(() => ({ data: [] })),
       referenceApi.getFeatures('atmosphere').catch(() => ({ data: [] })),
+      referenceApi.getFeatures('entertainment').catch(() => ({ data: [] })),
       referenceApi.getVenueTypes().catch(() => ({ data: [] })),
-    ]).then(([citiesRes, cuisinesRes, occasionsRes, atmospheresRes, venueRes]) => {
+    ]).then(([citiesRes, cuisinesRes, occasionsRes, atmospheresRes, entertainmentsRes, venueRes]) => {
       setCities((citiesRes.data || []).map((c: { name: string; slug: string }) => ({ label: c.name, value: c.slug })));
       setCuisines((cuisinesRes.data || []).map((c: { name: string; slug: string }) => ({ label: c.name, value: c.slug })));
       setOccasions((occasionsRes.data || []).map((f: { name: string; slug: string; icon?: string }) => ({ label: f.name, value: f.slug, icon: f.icon })));
       setAtmospheres((atmospheresRes.data || []).map((f: { name: string; slug: string; icon?: string }) => ({ label: f.name, value: f.slug, icon: f.icon })));
+      setEntertainments((entertainmentsRes.data || []).map((f: { name: string; slug: string; icon?: string }) => ({ label: f.name, value: f.slug, icon: f.icon })));
       setVenueTypes((venueRes.data || []).map((v: { slug: string; name: string }) => ({ label: v.name, value: v.slug })));
     });
   }, []);
@@ -454,24 +448,27 @@ function FiltersBarInner() {
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Restore occasion/atmosphere from URL once options are loaded
+  // Restore occasion/atmosphere/entertainment from URL once options are loaded
   useEffect(() => {
     const features = searchParams.get('features');
-    if (features && (occasions.length || atmospheres.length)) {
+    if (features && (occasions.length || atmospheres.length || entertainments.length)) {
       const slugs = features.split(',');
       const occasionSlugs = new Set(occasions.map(o => o.value));
       const atmosphereSlugs = new Set(atmospheres.map(a => a.value));
+      const entertainmentSlugs = new Set(entertainments.map(e => e.value));
       setSelectedOccasion(slugs.find(s => occasionSlugs.has(s)));
       setSelectedAtmosphere(slugs.find(s => atmosphereSlugs.has(s)));
+      setSelectedEntertainment(slugs.find(s => entertainmentSlugs.has(s)));
     }
-  }, [occasions, atmospheres, searchParams]);
+  }, [occasions, atmospheres, entertainments, searchParams]);
 
-  const buildFeaturesParam = useCallback((overrideOccasion?: string | null, overrideAtmo?: string | null) => {
+  const buildFeaturesParam = useCallback((overrideOccasion?: string | null, overrideAtmo?: string | null, overrideEnt?: string | null) => {
     const occ = overrideOccasion === null ? undefined : (overrideOccasion ?? selectedOccasion);
     const atm = overrideAtmo === null ? undefined : (overrideAtmo ?? selectedAtmosphere);
-    const parts = [occ, atm].filter(Boolean) as string[];
+    const ent = overrideEnt === null ? undefined : (overrideEnt ?? selectedEntertainment);
+    const parts = [occ, atm, ent].filter(Boolean) as string[];
     return parts.length ? parts.join(',') : undefined;
-  }, [selectedOccasion, selectedAtmosphere]);
+  }, [selectedOccasion, selectedAtmosphere, selectedEntertainment]);
 
   const pushFilters = useCallback((overrides: Record<string, unknown> = {}, featuresOverride?: string | undefined) => {
     const current = useSearchStore.getState().filters;
@@ -523,13 +520,19 @@ function FiltersBarInner() {
 
   const handleOccasionChange = (v: string | undefined) => {
     setSelectedOccasion(v);
-    const feat = buildFeaturesParam(v === undefined ? null : v, undefined);
+    const feat = buildFeaturesParam(v === undefined ? null : v, undefined, undefined);
     pushFilters({}, feat);
   };
 
   const handleAtmosphereChange = (v: string | undefined) => {
     setSelectedAtmosphere(v);
-    const feat = buildFeaturesParam(undefined, v === undefined ? null : v);
+    const feat = buildFeaturesParam(undefined, v === undefined ? null : v, undefined);
+    pushFilters({}, feat);
+  };
+
+  const handleEntertainmentChange = (v: string | undefined) => {
+    setSelectedEntertainment(v);
+    const feat = buildFeaturesParam(undefined, undefined, v === undefined ? null : v);
     pushFilters({}, feat);
   };
 
@@ -592,6 +595,10 @@ function FiltersBarInner() {
     const a = atmospheres.find(a => a.value === selectedAtmosphere);
     if (a) activeTags.push({ key: `atmosphere:${a.value}`, label: `${a.icon || ''} ${a.label}`.trim() });
   }
+  if (selectedEntertainment) {
+    const e = entertainments.find(e => e.value === selectedEntertainment);
+    if (e) activeTags.push({ key: `entertainment:${e.value}`, label: `${e.icon || ''} ${e.label}`.trim() });
+  }
   if (selectedMetro) {
     activeTags.push({ key: `metro:${selectedMetro}`, label: `🚇 ${selectedMetro}` });
   }
@@ -613,6 +620,7 @@ function FiltersBarInner() {
     if (key.startsWith('cuisine:')) return handleCuisineToggle(key.split(':')[1]);
     if (key.startsWith('occasion:')) return handleOccasionChange(undefined);
     if (key.startsWith('atmosphere:')) return handleAtmosphereChange(undefined);
+    if (key.startsWith('entertainment:')) return handleEntertainmentChange(undefined);
     if (key.startsWith('metro:')) return handleMetroChange(undefined);
     if (key.startsWith('district:')) return handleDistrictChange(undefined);
     if (key.startsWith('venue:')) return handleVenueChange(undefined);
@@ -626,6 +634,7 @@ function FiltersBarInner() {
     setPriceMax(undefined);
     setSelectedOccasion(undefined);
     setSelectedAtmosphere(undefined);
+    setSelectedEntertainment(undefined);
     setSelectedMetro(undefined);
     setSelectedDistrict(undefined);
     setSelectedVenue(undefined);
@@ -651,6 +660,7 @@ function FiltersBarInner() {
         <MiniDropdown icon="🏠" label="Тип заведения" options={venueTypes} value={selectedVenue} onChange={handleVenueChange} searchable />
         <MiniDropdown icon="🎉" label="Повод" options={occasions} value={selectedOccasion} onChange={handleOccasionChange} />
         <MiniDropdown icon="✨" label="Атмосфера" options={atmospheres} value={selectedAtmosphere} onChange={handleAtmosphereChange} />
+        <MiniDropdown icon="🎭" label="Развлечения" options={entertainments} value={selectedEntertainment} onChange={handleEntertainmentChange} />
         <PriceRangeSelector minVal={priceMin} maxVal={priceMax} onChange={handlePriceRangeChange} />
         <NearbyButton active={nearbyActive} onToggle={handleNearbyToggle} />
         {activeTags.length > 0 && (

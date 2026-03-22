@@ -12,6 +12,20 @@ export class CreateRestaurantDishDto {
   sortOrder?: number;
 }
 
+export class CreateDishFullDto {
+  name: string;
+  description?: string;
+  composition?: string;
+  categoryName?: string;
+  price: number;
+  weightGrams?: number;
+  volumeMl?: number;
+  calories?: number;
+  protein?: number;
+  fat?: number;
+  carbs?: number;
+}
+
 export class UpdateRestaurantDishDto {
   categoryName?: string;
   price?: number;
@@ -44,6 +58,32 @@ export class MenuService {
     }
 
     return Object.entries(grouped).map(([category, dishes]) => ({ category, dishes }));
+  }
+
+  async createDishFull(restaurantId: number, dto: CreateDishFullDto): Promise<RestaurantDish> {
+    const dish = this.dishRepo.create({
+      name: dto.name,
+      description: dto.description || null,
+      composition: dto.composition || null,
+      weightGrams: dto.weightGrams || null,
+      volumeMl: dto.volumeMl || null,
+      calories: dto.calories || null,
+      protein: dto.protein || null,
+      fat: dto.fat || null,
+      carbs: dto.carbs || null,
+    });
+    const savedDish = await this.dishRepo.save(dish);
+
+    const entry = this.restaurantDishRepo.create({
+      restaurantId,
+      dishId: savedDish.id,
+      categoryName: dto.categoryName || 'Основное меню',
+      price: dto.price,
+      isAvailable: true,
+    });
+    const savedEntry = await this.restaurantDishRepo.save(entry);
+    savedEntry.dish = savedDish;
+    return savedEntry;
   }
 
   async addDishToRestaurant(restaurantId: number, dto: CreateRestaurantDishDto): Promise<RestaurantDish> {

@@ -1,41 +1,38 @@
 export const featuresSeed = [
-  // Атмосфера
-  { name: 'Уютный интерьер',   slug: 'cozy',          category: 'atmosphere', icon: '🕯️' },
-  { name: 'С видом',           slug: 'with-view',     category: 'atmosphere', icon: '🌆' },
-  { name: 'Живая музыка',      slug: 'live-music',    category: 'atmosphere', icon: '🎸' },
-  { name: 'Терраса',           slug: 'terrace',       category: 'atmosphere', icon: '🌿' },
-  { name: 'Тихое место',       slug: 'quiet',         category: 'atmosphere', icon: '🔇' },
-  { name: 'Крышная терраса',   slug: 'rooftop',       category: 'atmosphere', icon: '🏙️' },
-  { name: 'Панорамные окна',   slug: 'panoramic',     category: 'atmosphere', icon: '🪟' },
+  // ─── Повод (occasion) — 11 шт ───
+  { name: 'Романтический ужин',     slug: 'romantic-dinner',   category: 'occasion', icon: '💕' },
+  { name: 'С друзьями',             slug: 'with-friends',      category: 'occasion', icon: '🍻' },
+  { name: 'С семьёй',              slug: 'family',            category: 'occasion', icon: '👨‍👩‍👧' },
+  { name: 'Деловая встреча',        slug: 'business-meeting',  category: 'occasion', icon: '💼' },
+  { name: 'Бизнес-ланч',            slug: 'business-lunch',    category: 'occasion', icon: '🍱' },
+  { name: 'Большая компания',       slug: 'large-group',       category: 'occasion', icon: '🎉' },
+  { name: 'Завтрак / бранч',        slug: 'breakfast-brunch',  category: 'occasion', icon: '🥐' },
+  { name: 'Поздний ужин',           slug: 'late-dinner',       category: 'occasion', icon: '🌙' },
+  { name: 'Банкет / Мероприятие',    slug: 'banquet',           category: 'occasion', icon: '🎊' },
+  { name: 'Быстро перекусить',      slug: 'quick-bite',        category: 'occasion', icon: '⚡' },
+  { name: 'Поработать с ноутбуком',  slug: 'laptop-work',       category: 'occasion', icon: '💻' },
 
-  // Сервис
-  { name: 'Детское меню',      slug: 'kids-menu',     category: 'service', icon: '🧒' },
-  { name: 'Детская комната',   slug: 'kids-room',     category: 'service', icon: '🎪' },
-  { name: 'Кальян',            slug: 'hookah',        category: 'service', icon: '💨' },
-  { name: 'Парковка',          slug: 'parking',       category: 'service', icon: '🅿️' },
-  { name: 'Доставка',          slug: 'delivery',      category: 'service', icon: '🛵' },
-  { name: 'Бизнес-ланч',       slug: 'business-lunch',category: 'service', icon: '🕐' },
+  // ─── Удобства и атмосфера (atmosphere) — 13 шт ───
+  { name: 'Спокойная атмосфера',           slug: 'quiet',         category: 'atmosphere', icon: '🤫' },
+  { name: 'Веранда',                       slug: 'terrace',       category: 'atmosphere', icon: '🌿' },
+  { name: 'Живая музыка',                  slug: 'live-music',    category: 'atmosphere', icon: '🎵' },
+  { name: 'Можно с животными',             slug: 'pet-friendly',  category: 'atmosphere', icon: '🐾' },
+  { name: 'Детская комната',               slug: 'kids-room',     category: 'atmosphere', icon: '🧒' },
+  { name: 'Детские стульчики',             slug: 'kids-chairs',   category: 'atmosphere', icon: '🪑' },
+  { name: 'Парковка',                      slug: 'parking',       category: 'atmosphere', icon: '🅿️' },
+  { name: 'Wi-Fi / розетки',               slug: 'wifi',          category: 'atmosphere', icon: '📶' },
+  { name: 'Для детей',                     slug: 'kids-friendly', category: 'atmosphere', icon: '👶' },
+  { name: 'Доступно для колясок (МГН)',    slug: 'wheelchair',    category: 'atmosphere', icon: '♿' },
+  { name: 'Кондиционер',                   slug: 'ac',            category: 'atmosphere', icon: '❄️' },
+  { name: 'Панорамный вид',                slug: 'panorama',      category: 'atmosphere', icon: '🏙️' },
+  { name: 'Отдельный зал',                 slug: 'private-room',  category: 'atmosphere', icon: '🚪' },
 
-  // Повод
-  { name: 'Романтика',         slug: 'romantic',      category: 'occasion', icon: '❤️' },
-  { name: 'День рождения',     slug: 'birthday',      category: 'occasion', icon: '🎂' },
-  { name: 'Деловые встречи',   slug: 'business',      category: 'occasion', icon: '💼' },
-  { name: 'С компанией',       slug: 'group',         category: 'occasion', icon: '👥' },
-  { name: 'Банкет',            slug: 'banquet',       category: 'occasion', icon: '🥂' },
-
-  // Диетические
-  { name: 'Веганское меню',    slug: 'vegan',         category: 'dietary', icon: '🌱' },
-  { name: 'Безглютеновое',     slug: 'gluten-free',   category: 'dietary', icon: '🚫🌾' },
-  { name: 'Халяль',            slug: 'halal',         category: 'dietary', icon: '☪️' },
-  { name: 'Кошер',             slug: 'kosher',        category: 'dietary', icon: '✡️' },
-  { name: 'ЗОЖ / КБЖУ',       slug: 'healthy',       category: 'dietary', icon: '💪' },
-  { name: 'Маркировка аллергенов', slug: 'allergen-info', category: 'dietary', icon: '🛡️' },
-
-  // Удобства
-  { name: 'Wi-Fi',             slug: 'wifi',          category: 'amenity', icon: '📶' },
-  { name: 'Кондиционер',       slug: 'ac',            category: 'amenity', icon: '❄️' },
-  { name: 'Pet-friendly',      slug: 'pet-friendly',  category: 'amenity', icon: '🐕' },
-  { name: 'Для курящих',       slug: 'smoking',       category: 'amenity', icon: '🚬' },
-  { name: 'Танцпол',           slug: 'dancefloor',    category: 'amenity', icon: '💃' },
-  { name: 'Проектор/экран',    slug: 'projector',     category: 'amenity', icon: '📽️' },
+  // ─── Развлечения (entertainment) — 7 шт ───
+  { name: 'Караоке',              slug: 'karaoke',      category: 'entertainment', icon: '🎤' },
+  { name: 'DJ',                   slug: 'dj',           category: 'entertainment', icon: '🎧' },
+  { name: 'Танцпол',              slug: 'dance-floor',  category: 'entertainment', icon: '💃' },
+  { name: 'Настольные игры',      slug: 'board-games',  category: 'entertainment', icon: '🎲' },
+  { name: 'Есть кальян',          slug: 'hookah',       category: 'entertainment', icon: '💨' },
+  { name: 'Спорт-трансляции',     slug: 'sports-tv',    category: 'entertainment', icon: '📺' },
+  { name: 'Шоу-программы',        slug: 'show',         category: 'entertainment', icon: '🎭' },
 ];

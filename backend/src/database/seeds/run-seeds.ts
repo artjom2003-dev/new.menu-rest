@@ -54,15 +54,25 @@ async function runSeeds() {
     }
   }
 
-  // Features
+  // Features (upsert — update name/category/icon if slug exists)
   const featureRepo = dataSource.getRepository('features');
   for (const feature of featuresSeed) {
-    const exists = await featureRepo.findOneBy({ slug: feature.slug });
-    if (!exists) {
-      await featureRepo.save(feature);
-      console.log(`  ✅ Фича: ${feature.name}`);
-    }
+    await featureRepo
+      .createQueryBuilder()
+      .insert()
+      .values(feature)
+      .orUpdate(['name', 'category', 'icon'], ['slug'])
+      .execute();
+    console.log(`  ✅ Фича: ${feature.name}`);
   }
+  // Remove features with old categories not in the new seed
+  const validSlugs = featuresSeed.map(f => f.slug);
+  await dataSource.query(
+    `DELETE FROM features WHERE slug != ALL($1)`,
+    [validSlugs],
+  );
+  console.log(`  🧹 Удалены устаревшие фичи (оставлено ${validSlugs.length})`);
+
 
   console.log('🎉 Seeds завершены!');
   await dataSource.destroy();

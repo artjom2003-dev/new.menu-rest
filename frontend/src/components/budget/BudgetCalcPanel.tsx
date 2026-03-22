@@ -1,8 +1,10 @@
 'use client';
 
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useBudgetStore, BudgetItem, MenuCategory } from '@/stores/budget.store';
+import { ReferralModal } from '@/components/ui/ReferralModal';
+import { useAuthStore } from '@/stores/auth.store';
 
 /* ── Emoji helper (same as DishCard) ── */
 const DISH_EMOJIS: Record<string, string> = {
@@ -204,13 +206,21 @@ export function BudgetCalcPanel() {
     for (const item of picked) addItem(item);
   }, [menuCategories, budget, guests, clear, addItem]);
 
-  const handleShare = () => {
+  const [showShareModal, setShowShareModal] = useState(false);
+  const { user } = useAuthStore();
+
+  const shareDinnerText = (() => {
     const header = restaurantName ? `🍽️ План ужина — ${restaurantName}` : '🍽️ План ужина';
-    const text = `${header} (${guests} чел.)\n\n${items.map((i) => `${i.icon} ${i.name} — ${Math.round(i.price / 100).toLocaleString()} ₽`).join('\n')}\n\n💰 Итого с чаевыми: ${withTips.toLocaleString()} ₽`;
-    if (navigator.share) {
-      navigator.share({ title: 'План ужина', text });
+    return `${header} (${guests} чел.)\n\n${items.map((i) => `${i.icon} ${i.name} — ${Math.round(i.price / 100).toLocaleString()} ₽`).join('\n')}\n\n💰 Итого с чаевыми: ${withTips.toLocaleString()} ₽`;
+  })();
+
+  const handleShare = () => {
+    if (user?.referralCode) {
+      setShowShareModal(true);
+    } else if (navigator.share) {
+      navigator.share({ title: 'План ужина', text: shareDinnerText });
     } else {
-      navigator.clipboard.writeText(text);
+      navigator.clipboard.writeText(shareDinnerText);
     }
   };
 
@@ -435,6 +445,13 @@ export function BudgetCalcPanel() {
           </button>
         </div>
       </div>
+
+      <ReferralModal
+        open={showShareModal}
+        onClose={() => setShowShareModal(false)}
+        variant="dinner"
+        dinnerText={shareDinnerText}
+      />
     </div>
   );
 }

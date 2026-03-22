@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { useAuthStore } from '@/stores/auth.store';
 import { useFavoritesStore } from '@/stores/favorites.store';
+import { useWishlistStore } from '@/stores/wishlist.store';
 
 interface Restaurant {
   id?: number;
@@ -19,7 +20,7 @@ interface Restaurant {
   priceLevel?: number;
   averageBill?: number;
   photos?: Array<{ url: string; isCover: boolean }>;
-  features?: Array<{ slug: string; name: string }>;
+  features?: Array<{ slug: string; name: string; category?: string; icon?: string }>;
   distanceKm?: number;
 }
 
@@ -116,6 +117,41 @@ function FavoriteButton({ restaurantId }: { restaurantId?: number }) {
   );
 }
 
+function WishlistButton({ restaurantId }: { restaurantId?: number }) {
+  const isLoggedIn = useAuthStore(s => s.isLoggedIn);
+  const isInWishlist = useWishlistStore(s => restaurantId ? s.ids.has(restaurantId) : false);
+  const toggle = useWishlistStore(s => s.toggle);
+  const [animating, setAnimating] = useState(false);
+  const [hovered, setHovered] = useState(false);
+
+  const handleClick = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!restaurantId || !isLoggedIn) return;
+    setAnimating(true);
+    await toggle(restaurantId);
+    setTimeout(() => setAnimating(false), 300);
+  };
+
+  return (
+    <button
+      onClick={handleClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      className="absolute top-3.5 right-14 z-10 w-9 h-9 rounded-full flex items-center justify-center text-[15px] transition-all duration-300"
+      title="Хочу сходить"
+      style={{
+        background: isInWishlist ? 'rgba(20,184,166,0.7)' : hovered ? 'rgba(20,184,166,0.45)' : 'rgba(0,0,0,0.4)',
+        backdropFilter: 'blur(8px)',
+        border: '1px solid rgba(255,255,255,0.08)',
+        color: isInWishlist ? '#fff' : hovered ? '#99f6e4' : 'var(--text2)',
+        transform: animating ? 'scale(1.3)' : hovered ? 'scale(1.1)' : 'scale(1)',
+      }}>
+      {isInWishlist ? '\u{1F4CC}' : '\u{1F3AF}'}
+    </button>
+  );
+}
+
 export function RestaurantCard({ restaurant }: { restaurant: Restaurant }) {
   const t = useTranslations('card');
   const cover = (restaurant.photos?.find((p) => p.isCover) || restaurant.photos?.[0])?.url;
@@ -178,7 +214,8 @@ export function RestaurantCard({ restaurant }: { restaurant: Restaurant }) {
             )}
           </div>
 
-          {/* Favorite button */}
+          {/* Wishlist & Favorite buttons */}
+          <WishlistButton restaurantId={restaurant.id} />
           <FavoriteButton restaurantId={restaurant.id} />
 
           {/* Rating badge on image */}
@@ -213,6 +250,21 @@ export function RestaurantCard({ restaurant }: { restaurant: Restaurant }) {
             <p className="text-[11px] text-[var(--text3)] mt-1.5 leading-[1.5] line-clamp-2 opacity-70">
               {restaurant.description}
             </p>
+          )}
+          {/* Feature tags — minimal icons */}
+          {restaurant.features && restaurant.features.length > 0 && (
+            <div className="flex items-center gap-1 mt-1.5 overflow-hidden">
+              {restaurant.features.slice(0, 4).map(f => (
+                <span key={f.slug} className="text-[12px] leading-none flex-shrink-0" title={f.name}>
+                  {f.icon || ''}
+                </span>
+              ))}
+              {restaurant.features.length > 4 && (
+                <span className="text-[10px] text-[var(--text3)] flex-shrink-0">
+                  +{restaurant.features.length - 4}
+                </span>
+              )}
+            </div>
           )}
           <div className="flex items-center justify-between mt-2">
             <span className="text-[12px] text-[var(--text3)] truncate">{cuisineLabel}</span>

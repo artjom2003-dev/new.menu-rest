@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/commo
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Booking, BookingStatus } from '@database/entities/booking.entity';
+import { LoyaltyService } from '@modules/loyalty/loyalty.service';
 import { CreateBookingDto } from './dto/create-booking.dto';
 
 @Injectable()
@@ -9,6 +10,7 @@ export class BookingService {
   constructor(
     @InjectRepository(Booking)
     private readonly bookingRepo: Repository<Booking>,
+    private readonly loyaltyService: LoyaltyService,
   ) {}
 
   async create(userId: number, dto: CreateBookingDto): Promise<Booking> {
@@ -59,7 +61,14 @@ export class BookingService {
   async updateStatus(id: number, status: BookingStatus): Promise<Booking> {
     const booking = await this.findById(id);
     booking.status = status;
-    return this.bookingRepo.save(booking);
+    const saved = await this.bookingRepo.save(booking);
+
+    // Auto-award loyalty points when booking is completed
+    if (status === 'completed') {
+      await this.loyaltyService.addPoints(booking.userId, 'booking');
+    }
+
+    return saved;
   }
 
   async findByRestaurant(restaurantId: number, date?: string, page = 1, limit = 20) {

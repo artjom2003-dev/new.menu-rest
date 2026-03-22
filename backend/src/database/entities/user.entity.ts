@@ -49,6 +49,42 @@ export class User {
   @Column({ name: 'auth_provider_id', type: 'varchar', length: 200, nullable: true })
   authProviderId: string | null;
 
+  @Column({ name: 'referral_code', type: 'varchar', length: 12, nullable: true, unique: true })
+  referralCode: string | null;
+
+  @Column({ name: 'referred_by', type: 'int', nullable: true })
+  referredBy: number | null;
+
+  @Column({ name: 'nutrition_goal', type: 'varchar', length: 30, nullable: true })
+  nutritionGoal: string | null;
+
+  @Column({ name: 'hide_from_wishlists', type: 'boolean', default: false })
+  hideFromWishlists: boolean;
+
+  @Column({ name: 'block_messages', type: 'boolean', default: false })
+  blockMessages: boolean;
+
+  @Column({ type: 'varchar', length: 500, nullable: true })
+  bio: string | null;
+
+  @Column({ type: 'int', nullable: true })
+  age: number | null;
+
+  @Column({ name: 'city_name', type: 'varchar', length: 100, nullable: true })
+  cityName: string | null;
+
+  @Column({ name: 'favorite_cuisines', type: 'varchar', length: 300, nullable: true })
+  favoriteCuisines: string | null;
+
+  @Column({ name: 'favorite_dishes', type: 'varchar', length: 300, nullable: true })
+  favoriteDishes: string | null;
+
+  @Column({ name: 'reset_code', type: 'varchar', length: 6, nullable: true, select: false })
+  resetCode: string | null;
+
+  @Column({ name: 'reset_code_expires_at', type: 'timestamptz', nullable: true, select: false })
+  resetCodeExpiresAt: Date | null;
+
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;
 
@@ -59,4 +95,12 @@ export class User {
     inverseJoinColumn: { name: 'restaurant_id' },
   })
   favoriteRestaurants: Restaurant[];
+
+  @ManyToMany(() => Restaurant)
+  @JoinTable({
+    name: 'user_wishlists',
+    joinColumn: { name: 'user_id' },
+    inverseJoinColumn: { name: 'restaurant_id' },
+  })
+  wishlistRestaurants: Restaurant[];
 }

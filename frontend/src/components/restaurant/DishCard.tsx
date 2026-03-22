@@ -74,9 +74,9 @@ export function DishCard({ dish }: { dish: Dish }) {
         e.currentTarget.style.boxShadow = '0 16px 48px rgba(0,0,0,0.3)';
       }}
       onMouseLeave={(e) => {
-        e.currentTarget.style.borderColor = '';
-        e.currentTarget.style.transform = '';
-        e.currentTarget.style.boxShadow = '';
+        e.currentTarget.style.borderColor = 'var(--card-border)';
+        e.currentTarget.style.transform = 'none';
+        e.currentTarget.style.boxShadow = 'none';
       }}>
 
       {/* Hover gradient */}

@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Review, ReviewStatus } from '@database/entities/review.entity';
 import { RestaurantService } from '@modules/restaurant/restaurant.service';
+import { LoyaltyService } from '@modules/loyalty/loyalty.service';
 import { CreateReviewDto } from './dto/create-review.dto';
 
 @Injectable()
@@ -11,6 +12,7 @@ export class ReviewService {
     @InjectRepository(Review)
     private readonly reviewRepo: Repository<Review>,
     private readonly restaurantService: RestaurantService,
+    private readonly loyaltyService: LoyaltyService,
   ) {}
 
   async findByRestaurant(restaurantId: number, page = 1, limit = 20) {
@@ -44,6 +46,15 @@ export class ReviewService {
     });
 
     const saved = await this.reviewRepo.save(review);
+
+    // Auto-award loyalty points for review
+    const existingCount = await this.reviewRepo.count({
+      where: { userId, restaurantId: dto.restaurantId },
+    });
+    // existingCount includes the just-saved review, so 1 means it's the first
+    const action = existingCount === 1 ? 'first_review' : 'review';
+    await this.loyaltyService.addPoints(userId, action);
+
     return saved;
   }
 

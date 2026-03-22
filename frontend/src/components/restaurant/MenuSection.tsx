@@ -22,7 +22,7 @@ interface Category {
   dishes: Dish[];
 }
 
-export function MenuSection({ categories }: { categories: Category[] }) {
+export function MenuSection({ categories, isVerified, phone }: { categories: Category[]; isVerified?: boolean; phone?: string }) {
   const [activeTab, setActiveTab] = useState(0);
 
   if (!categories.length) {
@@ -38,7 +38,12 @@ export function MenuSection({ categories }: { categories: Category[] }) {
 
   return (
     <div>
-      <h2 className="font-serif text-[26px] font-bold text-[var(--text)] mb-4">Меню</h2>
+      <h2 className="font-serif text-[26px] font-bold text-[var(--text)] mb-2">Меню</h2>
+
+      <div className="mb-4 text-[12px] text-[var(--text3)] leading-relaxed">
+        <span style={{ color: 'var(--teal)' }}>🛡️</span>{' '}Учитываем аллергены и питание из вашего профиля — опасные блюда отмечены.
+        {!isVerified && <>{' '}Меню может незначительно отличаться — уточняйте{phone ? <>{' '}по тел.{' '}<a href={`tel:${phone}`} style={{ color: 'var(--teal)', textDecoration: 'none' }}>{phone}</a></> : ''} или на сайте ресторана.</>}
+      </div>
 
       {/* Tabs */}
       <div className="flex gap-1 mb-6 flex-wrap">

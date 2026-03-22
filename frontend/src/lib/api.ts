@@ -72,8 +72,12 @@ export const searchApi = {
 export const authApi = {
   login: (email: string, password: string) =>
     api.post('/auth/login', { email, password }),
-  register: (data: { name: string; email: string; password: string; city?: string }) =>
+  register: (data: { name: string; email: string; password: string; city?: string; referralCode?: string }) =>
     api.post('/auth/register', data),
+  forgotPassword: (email: string) =>
+    api.post('/auth/forgot-password', { email }),
+  resetPassword: (data: { email: string; code: string; newPassword: string }) =>
+    api.post('/auth/reset-password', data),
   logout: () => api.post('/auth/logout'),
   me: () => api.get('/users/me'),
 };
@@ -87,6 +91,19 @@ export const userApi = {
     api.post('/users/me/favorites', { restaurantId }),
   updateAllergens: (allergenIds: number[]) =>
     api.put('/users/me/allergens', { allergenIds }),
+  uploadAvatar: (file: File) => {
+    const fd = new FormData();
+    fd.append('file', file);
+    return api.post('/users/me/avatar', fd, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+  getPublicProfile: (id: number) => api.get(`/users/${id}/profile`),
+  getWishlist: () => api.get('/users/me/wishlist'),
+  toggleWishlist: (restaurantId: number) =>
+    api.post('/users/me/wishlist', { restaurantId }),
+  getWishlistUsers: (restaurantId: number) =>
+    api.get(`/restaurants/${restaurantId}/wishlist-users`),
 };
 
 // ─── Owner: My Restaurant ────────────────────────────────
@@ -96,6 +113,36 @@ export const ownerApi = {
   getPosts: () => api.get('/users/me/restaurant/posts'),
   createPost: (data: { title: string; body: string; category: string }) =>
     api.post('/users/me/restaurant/posts', data),
+  getListings: () => api.get('/users/me/restaurant/listings'),
+  createListing: (data: { type: string; title: string; description?: string; category?: string; salary?: string; contactInfo?: string }) =>
+    api.post('/users/me/restaurant/listings', data),
+  deleteListing: (id: number) => api.delete(`/users/me/restaurant/listings/${id}`),
+  // Working hours
+  updateWorkingHours: (hours: Array<{ dayOfWeek: number; openTime: string | null; closeTime: string | null; isClosed: boolean }>) =>
+    api.put('/users/me/restaurant/working-hours', { hours }),
+  // Features
+  updateFeatures: (featureIds: number[]) =>
+    api.put('/users/me/restaurant/features', { featureIds }),
+  // Menu
+  getMenu: () => api.get('/users/me/restaurant/menu'),
+  createDish: (data: { name: string; description?: string; composition?: string; categoryName?: string; price?: number; weightGrams?: number; volumeMl?: number; calories?: number; protein?: number; fat?: number; carbs?: number }) =>
+    api.post('/users/me/restaurant/menu/dishes', data),
+  updateDish: (id: number, data: Record<string, unknown>) =>
+    api.patch(`/users/me/restaurant/menu/dishes/${id}`, data),
+  deleteDish: (id: number) =>
+    api.delete(`/users/me/restaurant/menu/dishes/${id}`),
+  uploadMenuPdf: (file: File) => {
+    const form = new FormData();
+    form.append('file', file);
+    return api.post('/users/me/restaurant/menu/upload-pdf', form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+};
+
+// ─── Listings (public) ──────────────────────────────────
+export const listingApi = {
+  getPublic: (type?: string) => api.get('/listings', { params: type ? { type } : {} }),
 };
 
 // ─── Menu ─────────────────────────────────────────────────
@@ -108,6 +155,8 @@ export const menuApi = {
 export const bookingApi = {
   create: (data: unknown) => api.post('/bookings', data),
   getMyBookings: () => api.get('/bookings/my'),
+  getRestaurantBookings: (restaurantId: number) =>
+    api.get(`/bookings/restaurant/${restaurantId}`),
 };
 
 // ─── Reviews ──────────────────────────────────────────────
@@ -122,6 +171,22 @@ export const reviewApi = {
 export const loyaltyApi = {
   getStatus: () => api.get('/loyalty/status'),
   getLeaderboard: (limit = 10) => api.get('/loyalty/leaderboard', { params: { limit } }),
+  getWeeklyLeaderboard: (limit = 10) => api.get('/loyalty/leaderboard/weekly', { params: { limit } }),
+  getCommunityStats: () => api.get('/loyalty/stats'),
+  redeemPoints: (data: { points: number; restaurantId: number; orderTotal: number }) =>
+    api.post('/loyalty/redeem', data),
+};
+
+// ─── Chat ────────────────────────────────────────────────
+export const chatApi = {
+  getConversations: () => api.get('/chat/conversations'),
+  createConversation: (userId: number) => api.post('/chat/conversations', { userId }),
+  getMessages: (convId: number, page?: number) =>
+    api.get(`/chat/conversations/${convId}/messages`, { params: { page } }),
+  sendMessage: (convId: number, text: string) =>
+    api.post(`/chat/conversations/${convId}/messages`, { text }),
+  markRead: (convId: number) => api.patch(`/chat/conversations/${convId}/read`),
+  getUnreadCount: () => api.get('/chat/unread-count'),
 };
 
 // ─── Budget Calculator ───────────────────────────────────

@@ -15,6 +15,9 @@ export class Cuisine {
   @Column({ type: 'varchar', length: 10, nullable: true })
   icon: string | null;
 
+  @Column({ type: 'varchar', length: 20, default: 'cuisine' })
+  type: string; // 'cuisine' = национальная кухня, 'specialty' = блюда/специализация
+
   @Column({ name: 'legacy_id', type: 'int', nullable: true, unique: true })
   legacyId: number | null;
 }

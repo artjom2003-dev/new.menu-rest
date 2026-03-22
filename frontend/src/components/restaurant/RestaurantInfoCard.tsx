@@ -155,77 +155,88 @@ function getTodayHours(workingHours?: Restaurant['workingHours'], closedLabel?: 
   return `${wh.openTime?.slice(0, 5)} – ${wh.closeTime?.slice(0, 5)}`;
 }
 
-/* ─── Feature chips by category ─── */
+/* ─── Feature chips — compact inline ─── */
+const CAT_COLORS: Record<string, { color: string; bg: string }> = {
+  occasion:      { color: 'rgba(255,120,60,0.9)', bg: 'rgba(255,92,40,0.1)' },
+  atmosphere:    { color: 'rgba(99,179,237,0.9)', bg: 'rgba(99,179,237,0.1)' },
+  entertainment: { color: 'rgba(183,121,255,0.9)', bg: 'rgba(183,121,255,0.1)' },
+};
+
 function FeatureChips({ features }: { features: Restaurant['features'] }) {
   if (!features?.length) return null;
 
-  const CATEGORY_LABELS: Record<string, string> = {
-    specialization: 'Специализация',
-    amenity: 'Удобства',
-    atmosphere: 'Атмосфера',
-    dietary: 'Диета',
-    occasion: 'Повод',
-    service: 'Сервис',
-  };
-
-  const grouped: Record<string, typeof features> = {};
-  for (const f of features) {
-    const cat = f.category || 'other';
-    if (!grouped[cat]) grouped[cat] = [];
-    grouped[cat].push(f);
-  }
+  const order = ['occasion', 'atmosphere', 'entertainment'];
+  const sorted = [...features].sort((a, b) => order.indexOf(a.category) - order.indexOf(b.category));
 
   return (
-    <div className="mt-4 space-y-2">
-      {Object.entries(grouped).map(([cat, items]) => (
-        <div key={cat} className="flex items-center gap-2 flex-wrap">
-          <span className="text-[10px] uppercase tracking-[0.08em] text-[var(--text3)] w-[70px] flex-shrink-0">
-            {CATEGORY_LABELS[cat] || cat}
+    <div className="flex flex-wrap gap-1.5 mt-3">
+      {sorted.map(f => {
+        const c = CAT_COLORS[f.category] || CAT_COLORS.atmosphere;
+        return (
+          <span key={f.slug}
+            className="inline-flex items-center gap-1 px-2 py-[3px] rounded-full text-[11px] font-medium"
+            style={{ background: c.bg, color: c.color }}>
+            {f.icon && <span className="text-[11px] leading-none">{f.icon}</span>}
+            {f.name}
           </span>
-          {items.map(f => (
-            <span key={f.slug}
-              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium border"
-              style={{ background: 'var(--bg3)', borderColor: 'var(--card-border)', color: 'var(--text2)' }}>
-              {f.icon && <span className="text-[12px]">{f.icon}</span>}
-              {f.name}
-            </span>
-          ))}
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
 
-/* ─── Social links ─── */
-function SocialLinks({ restaurant }: { restaurant: Restaurant }) {
-  const links: Array<{ icon: string; label: string; url: string }> = [];
+/* ─── Contacts & Social links — inline with meta grid ─── */
+function ContactItems({ restaurant }: { restaurant: Restaurant }) {
+  const items: Array<{ icon: string; label: string; value: string; url: string }> = [];
 
-  if (restaurant.phone) links.push({ icon: '📞', label: restaurant.phone, url: `tel:${restaurant.phone}` });
-  if (restaurant.email) links.push({ icon: '✉️', label: restaurant.email, url: `mailto:${restaurant.email}` });
+  if (restaurant.phone) items.push({ icon: '📞', label: 'Телефон', value: restaurant.phone, url: `tel:${restaurant.phone}` });
   if (restaurant.website) {
     const display = restaurant.website.replace(/^https?:\/\//, '').replace(/\/$/, '');
-    links.push({ icon: '🌐', label: display, url: restaurant.website.startsWith('http') ? restaurant.website : `https://${restaurant.website}` });
+    items.push({ icon: '🌐', label: 'Сайт', value: display, url: restaurant.website.startsWith('http') ? restaurant.website : `https://${restaurant.website}` });
   }
-  if (restaurant.instagram) links.push({ icon: '📸', label: 'Instagram', url: restaurant.instagram.startsWith('http') ? restaurant.instagram : `https://instagram.com/${restaurant.instagram}` });
-  if (restaurant.vk) links.push({ icon: '💬', label: 'VK', url: restaurant.vk.startsWith('http') ? restaurant.vk : `https://vk.com/${restaurant.vk}` });
-  if (restaurant.facebook) links.push({ icon: '📘', label: 'Facebook', url: restaurant.facebook.startsWith('http') ? restaurant.facebook : `https://facebook.com/${restaurant.facebook}` });
-  if (restaurant.youtube) links.push({ icon: '▶️', label: 'YouTube', url: restaurant.youtube.startsWith('http') ? restaurant.youtube : `https://youtube.com/${restaurant.youtube}` });
+  if (restaurant.email) items.push({ icon: '✉️', label: 'E-mail', value: restaurant.email, url: `mailto:${restaurant.email}` });
 
-  if (links.length === 0) return null;
+  const socials: Array<{ icon: string; label: string; url: string }> = [];
+  if (restaurant.instagram) socials.push({ icon: '📸', label: 'Instagram', url: restaurant.instagram.startsWith('http') ? restaurant.instagram : `https://instagram.com/${restaurant.instagram}` });
+  if (restaurant.vk) socials.push({ icon: '💬', label: 'VK', url: restaurant.vk.startsWith('http') ? restaurant.vk : `https://vk.com/${restaurant.vk}` });
+  if (restaurant.facebook) socials.push({ icon: '📘', label: 'Facebook', url: restaurant.facebook.startsWith('http') ? restaurant.facebook : `https://facebook.com/${restaurant.facebook}` });
+  if (restaurant.youtube) socials.push({ icon: '▶️', label: 'YouTube', url: restaurant.youtube.startsWith('http') ? restaurant.youtube : `https://youtube.com/${restaurant.youtube}` });
+
+  if (!items.length && !socials.length) return null;
 
   return (
-    <div className="mt-4 flex flex-wrap gap-2">
-      {links.map((link) => (
-        <a key={link.label} href={link.url} target="_blank" rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-medium border no-underline transition-all"
-          style={{ background: 'var(--bg3)', borderColor: 'var(--card-border)', color: 'var(--text2)' }}
-          onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.color = 'var(--accent)'; }}
-          onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--card-border)'; e.currentTarget.style.color = 'var(--text2)'; }}>
-          <span className="text-[13px]">{link.icon}</span>
-          {link.label}
+    <>
+      {/* Contacts — same style as meta grid */}
+      {items.map((c) => (
+        <a key={c.label} href={c.url} target={c.url.startsWith('http') ? '_blank' : undefined} rel="noopener noreferrer"
+          className="flex items-center gap-2.5 p-2.5 rounded-[12px] border no-underline transition-colors"
+          style={{ background: 'var(--bg3)', borderColor: 'var(--card-border)' }}
+          onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--accent)'; }}
+          onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--card-border)'; }}>
+          <span className="text-[16px]">{c.icon}</span>
+          <div className="min-w-0">
+            <div className="text-[10px] uppercase tracking-[0.08em] text-[var(--text3)]">{c.label}</div>
+            <div className="text-[12px] font-semibold text-[var(--text)] truncate">{c.value}</div>
+          </div>
         </a>
       ))}
-    </div>
+      {/* Socials — compact row inside one grid cell */}
+      {socials.length > 0 && (
+        <div className="flex items-center gap-1.5 p-2.5 rounded-[12px] border"
+          style={{ background: 'var(--bg3)', borderColor: 'var(--card-border)' }}>
+          {socials.map((s) => (
+            <a key={s.label} href={s.url} target="_blank" rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-medium no-underline transition-colors"
+              style={{ color: 'var(--text2)' }}
+              onMouseEnter={e => { e.currentTarget.style.color = 'var(--accent)'; }}
+              onMouseLeave={e => { e.currentTarget.style.color = 'var(--text2)'; }}>
+              <span className="text-[13px]">{s.icon}</span>
+              {s.label}
+            </a>
+          ))}
+        </div>
+      )}
+    </>
   );
 }
 
@@ -255,14 +266,6 @@ export function RestaurantInfoCard({ restaurant }: { restaurant: Restaurant }) {
       value: restaurant.averageBill
         ? `~${restaurant.averageBill.toLocaleString('ru-RU')} ₽`
         : t('notSpecified'),
-    },
-    {
-      icon: '🎯', label: t('occasion'),
-      value: restaurant.features?.filter(f => f.category === 'occasion').map(f => `${f.icon || ''} ${f.name}`.trim()).join(', ') || undefined,
-    },
-    {
-      icon: '✨', label: t('atmosphere'),
-      value: restaurant.features?.filter(f => f.category === 'atmosphere').map(f => `${f.icon || ''} ${f.name}`.trim()).join(', ') || undefined,
     },
   ].filter((item) => item.value);
 
@@ -295,7 +298,7 @@ export function RestaurantInfoCard({ restaurant }: { restaurant: Restaurant }) {
             </p>
           )}
 
-          {/* Meta grid */}
+          {/* Meta grid + contacts — unified */}
           <div className="grid grid-cols-2 gap-2 max-sm:grid-cols-1">
             {metaItems.map((item) => (
               <div key={item.label}
@@ -308,13 +311,11 @@ export function RestaurantInfoCard({ restaurant }: { restaurant: Restaurant }) {
                 </div>
               </div>
             ))}
+            <ContactItems restaurant={restaurant} />
           </div>
 
-          {/* Features / tags */}
+          {/* Feature tags — inline */}
           <FeatureChips features={restaurant.features} />
-
-          {/* Social links, contacts */}
-          <SocialLinks restaurant={restaurant} />
         </div>
 
         {/* Actions — different for owner vs guest */}

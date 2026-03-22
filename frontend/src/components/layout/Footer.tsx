@@ -22,6 +22,7 @@ export function Footer() {
         { href: '/for-business', label: t('addRestaurant') },
         { href: '/for-business#pricing', label: t('pricing') },
         { href: '/for-business#analytics', label: t('analytics') },
+        { href: '/listings', label: 'Вакансии и поставщики' },
       ],
     },
     {

@@ -2,11 +2,11 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { RestaurantHero } from '@/components/restaurant/RestaurantHero';
 import { RestaurantInfoCard } from '@/components/restaurant/RestaurantInfoCard';
-import { AllergenBar } from '@/components/restaurant/AllergenBar';
 import { MenuSection } from '@/components/restaurant/MenuSection';
 import { ReviewSection } from '@/components/restaurant/ReviewSection';
 import { RestaurantActions } from '@/components/restaurant/RestaurantActions';
 import { BudgetRestaurantContext } from '@/components/budget/BudgetRestaurantContext';
+import { WishlistUsersSection } from '@/components/restaurant/WishlistUsersSection';
 
 const API_BASE = process.env.BACKEND_URL || 'http://localhost:3001';
 
@@ -94,8 +94,8 @@ export default async function RestaurantPage({ params }: { params: { slug: strin
       <RestaurantHero restaurant={restaurant} />
       <div className="max-w-[1400px] mx-auto px-10 pb-24">
         <RestaurantInfoCard restaurant={restaurant} />
-        <AllergenBar restaurant={restaurant} />
-        <MenuSection categories={menu} />
+        <WishlistUsersSection restaurantId={restaurant.id} />
+        <MenuSection categories={menu} isVerified={!!restaurant.isVerified} phone={restaurant.phone} />
         <ReviewSection restaurantId={restaurant.id} />
         <RestaurantActions restaurantId={restaurant.id} restaurantName={restaurant.name} />
       </div>

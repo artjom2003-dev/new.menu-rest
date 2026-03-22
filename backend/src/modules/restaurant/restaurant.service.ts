@@ -1,5 +1,5 @@
 import {
-  Injectable, NotFoundException, BadRequestException,
+  Injectable, NotFoundException, BadRequestException, OnModuleInit, Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
@@ -14,7 +14,11 @@ import { UpdateRestaurantDto } from './dto/update-restaurant.dto';
 import { QueryRestaurantDto } from './dto/query-restaurant.dto';
 
 @Injectable()
-export class RestaurantService {
+export class RestaurantService implements OnModuleInit {
+  private readonly logger = new Logger(RestaurantService.name);
+  private countCache = new Map<string, { total: number; expires: number }>();
+  private listCache = new Map<string, { data: unknown; expires: number }>();
+
   constructor(
     @InjectRepository(Restaurant)
     private readonly restaurantRepo: Repository<Restaurant>,
@@ -26,14 +30,25 @@ export class RestaurantService {
     private readonly searchService: SearchService,
   ) {}
 
+  onModuleInit() {
+    this.logger.log('RestaurantService ready (cache warms on first request)');
+  }
+
   async findAll(query: QueryRestaurantDto) {
     const { page = 1, limit = 20, city, cuisine, priceLevel, priceLevelMin, priceLevelMax, sortBy = 'rating', status = 'published', search, features, hasMenu, metro, district, venueType, lat, lng, radius = 10 } = query;
+
+    // Response cache (30s) — huge perf win on 144K rows
+    const listCacheKey = JSON.stringify(query);
+    const cachedList = this.listCache.get(listCacheKey);
+    if (cachedList && cachedList.expires > Date.now()) {
+      return cachedList.data;
+    }
 
     const qb = this.restaurantRepo
       .createQueryBuilder('r')
       .leftJoinAndSelect('r.cuisines', 'c')
       .leftJoinAndSelect('r.city', 'city')
-      .leftJoinAndSelect('r.photos', 'photo', 'photo.is_cover = true')
+      .leftJoinAndSelect('r.features', 'features')
       .where('r.status = :status', { status });
 
     // Photos filter removed — show all published restaurants including those without photos
@@ -81,8 +96,7 @@ export class RestaurantService {
     if (features) {
       const featureSlugs = features.split(',').map(s => s.trim()).filter(Boolean);
       if (featureSlugs.length) {
-        qb.leftJoin('r.features', 'feat')
-          .andWhere('feat.slug IN (:...featureSlugs)', { featureSlugs });
+        qb.andWhere('features.slug IN (:...featureSlugs)', { featureSlugs });
       }
     }
 
@@ -131,15 +145,58 @@ export class RestaurantService {
       qb.orderBy('r.name', 'ASC');
     }
 
-    const [items, total] = await qb
-      .skip((page - 1) * limit)
-      .take(limit)
-      .getManyAndCount();
+    // Count with 60s in-memory cache to avoid slow COUNT on 144K rows
+    const cacheKey = `${status}:${city||''}:${cuisine||''}:${priceLevelMin||''}:${priceLevelMax||''}:${venueType||''}:${metro||''}:${search||''}:${hasMenu||''}:${features||''}:${district||''}`;
+    const cached = this.countCache.get(cacheKey);
+    let totalPromise: Promise<number>;
 
-    return {
-      items,
+    if (cached && cached.expires > Date.now()) {
+      totalPromise = Promise.resolve(cached.total);
+    } else {
+      const countQb = this.restaurantRepo.createQueryBuilder('r')
+        .where('r.status = :status', { status });
+      if (city) countQb.leftJoin('r.city', 'city').andWhere('city.slug = :city', { city });
+      if (cuisine) countQb.leftJoin('r.cuisines', 'c').andWhere('c.slug = :cuisine', { cuisine });
+      if (priceLevelMin) countQb.andWhere('r.priceLevel >= :priceLevelMin', { priceLevelMin });
+      if (priceLevelMax) countQb.andWhere('r.priceLevel <= :priceLevelMax', { priceLevelMax });
+      if (venueType) countQb.andWhere('r.venue_type = :venueType', { venueType });
+      if (metro) countQb.andWhere('r.metro_station = :metro', { metro });
+      if (search) countQb.leftJoin('r.cuisines', 'cs').andWhere('(r.name ILIKE :search OR r.description ILIKE :search OR cs.name ILIKE :search)', { search: `%${search}%` });
+      if (hasMenu === 'true') countQb.andWhere('EXISTS (SELECT 1 FROM restaurant_dishes rd WHERE rd.restaurant_id = r.id)');
+      totalPromise = countQb.getCount().then(total => {
+        this.countCache.set(cacheKey, { total, expires: Date.now() + 60_000 });
+        return total;
+      });
+    }
+
+    const [rawItems, total] = await Promise.all([
+      qb.skip((page - 1) * limit).take(limit).getMany(),
+      totalPromise,
+    ]);
+
+    // Load cover photos separately (fast indexed query)
+    if (rawItems.length > 0) {
+      const ids = rawItems.map(r => r.id);
+      const photos = await this.photoRepo
+        .createQueryBuilder('p')
+        .where('p.restaurant_id IN (:...ids)', { ids })
+        .andWhere('p.is_cover = true')
+        .getMany();
+      const photoMap = new Map(photos.map(p => [p.restaurantId, p]));
+      for (const r of rawItems) {
+        (r as any).photos = photoMap.has(r.id) ? [photoMap.get(r.id)] : [];
+      }
+    }
+
+    const result = {
+      items: rawItems,
       meta: { total, page, limit, pages: Math.ceil(total / limit) },
     };
+
+    // Cache for 5 minutes
+    this.listCache.set(listCacheKey, { data: result, expires: Date.now() + 300_000 });
+
+    return result;
   }
 
   async findBySlug(slug: string): Promise<Restaurant> {

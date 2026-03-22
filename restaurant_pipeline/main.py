@@ -27,6 +27,7 @@ Menu-Rest Restaurant Pipeline — точка входа.
     python main.py --step menus-json  # Только JSON-меню из restoclub
     python main.py --step menus-pdf   # Только PDF-меню (afisha + restoclub)
     python main.py --step menus-desc  # Только обновление описаний
+    python main.py --step yandex      # Сверка с Яндекс Картами (часы + закрытые)
     python main.py --city Москва      # Pipeline для одного города
 """
 import sys
@@ -61,6 +62,7 @@ from enrichment.district_extractor import run_district_extractor
 from enrichment.district_geo_matcher import run_district_geo_matcher
 from enrichment.healthy_choice_detector import run_healthy_choice_detector
 from enrichment.menu_extractor import run_menu_extraction
+from enrichment.yandex_hours import run_yandex_hours
 from scrapers.restoclub import run as run_restoclub
 from scrapers.afisha import run as run_afisha
 from scrapers.tripadvisor import run as run_tripadvisor
@@ -170,7 +172,8 @@ def main():
                                  'allergens', 'descriptions', 'districts',
                                  'districts-geo', 'healthy',
                                  'menus', 'menus-json', 'menus-pdf', 'menus-desc',
-                                 'restoclub', 'afisha', 'tripadvisor'],
+                                 'restoclub', 'afisha', 'tripadvisor',
+                                 'yandex'],
                         help='Запустить отдельный шаг')
     parser.add_argument('--city', type=str,
                         help='Запустить pipeline для одного города')
@@ -241,6 +244,8 @@ def main():
     elif args.step == 'tripadvisor':
         init_db()
         run_tripadvisor(resume=True)
+    elif args.step == 'yandex':
+        run_yandex_hours()
     else:
         parser.print_help()
         print("\nПримеры:")

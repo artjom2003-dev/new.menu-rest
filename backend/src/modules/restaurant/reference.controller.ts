@@ -22,10 +22,13 @@ export class ReferenceController {
   ) {}
 
   @Get('cuisines')
-  @ApiOperation({ summary: 'Список национальных кухонь' })
-  async getCuisines() {
-    // After cleanup, cuisines table contains only national/regional cuisines
-    return this.cuisineRepo.find({ order: { name: 'ASC' } });
+  @ApiOperation({ summary: 'Список национальных кухонь (фильтр type=cuisine|specialty)' })
+  @ApiQuery({ name: 'type', required: false, example: 'cuisine' })
+  async getCuisines(@Query('type') type?: string) {
+    const where: Record<string, unknown> = {};
+    // По умолчанию — только национальные кухни (для фильтра каталога)
+    where.type = type || 'cuisine';
+    return this.cuisineRepo.find({ where, order: { name: 'ASC' } });
   }
 
   @Get('cities')

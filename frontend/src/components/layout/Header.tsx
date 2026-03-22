@@ -8,8 +8,10 @@ import { useTranslations } from 'next-intl';
 import { useAuthStore } from '@/stores/auth.store';
 import { useBudgetStore } from '@/stores/budget.store';
 import { useFavoritesStore } from '@/stores/favorites.store';
+import { useWishlistStore } from '@/stores/wishlist.store';
 import { AuthModal } from '@/components/auth/AuthModal';
 import { LanguageSwitcher } from './LanguageSwitcher';
+import { chatApi } from '@/lib/api';
 
 function NavLink({ href, label, isActive }: { href: string; label: string; isActive: boolean }) {
   return (
@@ -50,6 +52,9 @@ export function Header() {
 
   const loadFavorites = useFavoritesStore(s => s.load);
   const favLoaded = useFavoritesStore(s => s.loaded);
+  const loadWishlist = useWishlistStore(s => s.load);
+  const wishlistLoaded = useWishlistStore(s => s.loaded);
+  const [chatUnread, setChatUnread] = useState(0);
 
   useEffect(() => {
     setMounted(true);
@@ -60,7 +65,21 @@ export function Header() {
 
   useEffect(() => {
     if (isLoggedIn && !favLoaded) loadFavorites();
-  }, [isLoggedIn, favLoaded, loadFavorites]);
+    if (isLoggedIn && !wishlistLoaded) loadWishlist();
+  }, [isLoggedIn, favLoaded, loadFavorites, wishlistLoaded, loadWishlist]);
+
+  useEffect(() => {
+    if (!isLoggedIn) { setChatUnread(0); return; }
+    chatApi.getUnreadCount()
+      .then(r => setChatUnread(r.data?.count || 0))
+      .catch(() => {});
+    const interval = setInterval(() => {
+      chatApi.getUnreadCount()
+        .then(r => setChatUnread(r.data?.count || 0))
+        .catch(() => {});
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [isLoggedIn]);
 
   const isBlogActive = pathname?.startsWith('/blog');
   const isOwner = user?.role === 'owner' || user?.role === 'admin';
@@ -150,20 +169,20 @@ export function Header() {
             {/* Owner: creative "My Restaurant" button */}
             {isOwner && mounted && (
               <button
-                onClick={() => router.push('/profile')}
+                onClick={() => router.push('/owner')}
                 className="relative px-5 py-[7px] text-[13px] font-bold rounded-full transition-all duration-300 tracking-[0.01em] overflow-hidden group/mybtn border-none cursor-pointer"
                 style={{
-                  background: pathname === '/profile'
+                  background: pathname.startsWith('/owner')
                     ? 'linear-gradient(135deg, #0d9488, #14b8a6, #2dd4bf)'
                     : 'linear-gradient(135deg, rgba(45,212,191,0.12), rgba(20,184,166,0.06))',
-                  color: pathname === '/profile' ? '#fff' : 'var(--teal)',
-                  boxShadow: pathname === '/profile'
+                  color: pathname.startsWith('/owner') ? '#fff' : 'var(--teal)',
+                  boxShadow: pathname.startsWith('/owner')
                     ? '0 0 20px rgba(45,212,191,0.4), inset 0 1px 0 rgba(255,255,255,0.15)'
                     : 'none',
-                  border: pathname === '/profile' ? 'none' : '1px solid rgba(45,212,191,0.2)',
+                  border: pathname.startsWith('/owner') ? 'none' : '1px solid rgba(45,212,191,0.2)',
                 }}
                 onMouseEnter={(e) => {
-                  if (pathname !== '/profile') {
+                  if (!pathname.startsWith('/owner')) {
                     const el = e.currentTarget;
                     el.style.background = 'linear-gradient(135deg, rgba(45,212,191,0.2), rgba(20,184,166,0.12))';
                     el.style.borderColor = 'rgba(45,212,191,0.4)';
@@ -172,7 +191,7 @@ export function Header() {
                   }
                 }}
                 onMouseLeave={(e) => {
-                  if (pathname !== '/profile') {
+                  if (!pathname.startsWith('/owner')) {
                     const el = e.currentTarget;
                     el.style.background = 'linear-gradient(135deg, rgba(45,212,191,0.12), rgba(20,184,166,0.06))';
                     el.style.borderColor = 'rgba(45,212,191,0.2)';
@@ -191,51 +210,6 @@ export function Header() {
               </button>
             )}
 
-            {/* Owner: Analytics link */}
-            {isOwner && mounted && (
-              <button
-                onClick={() => router.push('/profile?tab=analytics')}
-                className="relative px-4 py-[7px] text-[13px] font-semibold rounded-full transition-all duration-300 tracking-[0.01em] flex items-center gap-1.5 border-none cursor-pointer"
-                style={{
-                  color: 'var(--text3)',
-                  background: 'transparent',
-                }}
-                onMouseEnter={(e) => {
-                  const el = e.currentTarget;
-                  el.style.color = 'var(--text)';
-                  el.style.background = 'rgba(255,255,255,0.06)';
-                }}
-                onMouseLeave={(e) => {
-                  const el = e.currentTarget;
-                  el.style.color = 'var(--text3)';
-                  el.style.background = 'transparent';
-                }}>
-                📊 {t('ownerAnalytics')}
-              </button>
-            )}
-
-            {/* Owner: Services info link */}
-            {isOwner && mounted && (
-              <Link
-                href="/for-business"
-                className="relative px-4 py-[7px] text-[13px] font-semibold no-underline rounded-full transition-all duration-300 tracking-[0.01em] flex items-center gap-1.5"
-                style={{
-                  color: 'var(--text3)',
-                  background: 'transparent',
-                }}
-                onMouseEnter={(e) => {
-                  const el = e.currentTarget;
-                  el.style.color = 'var(--text)';
-                  el.style.background = 'rgba(255,255,255,0.06)';
-                }}
-                onMouseLeave={(e) => {
-                  const el = e.currentTarget;
-                  el.style.color = 'var(--text3)';
-                  el.style.background = 'transparent';
-                }}>
-                📋 {t('ownerServices')}
-              </Link>
-            )}
           </nav>
 
           {/* Right */}
@@ -275,6 +249,54 @@ export function Header() {
                 style={{ background: 'var(--glass)', color: 'var(--text2)', borderColor: 'var(--glass-border)', backdropFilter: 'blur(8px)' }}>
                 🍽️ {t('budgetCalc')}
               </button>
+            )}
+
+            {/* Chat */}
+            {mounted && isLoggedIn && (
+              <Link
+                href="/chat"
+                className="relative flex items-center justify-center w-[36px] h-[36px] rounded-full transition-all no-underline"
+                style={{
+                  background: pathname === '/chat' ? 'rgba(255,92,40,0.15)' : 'var(--glass)',
+                  border: `1px solid ${pathname === '/chat' ? 'var(--accent)' : 'var(--glass-border)'}`,
+                }}
+                onMouseEnter={(e) => {
+                  if (pathname !== '/chat') {
+                    (e.currentTarget as HTMLElement).style.borderColor = 'var(--accent)';
+                    (e.currentTarget as HTMLElement).style.background = 'rgba(255,92,40,0.08)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (pathname !== '/chat') {
+                    (e.currentTarget as HTMLElement).style.borderColor = 'var(--glass-border)';
+                    (e.currentTarget as HTMLElement).style.background = 'var(--glass)';
+                  }
+                }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={pathname === '/chat' ? 'var(--accent)' : 'var(--text2)'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
+                </svg>
+                {chatUnread > 0 && (
+                  <span style={{
+                    position: 'absolute',
+                    top: -4,
+                    right: -4,
+                    minWidth: 18,
+                    height: 18,
+                    borderRadius: 9,
+                    background: 'var(--accent)',
+                    color: 'white',
+                    fontSize: 10,
+                    fontWeight: 700,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '0 5px',
+                    boxShadow: '0 2px 8px var(--accent-glow)',
+                  }}>
+                    {chatUnread > 99 ? '99+' : chatUnread}
+                  </span>
+                )}
+              </Link>
             )}
 
             {/* Auth / Profile */}

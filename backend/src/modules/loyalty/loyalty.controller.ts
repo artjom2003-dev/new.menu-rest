@@ -32,6 +32,19 @@ export class LoyaltyController {
     return this.service.addPoints(userId, action, points);
   }
 
+  @Post('redeem')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Списать баллы за скидку' })
+  redeemPoints(
+    @CurrentUser('id') userId: number,
+    @Body('points') points: number,
+    @Body('restaurantId') restaurantId: number,
+    @Body('orderTotal') orderTotal: number,
+  ) {
+    return this.service.redeemPoints(userId, points, restaurantId, orderTotal);
+  }
+
   @Get('leaderboard')
   @ApiOperation({ summary: 'Топ пользователей по баллам' })
   @ApiQuery({ name: 'limit', required: false })
@@ -39,5 +52,20 @@ export class LoyaltyController {
     @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
   ) {
     return this.service.getLeaderboard(limit);
+  }
+
+  @Get('leaderboard/weekly')
+  @ApiOperation({ summary: 'Лидеры недели' })
+  @ApiQuery({ name: 'limit', required: false })
+  getWeeklyLeaderboard(
+    @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
+  ) {
+    return this.service.getWeeklyLeaderboard(limit);
+  }
+
+  @Get('stats')
+  @ApiOperation({ summary: 'Общая статистика сообщества' })
+  getCommunityStats() {
+    return this.service.getCommunityStats();
   }
 }

@@ -5,6 +5,7 @@ import { getLocale, getMessages } from 'next-intl/server';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { BudgetCalcPanel } from '@/components/budget/BudgetCalcPanel';
+import { ChatWidget } from '@/components/chat/ChatWidget';
 import { ToastProvider } from '@/components/ui/Toast';
 import '../styles/globals.css';
 
@@ -46,6 +47,7 @@ export default async function RootLayout({
               <Header />
               <main className="pt-[72px]">{children}</main>
               <BudgetCalcPanel />
+              <ChatWidget />
               <Footer />
             </ToastProvider>
           </ThemeProvider>

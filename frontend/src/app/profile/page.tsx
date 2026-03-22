@@ -1,11 +1,13 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, Suspense, type ReactNode } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuthStore } from '@/stores/auth.store';
 import { useFavoritesStore } from '@/stores/favorites.store';
+import { useWishlistStore } from '@/stores/wishlist.store';
 import { userApi, referenceApi, bookingApi, ownerApi, photoApi } from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
+import { ReferralModal } from '@/components/ui/ReferralModal';
 
 interface Booking {
   id: number;
@@ -46,6 +48,48 @@ interface Post {
   status: string; createdAt: string; publishedAt?: string;
 }
 
+/* ─── Collapsible section ─── */
+function CollapsibleSection({ icon, gradient, title, subtitle, badge, badgeColor, borderColor, bgGradient, children }: {
+  icon: string; gradient: string; title: string; subtitle: string;
+  badge?: string; badgeColor?: string; borderColor: string; bgGradient: string;
+  children: ReactNode;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="rounded-[20px] border mb-4 relative overflow-hidden transition-all"
+      style={{ background: bgGradient, borderColor }}>
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center gap-3 p-5 cursor-pointer border-none text-left transition-all"
+        style={{ background: 'transparent' }}>
+        <span className="w-10 h-10 rounded-[12px] flex items-center justify-center text-[20px] shrink-0"
+          style={{ background: gradient, boxShadow: `0 4px 16px ${badgeColor || borderColor}44` }}>
+          {icon}
+        </span>
+        <div className="flex-1 min-w-0">
+          <h2 className="text-[16px] font-bold text-[var(--text)]">{title}</h2>
+          <p className="text-[12px] text-[var(--text3)]">{subtitle}</p>
+        </div>
+        {badge && (
+          <span className="px-3 py-1 rounded-full text-[11px] font-bold shrink-0"
+            style={{ background: `${badgeColor}18`, color: badgeColor, border: `1px solid ${badgeColor}40` }}>
+            {badge}
+          </span>
+        )}
+        <span className="text-[14px] text-[var(--text3)] shrink-0 transition-transform"
+          style={{ transform: open ? 'rotate(180deg)' : 'rotate(0deg)', transitionDuration: '200ms' }}>
+          ▾
+        </span>
+      </button>
+      {open && (
+        <div className="px-5 pb-5 animate-fade-up">
+          {children}
+        </div>
+      )}
+    </div>
+  );
+}
+
 const STATUS_LABELS: Record<string, string> = {
   pending: '⏳ Ожидает',
   confirmed: '✅ Подтверждена',
@@ -60,8 +104,16 @@ const LEVEL_INFO: Record<string, { label: string; color: string; icon: string }>
   gold: { label: 'Золото', color: '#ffd700', icon: '🥇' },
 };
 
-type GuestTab = 'info' | 'bookings' | 'history' | 'favorites' | 'allergens';
+type GuestTab = 'info' | 'bookings' | 'history' | 'favorites' | 'wishlist' | 'settings';
 type OwnerTab = 'dashboard' | 'edit' | 'photos' | 'posts' | 'analytics' | 'bookings' | 'reviews';
+
+const NUTRITION_GOALS = [
+  { value: 'lose_weight', label: 'Похудеть', icon: '🔥', color: '#ef4444', desc: 'Низкокалорийные блюда, салаты, рыба' },
+  { value: 'gain_muscle', label: 'Набрать массу', icon: '💪', color: '#3b82f6', desc: 'Высокобелковые блюда, мясо, гарниры' },
+  { value: 'maintain', label: 'Поддерживать форму', icon: '⚖️', color: '#34d399', desc: 'Сбалансированное питание, умеренные порции' },
+  { value: 'healthy', label: 'Правильное питание', icon: '🥦', color: '#22c55e', desc: 'Без сахара и фастфуда, натуральное' },
+  { value: 'no_limit', label: 'Без ограничений', icon: '🍕', color: 'var(--text3)', desc: 'Ем что хочу, рекомендации не нужны' },
+] as const;
 
 export default function ProfilePage() {
   return (
@@ -72,7 +124,7 @@ export default function ProfilePage() {
 }
 
 function ProfileContent() {
-  const { user, isLoggedIn, logout, updateUser } = useAuthStore();
+  const { user, isLoggedIn, logout, updateUser, _hydrated } = useAuthStore();
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
@@ -101,6 +153,7 @@ function ProfileContent() {
   // Guest state
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [favorites, setFavorites] = useState<FavoriteRestaurant[]>([]);
+  const [wishlist, setWishlist] = useState<FavoriteRestaurant[]>([]);
   const [allergens, setAllergens] = useState<Allergen[]>([]);
   const [userAllergenIds, setUserAllergenIds] = useState<Set<number>>(new Set());
   const [loading, setLoading] = useState(false);
@@ -120,9 +173,12 @@ function ProfileContent() {
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [deletePhotoId, setDeletePhotoId] = useState<number | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [showReferral, setShowReferral] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
 
   // Load role + restaurant on mount
   useEffect(() => {
+    if (!_hydrated) return; // ждём загрузки store из localStorage
     if (!isLoggedIn) { router.push('/login'); return; }
     setNameInput(user?.name || '');
 
@@ -151,7 +207,15 @@ function ProfileContent() {
       setIsOwner(user?.role === 'owner' || user?.role === 'admin');
       setRoleLoaded(true);
     });
-  }, [isLoggedIn, router]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isLoggedIn, _hydrated, router]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Load allergens & nutrition goal on mount (for prominent sections)
+  useEffect(() => {
+    if (!isLoggedIn || isOwner) return;
+    referenceApi.getAllergens().then(r => setAllergens(r.data || [])).catch(() => {});
+    const ids = user?.allergenProfile?.map(a => a.id) || [];
+    setUserAllergenIds(new Set(ids));
+  }, [isLoggedIn, isOwner, user?.allergenProfile]);
 
   // Guest tab data loading
   useEffect(() => {
@@ -160,12 +224,10 @@ function ProfileContent() {
       bookingApi.getMyBookings().then(r => setBookings(r.data.items || [])).catch(() => {});
     } else if (guestTab === 'favorites') {
       userApi.getFavorites().then(r => setFavorites(r.data || [])).catch(() => {});
-    } else if (guestTab === 'allergens') {
-      referenceApi.getAllergens().then(r => setAllergens(r.data || [])).catch(() => {});
-      const ids = user?.allergenProfile?.map(a => a.id) || [];
-      setUserAllergenIds(new Set(ids));
+    } else if (guestTab === 'wishlist') {
+      userApi.getWishlist().then(r => setWishlist(r.data || [])).catch(() => {});
     }
-  }, [guestTab, isLoggedIn, isOwner, user?.allergenProfile]);
+  }, [guestTab, isLoggedIn, isOwner]);
 
   const handleSaveName = async () => {
     setLoading(true);
@@ -187,6 +249,47 @@ function ProfileContent() {
     } catch { toast('Не удалось обновить аллергены', 'error'); }
   };
 
+  const handleNutritionGoal = async (goal: string) => {
+    const newGoal = user?.nutritionGoal === goal ? undefined : goal;
+    updateUser({ nutritionGoal: newGoal || undefined });
+    try {
+      await userApi.updateMe({ nutritionGoal: newGoal || null });
+    } catch {
+      // Column may not exist yet in DB — save locally only, no error shown
+    }
+  };
+
+  // ─── Profile extended fields ──────────────────
+  const [bioInput, setBioInput] = useState(user?.bio || '');
+  const [ageInput, setAgeInput] = useState(user?.age ? String(user.age) : '');
+  const [cityNameInput, setCityNameInput] = useState(user?.cityName || '');
+  const [favCuisinesInput, setFavCuisinesInput] = useState(user?.favoriteCuisines || '');
+  const [favDishesInput, setFavDishesInput] = useState(user?.favoriteDishes || '');
+  const [profileSaving, setProfileSaving] = useState(false);
+
+  const handleSaveProfile = async () => {
+    setProfileSaving(true);
+    const data: Record<string, unknown> = {
+      bio: bioInput.trim() || null,
+      age: ageInput ? Number(ageInput) : null,
+      cityName: cityNameInput.trim() || null,
+      favoriteCuisines: favCuisinesInput.trim() || null,
+      favoriteDishes: favDishesInput.trim() || null,
+    };
+    try {
+      await userApi.updateMe(data);
+      updateUser({
+        bio: data.bio as string,
+        age: data.age as number,
+        cityName: data.cityName as string,
+        favoriteCuisines: data.favoriteCuisines as string,
+        favoriteDishes: data.favoriteDishes as string,
+      });
+      toast('Профиль обновлён', 'success');
+    } catch { toast('Не удалось сохранить', 'error'); }
+    setProfileSaving(false);
+  };
+
   const handleLogout = () => {
     logout();
     localStorage.removeItem('access_token');
@@ -197,10 +300,14 @@ function ProfileContent() {
 
   const level = LEVEL_INFO[user.loyaltyLevel] || LEVEL_INFO.bronze;
 
-  // ═══════════════════════════════════════════════
-  //  OWNER PROFILE — Restaurant Dashboard
-  // ═══════════════════════════════════════════════
+  // Owner → redirect to /owner panel
   if (isOwner) {
+    router.push('/owner');
+    return null;
+  }
+
+  /* legacy owner block removed — now at /owner/ */
+  if (false as boolean) {
     return (
       <div className="max-w-[1000px] mx-auto px-6 py-12">
         {/* Owner Header */}
@@ -762,18 +869,16 @@ function ProfileContent() {
                   </span>
                 </div>
 
-                {/* Blurred data section */}
-                <div className="relative">
-                {/* Blur overlay */}
-                <div className="absolute inset-0 z-20 rounded-[20px] pointer-events-none" style={{ backdropFilter: 'blur(2.5px)', WebkitBackdropFilter: 'blur(2.5px)' }} />
-                <div className="absolute inset-0 z-30 flex items-center justify-center pointer-events-none">
-                  <div className="px-5 py-3 rounded-[16px] flex items-center gap-2.5"
-                    style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)', boxShadow: '0 8px 32px rgba(0,0,0,0.4)' }}>
-                    <span className="text-[18px]">🔒</span>
-                    <span className="text-[13px] font-semibold text-white/90">Доступно с подпиской «Партнёр»</span>
-                  </div>
+                {/* Demo data notice */}
+                <div className="rounded-[14px] border px-4 py-3 flex items-center gap-3"
+                  style={{ background: 'rgba(245,158,11,0.06)', borderColor: 'rgba(245,158,11,0.2)' }}>
+                  <span className="text-[18px]">⚠️</span>
+                  <p className="text-[13px] text-[var(--text2)] flex-1">
+                    <span className="font-semibold">Демо-режим.</span> Цифры ниже показаны для примера. Реальная аналитика подключается автоматически по мере накопления данных.
+                  </p>
                 </div>
 
+                <div>
                 {/* Row 1: Key metrics */}
                 <div className="grid grid-cols-4 gap-4 max-sm:grid-cols-2">
                   {[
@@ -934,7 +1039,93 @@ function ProfileContent() {
                   </div>
                 </div>
 
-                </div>{/* end blurred data section */}
+                </div>{/* end data section */}
+
+                {/* Recommendations based on analytics */}
+                <div className="rounded-[20px] border p-6" style={{ background: 'linear-gradient(135deg, rgba(52,211,153,0.06), rgba(59,130,246,0.04))', borderColor: 'rgba(52,211,153,0.2)' }}>
+                  <div className="flex items-center gap-3 mb-5">
+                    <span className="w-10 h-10 rounded-[12px] flex items-center justify-center text-[20px]"
+                      style={{ background: 'linear-gradient(135deg, #34d399, #06b6d4)', boxShadow: '0 4px 16px rgba(52,211,153,0.3)' }}>
+                      💡
+                    </span>
+                    <div>
+                      <h3 className="text-[15px] font-semibold text-[var(--text)]">Рекомендации для роста</h3>
+                      <p className="text-[11px] text-[var(--text3)]">На основе аналитики вашего ресторана</p>
+                    </div>
+                  </div>
+                  <div className="space-y-3">
+                    {[
+                      {
+                        priority: 'high',
+                        icon: '📸',
+                        title: 'Добавьте больше фото',
+                        desc: 'Рестораны с 5+ фотографиями получают на 40% больше просмотров. У вас пока мало фото — загрузите снимки интерьера, блюд и атмосферы.',
+                        action: 'Загрузить фото',
+                        tab: 'photos',
+                      },
+                      {
+                        priority: 'high',
+                        icon: '🍽️',
+                        title: 'Обновите меню',
+                        desc: 'Карточка с актуальным меню конвертирует в 2.5 раза лучше. Добавьте цены и описания блюд, чтобы гости могли принять решение прямо на сайте.',
+                        action: 'Редактировать',
+                        tab: 'edit',
+                      },
+                      {
+                        priority: 'medium',
+                        icon: '📝',
+                        title: 'Публикуйте новости и акции',
+                        desc: 'Рестораны с активными публикациями привлекают на 25% больше бронирований. Расскажите о сезонном меню, скидках или мероприятиях.',
+                        action: 'Создать пост',
+                        tab: 'posts',
+                      },
+                      {
+                        priority: 'medium',
+                        icon: '⭐',
+                        title: 'Работайте с отзывами',
+                        desc: 'Ответы на отзывы повышают лояльность на 30%. Благодарите за позитив и решайте проблемы из негативных — это видят все посетители.',
+                        action: 'Отзывы',
+                        tab: 'reviews',
+                      },
+                      {
+                        priority: 'low',
+                        icon: '📍',
+                        title: 'Проверьте контактную информацию',
+                        desc: 'Убедитесь, что телефон, адрес и часы работы актуальны. 15% клиентов уходят, если не могут быстро найти контакты.',
+                        action: 'Проверить',
+                        tab: 'edit',
+                      },
+                    ].map((rec, i) => (
+                      <div key={i} className="flex gap-3 p-4 rounded-[14px] transition-all"
+                        style={{ background: 'var(--bg2)', border: '1px solid var(--card-border)' }}
+                        onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(52,211,153,0.3)'; }}
+                        onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--card-border)'; }}>
+                        <span className="text-[24px] shrink-0 mt-0.5">{rec.icon}</span>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-[13px] font-semibold text-[var(--text)]">{rec.title}</span>
+                            <span className="px-2 py-0.5 rounded-full text-[9px] font-bold"
+                              style={{
+                                background: rec.priority === 'high' ? 'rgba(239,68,68,0.1)' : rec.priority === 'medium' ? 'rgba(245,158,11,0.1)' : 'rgba(107,114,128,0.1)',
+                                color: rec.priority === 'high' ? '#f87171' : rec.priority === 'medium' ? '#fbbf24' : '#9ca3af',
+                                border: `1px solid ${rec.priority === 'high' ? 'rgba(239,68,68,0.2)' : rec.priority === 'medium' ? 'rgba(245,158,11,0.2)' : 'rgba(107,114,128,0.15)'}`,
+                              }}>
+                              {rec.priority === 'high' ? 'Важно' : rec.priority === 'medium' ? 'Средне' : 'Совет'}
+                            </span>
+                          </div>
+                          <p className="text-[12px] text-[var(--text3)] leading-relaxed mb-2">{rec.desc}</p>
+                          <button onClick={() => setOwnerTab(rec.tab as OwnerTab)}
+                            className="text-[11px] font-semibold cursor-pointer border-none bg-transparent transition-all"
+                            style={{ color: 'var(--teal)' }}
+                            onMouseEnter={e => { e.currentTarget.style.textDecoration = 'underline'; }}
+                            onMouseLeave={e => { e.currentTarget.style.textDecoration = 'none'; }}>
+                            {rec.action} →
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
 
                 {/* PDF Export — locked */}
                 <div className="rounded-[20px] border p-6 text-center relative overflow-hidden"
@@ -1019,12 +1210,31 @@ function ProfileContent() {
     <div className="max-w-[900px] mx-auto px-6 py-12">
       {/* Header */}
       <div className="flex items-center gap-6 mb-10">
-        <div className="w-[80px] h-[80px] rounded-full flex items-center justify-center text-[36px]"
+        <label className="relative w-[80px] h-[80px] rounded-full flex items-center justify-center text-[36px] cursor-pointer group shrink-0"
           style={{ background: 'var(--bg3)', border: '2px solid var(--card-border)' }}>
           {user.avatarUrl ? (
             <img src={user.avatarUrl} alt="" className="w-full h-full rounded-full object-cover" />
           ) : '👤'}
-        </div>
+          <div className="absolute inset-0 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+            style={{ background: 'rgba(0,0,0,0.5)' }}>
+            <span className="text-[18px]">📷</span>
+          </div>
+          <input type="file" accept="image/*" className="hidden"
+            onChange={async (e) => {
+              const file = e.target.files?.[0];
+              if (!file) return;
+              try {
+                const res = await userApi.uploadAvatar(file);
+                const url = res.data?.avatarUrl || res.data?.avatar_url;
+                if (url) updateUser({ avatarUrl: url });
+                toast('Фото обновлено', 'success');
+              } catch {
+                toast('Не удалось загрузить фото', 'error');
+              }
+              e.target.value = '';
+            }}
+          />
+        </label>
         <div className="flex-1">
           {editMode ? (
             <div className="flex gap-2 items-center mb-1">
@@ -1066,14 +1276,15 @@ function ProfileContent() {
         </button>
       </div>
 
-      {/* Tabs */}
+      {/* Tabs — 5 items */}
       <div className="flex gap-1 mb-8 p-1 rounded-[14px] overflow-x-auto" style={{ background: 'var(--bg3)' }}>
         {([
           ['info', '👤 Профиль'],
           ['bookings', '📅 Брони'],
           ['history', '🕐 История'],
           ['favorites', '❤️ Избранное'],
-          ['allergens', '🛡️ Аллергены'],
+          ['wishlist', '📌 Хочу сходить'],
+          ['settings', '⚙️ Настройки'],
         ] as const).map(([key, label]) => (
           <button key={key} onClick={() => setGuestTab(key)}
             className="flex-1 py-2.5 rounded-[10px] text-[13px] font-semibold transition-all cursor-pointer border-none whitespace-nowrap"
@@ -1088,24 +1299,305 @@ function ProfileContent() {
 
       {/* Tab content */}
       {guestTab === 'info' && (
-        <div className="rounded-[20px] border p-8" style={{ background: 'var(--bg2)', borderColor: 'var(--card-border)' }}>
-          <h2 className="text-[18px] font-semibold text-[var(--text)] mb-6">Информация</h2>
-          <div className="grid grid-cols-2 gap-6 max-sm:grid-cols-1">
-            <div>
-              <div className="text-[11px] text-[var(--text3)] font-semibold mb-1">Имя</div>
-              <div className="text-[15px] text-[var(--text)]">{user.name || '—'}</div>
+        <div className="space-y-5">
+          {/* Profile card with banner */}
+          <div className="rounded-[20px] border overflow-hidden" style={{ background: 'var(--bg2)', borderColor: 'var(--card-border)' }}>
+            {/* Gradient banner */}
+            <div className="relative h-[100px] overflow-hidden"
+              style={{ background: `linear-gradient(135deg, ${level.color}30 0%, rgba(255,92,40,0.15) 50%, rgba(57,255,209,0.1) 100%)` }}>
+              <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full opacity-30 blur-3xl" style={{ background: level.color }} />
+              <div className="absolute -bottom-8 -left-8 w-28 h-28 rounded-full opacity-20 blur-3xl" style={{ background: 'var(--accent)' }} />
+              <button onClick={() => setShowProfileModal(true)}
+                className="absolute top-4 right-4 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-semibold cursor-pointer transition-all"
+                style={{ background: 'rgba(0,0,0,0.35)', backdropFilter: 'blur(8px)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)' }}
+                onMouseEnter={e => (e.currentTarget.style.background = 'rgba(0,0,0,0.55)')}
+                onMouseLeave={e => (e.currentTarget.style.background = 'rgba(0,0,0,0.35)')}>
+                ✏️ Редактировать
+              </button>
             </div>
-            <div>
-              <div className="text-[11px] text-[var(--text3)] font-semibold mb-1">Email</div>
-              <div className="text-[15px] text-[var(--text)]">{user.email}</div>
+
+            {/* Avatar overlap */}
+            <div className="px-7 -mt-10 relative z-10">
+              <div className="w-[76px] h-[76px] rounded-full flex items-center justify-center text-[32px] overflow-hidden"
+                style={{ background: 'var(--bg2)', border: `3px solid ${level.color}`, boxShadow: `0 4px 20px ${level.color}40` }}>
+                {user.avatarUrl ? (
+                  <img src={user.avatarUrl} alt="" className="w-full h-full object-cover" />
+                ) : '👤'}
+              </div>
             </div>
-            <div>
-              <div className="text-[11px] text-[var(--text3)] font-semibold mb-1">Уровень</div>
-              <div className="text-[15px] text-[var(--text)]">{level.icon} {level.label}</div>
+
+            {/* Content */}
+            <div className="px-7 pt-3 pb-6">
+              {/* Name + level */}
+              <div className="flex items-center gap-3 mb-1">
+                <h2 className="font-serif text-[22px] font-bold text-[var(--text)]">{user.name || 'Пользователь'}</h2>
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold"
+                  style={{ background: `${level.color}20`, color: level.color, border: `1px solid ${level.color}35` }}>
+                  {level.icon} {level.label}
+                </span>
+              </div>
+
+              {/* Meta row */}
+              <div className="flex items-center gap-4 text-[12px] text-[var(--text3)] mb-4">
+                <span>{user.email}</span>
+                {user.cityName && <><span style={{ opacity: 0.3 }}>·</span><span>📍 {user.cityName}</span></>}
+                {user.age && <><span style={{ opacity: 0.3 }}>·</span><span>{user.age} лет</span></>}
+              </div>
+
+              {/* Stats row */}
+              <div className="flex gap-3 mb-5">
+                <div className="flex-1 p-3 rounded-[12px] text-center" style={{ background: 'var(--bg3)' }}>
+                  <div className="text-[18px] font-bold text-[var(--text)]">{user.loyaltyPoints}</div>
+                  <div className="text-[10px] text-[var(--text3)] font-semibold mt-0.5">Баллов</div>
+                </div>
+                <div className="flex-1 p-3 rounded-[12px] text-center" style={{ background: 'var(--bg3)' }}>
+                  <div className="text-[18px] font-bold text-[var(--text)]">{bookings.filter(b => b.status === 'completed').length}</div>
+                  <div className="text-[10px] text-[var(--text3)] font-semibold mt-0.5">Визитов</div>
+                </div>
+                <div className="flex-1 p-3 rounded-[12px] text-center" style={{ background: 'var(--bg3)' }}>
+                  <div className="text-[18px] font-bold text-[var(--text)]">{favorites.length}</div>
+                  <div className="text-[10px] text-[var(--text3)] font-semibold mt-0.5">Избранное</div>
+                </div>
+                <div className="flex-1 p-3 rounded-[12px] text-center" style={{ background: 'var(--bg3)' }}>
+                  <div className="text-[18px] font-bold text-[var(--text)]">{wishlist.length}</div>
+                  <div className="text-[10px] text-[var(--text3)] font-semibold mt-0.5">Хочу сходить</div>
+                </div>
+              </div>
+
+              {/* Bio */}
+              {user.bio && (
+                <p className="text-[13px] text-[var(--text2)] leading-relaxed mb-4">{user.bio}</p>
+              )}
+
+              {/* Cuisines & Dishes tags */}
+              {(user.favoriteCuisines || user.favoriteDishes) && (
+                <div className="flex gap-6 flex-wrap">
+                  {user.favoriteCuisines && (
+                    <div>
+                      <div className="text-[10px] text-[var(--text3)] font-semibold mb-1.5 uppercase tracking-wider">Любимые кухни</div>
+                      <div className="flex gap-1.5 flex-wrap">
+                        {user.favoriteCuisines.split(',').map(c => c.trim()).filter(Boolean).map(c => (
+                          <span key={c} className="px-2.5 py-1 rounded-full text-[11px] font-semibold"
+                            style={{ background: 'rgba(255,92,40,0.08)', color: 'var(--accent)', border: '1px solid rgba(255,92,40,0.15)' }}>
+                            {c}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {user.favoriteDishes && (
+                    <div>
+                      <div className="text-[10px] text-[var(--text3)] font-semibold mb-1.5 uppercase tracking-wider">Любимые блюда</div>
+                      <div className="flex gap-1.5 flex-wrap">
+                        {user.favoriteDishes.split(',').map(d => d.trim()).filter(Boolean).map(d => (
+                          <span key={d} className="px-2.5 py-1 rounded-full text-[11px] font-semibold"
+                            style={{ background: 'rgba(20,184,166,0.08)', color: 'var(--teal)', border: '1px solid rgba(20,184,166,0.15)' }}>
+                            {d}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* CTA if empty */}
+              {!user.bio && !user.favoriteCuisines && (
+                <div className="flex items-center gap-3 p-4 rounded-[14px]"
+                  style={{ background: 'linear-gradient(135deg, rgba(255,92,40,0.05), rgba(57,255,209,0.03))', border: '1px dashed rgba(255,92,40,0.2)' }}>
+                  <span className="text-[24px]">🍽️</span>
+                  <div className="flex-1">
+                    <p className="text-[13px] text-[var(--text)] font-semibold">Расскажите о своих вкусах</p>
+                    <p className="text-[11px] text-[var(--text3)] mt-0.5">Находите единомышленников и получайте персональные рекомендации</p>
+                  </div>
+                  <button onClick={() => setShowProfileModal(true)}
+                    className="px-4 py-2 rounded-full text-[12px] font-semibold border-none cursor-pointer text-white shrink-0 transition-all"
+                    style={{ background: 'var(--accent)' }}
+                    onMouseEnter={e => (e.currentTarget.style.boxShadow = '0 0 20px var(--accent-glow)')}
+                    onMouseLeave={e => (e.currentTarget.style.boxShadow = 'none')}>
+                    Заполнить
+                  </button>
+                </div>
+              )}
             </div>
-            <div>
-              <div className="text-[11px] text-[var(--text3)] font-semibold mb-1">Баллы</div>
-              <div className="text-[15px] text-[var(--text)]">{user.loyaltyPoints}</div>
+          </div>
+
+          {/* Invite friend — compact */}
+          <div className="rounded-[16px] border p-4 flex items-center gap-4"
+            style={{
+              background: 'linear-gradient(135deg, rgba(255,92,40,0.05), rgba(255,140,66,0.02))',
+              borderColor: 'rgba(255,92,40,0.15)',
+            }}>
+            <span className="w-10 h-10 rounded-[10px] flex items-center justify-center text-[20px] shrink-0"
+              style={{ background: 'rgba(255,92,40,0.1)' }}>
+              🎁
+            </span>
+            <div className="flex-1 min-w-0">
+              <span className="text-[13px] font-semibold text-[var(--text)]">Пригласите друга</span>
+              <span className="text-[12px] text-[var(--text3)] ml-2">+50 баллов каждому</span>
+            </div>
+            <button
+              onClick={() => setShowReferral(true)}
+              className="px-4 py-2 rounded-full text-[12px] font-semibold text-white border-none cursor-pointer transition-all shrink-0"
+              style={{ background: 'var(--accent)' }}>
+              Пригласить
+            </button>
+          </div>
+
+          {/* Nutrition goal */}
+          <CollapsibleSection
+            icon="🎯"
+            gradient="linear-gradient(135deg, #3b82f6, #06b6d4)"
+            title="Мой фокус"
+            subtitle="Подсветим подходящие блюда в меню"
+            badge={user?.nutritionGoal ? NUTRITION_GOALS.find(g => g.value === user.nutritionGoal)?.label : undefined}
+            badgeColor="#3b82f6"
+            borderColor="rgba(59,130,246,0.15)"
+            bgGradient="linear-gradient(135deg, rgba(59,130,246,0.06), rgba(52,211,153,0.04))">
+            <div className="grid grid-cols-5 gap-2.5 max-sm:grid-cols-2">
+              {NUTRITION_GOALS.map(g => {
+                const active = user?.nutritionGoal === g.value;
+                return (
+                  <button
+                    key={g.value}
+                    onClick={() => handleNutritionGoal(g.value)}
+                    className="relative p-3.5 rounded-[14px] border transition-all cursor-pointer text-center group"
+                    style={{
+                      background: active ? `${g.color}15` : 'var(--bg2)',
+                      borderColor: active ? `${g.color}55` : 'var(--card-border)',
+                      boxShadow: active ? `0 0 20px ${g.color}20` : 'none',
+                    }}>
+                    <span className="text-[28px] block mb-1.5 transition-transform group-hover:scale-110" style={{ transitionDuration: '200ms' }}>
+                      {g.icon}
+                    </span>
+                    <span className="text-[12px] font-bold block mb-0.5"
+                      style={{ color: active ? g.color : 'var(--text2)' }}>
+                      {g.label}
+                    </span>
+                    <span className="text-[10px] leading-tight block" style={{ color: 'var(--text3)' }}>
+                      {g.desc}
+                    </span>
+                    {active && (
+                      <div className="absolute top-2 right-2 w-5 h-5 rounded-full flex items-center justify-center text-[10px] text-white"
+                        style={{ background: g.color }}>✓</div>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </CollapsibleSection>
+
+          {/* Allergens */}
+          <CollapsibleSection
+            icon="🛡️"
+            gradient="linear-gradient(135deg, #ef4444, #f97316)"
+            title="Мои аллергены"
+            subtitle="Предупредим об опасных блюдах"
+            badge={userAllergenIds.size > 0 ? `${userAllergenIds.size} выбрано` : undefined}
+            badgeColor="#ef4444"
+            borderColor="rgba(239,68,68,0.12)"
+            bgGradient="linear-gradient(135deg, rgba(239,68,68,0.05), rgba(249,115,22,0.03))">
+            <div className="grid grid-cols-4 gap-2 max-sm:grid-cols-2">
+              {allergens.map(a => {
+                const active = userAllergenIds.has(a.id);
+                return (
+                  <button key={a.id} onClick={() => toggleAllergen(a.id)}
+                    className="flex items-center gap-2.5 p-3 rounded-[12px] border transition-all cursor-pointer text-left"
+                    style={{
+                      background: active ? 'rgba(239,68,68,0.1)' : 'var(--bg2)',
+                      borderColor: active ? 'rgba(239,68,68,0.4)' : 'var(--card-border)',
+                      boxShadow: active ? '0 0 12px rgba(239,68,68,0.1)' : 'none',
+                    }}>
+                    <span className="text-[20px]">{a.icon}</span>
+                    <span className="text-[12px] font-semibold flex-1"
+                      style={{ color: active ? '#ef4444' : 'var(--text2)' }}>
+                      {a.name}
+                    </span>
+                    {active && <span className="text-[10px] text-red-400 font-bold">✕</span>}
+                  </button>
+                );
+              })}
+            </div>
+          </CollapsibleSection>
+        </div>
+      )}
+
+      <ReferralModal open={showReferral} onClose={() => setShowReferral(false)} />
+
+      {/* ═══ Profile Edit Modal ═══ */}
+      {showProfileModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}
+          onClick={e => { if (e.target === e.currentTarget) setShowProfileModal(false); }}>
+          <div className="w-full max-w-[400px] rounded-[20px] border overflow-hidden"
+            style={{ background: 'var(--bg2)', borderColor: 'var(--card-border)' }}>
+            {/* Header */}
+            <div className="flex items-center justify-between p-5 pb-3">
+              <h2 className="text-[17px] font-semibold text-[var(--text)]">Редактировать профиль</h2>
+              <button onClick={() => setShowProfileModal(false)}
+                className="w-8 h-8 rounded-full flex items-center justify-center text-[var(--text3)] cursor-pointer border-none transition-all"
+                style={{ background: 'var(--bg3)' }}
+                onMouseEnter={e => (e.currentTarget.style.background = 'rgba(239,68,68,0.15)')}
+                onMouseLeave={e => (e.currentTarget.style.background = 'var(--bg3)')}>
+                ✕
+              </button>
+            </div>
+            {/* Form */}
+            <div className="px-5 pb-5 space-y-4">
+              {/* Avatar */}
+              <div className="flex flex-col items-center gap-3">
+                <div className="w-[80px] h-[80px] rounded-full flex items-center justify-center text-[36px] overflow-hidden"
+                  style={{ background: 'var(--bg3)', border: '2px solid var(--card-border)' }}>
+                  {user.avatarUrl ? (
+                    <img src={user.avatarUrl} alt="" className="w-full h-full object-cover" />
+                  ) : '👤'}
+                </div>
+                <label className="flex items-center gap-2 px-4 py-2 rounded-full text-[12px] font-semibold cursor-pointer border transition-all"
+                  style={{ color: 'var(--accent)', borderColor: 'rgba(255,92,40,0.25)', background: 'rgba(255,92,40,0.06)' }}>
+                  📷 Изменить фото
+                  <input type="file" accept="image/*" className="hidden"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      try {
+                        const res = await userApi.uploadAvatar(file);
+                        const url = res.data?.avatarUrl || res.data?.avatar_url;
+                        if (url) updateUser({ avatarUrl: url });
+                        toast('Фото обновлено', 'success');
+                      } catch { toast('Не удалось загрузить фото', 'error'); }
+                      e.target.value = '';
+                    }}
+                  />
+                </label>
+              </div>
+              {/* Name */}
+              <div>
+                <label className="text-[11px] font-semibold text-[var(--text3)] block mb-1.5">Имя</label>
+                <input
+                  value={nameInput}
+                  onChange={e => setNameInput(e.target.value)}
+                  placeholder="Ваше имя"
+                  className="w-full px-4 py-3 rounded-[12px] text-[14px] text-[var(--text)] border outline-none font-sans"
+                  style={{ background: 'var(--bg3)', borderColor: 'var(--card-border)' }}
+                  onFocus={e => (e.currentTarget.style.borderColor = 'var(--accent)')}
+                  onBlur={e => (e.currentTarget.style.borderColor = 'var(--card-border)')}
+                />
+              </div>
+              {/* Actions */}
+              <div className="flex gap-2 pt-1">
+                <button
+                  onClick={async () => { await handleSaveName(); setShowProfileModal(false); }}
+                  disabled={loading || nameInput === user.name}
+                  className="flex-1 py-3 rounded-[12px] text-[13px] font-semibold text-white border-none cursor-pointer disabled:opacity-40 transition-all"
+                  style={{ background: 'var(--accent)' }}>
+                  {loading ? '...' : 'Сохранить'}
+                </button>
+                <button onClick={() => { setShowProfileModal(false); setNameInput(user.name || ''); }}
+                  className="px-5 py-3 rounded-[12px] text-[13px] font-semibold border cursor-pointer transition-all"
+                  style={{ background: 'var(--glass)', borderColor: 'var(--glass-border)', color: 'var(--text2)' }}>
+                  Отмена
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -1202,30 +1694,192 @@ function ProfileContent() {
         </div>
       )}
 
-      {guestTab === 'allergens' && (
-        <div className="rounded-[20px] border p-8" style={{ background: 'var(--bg2)', borderColor: 'var(--card-border)' }}>
-          <h2 className="text-[18px] font-semibold text-[var(--text)] mb-2">Мои аллергены</h2>
-          <p className="text-[13px] text-[var(--text3)] mb-6">
-            Отметьте аллергены — мы подсветим опасные блюда в меню
-          </p>
-          <div className="grid grid-cols-2 gap-3 max-sm:grid-cols-1">
-            {allergens.map(a => (
-              <button key={a.id} onClick={() => toggleAllergen(a.id)}
-                className="flex items-center gap-3 p-4 rounded-[14px] border transition-all cursor-pointer text-left"
-                style={{
-                  background: userAllergenIds.has(a.id) ? 'rgba(239,68,68,0.1)' : 'var(--bg3)',
-                  borderColor: userAllergenIds.has(a.id) ? 'rgba(239,68,68,0.4)' : 'var(--card-border)',
-                }}>
-                <span className="text-[22px]">{a.icon}</span>
-                <span className="text-[14px] font-medium" style={{ color: userAllergenIds.has(a.id) ? '#ef4444' : 'var(--text2)' }}>
-                  {a.name}
-                </span>
-                {userAllergenIds.has(a.id) && <span className="ml-auto text-[11px] text-red-400 font-semibold">Опасно</span>}
-              </button>
-            ))}
+      {guestTab === 'wishlist' && (
+        <div className="space-y-3">
+          {wishlist.length === 0 ? (
+            <div className="text-center py-16">
+              <div className="text-5xl mb-3">📌</div>
+              <p className="text-[15px] text-[var(--text2)]">Список «Хочу сходить» пуст</p>
+              <a href="/restaurants" className="text-[13px] text-[var(--accent)] mt-2 inline-block">Найти ресторан →</a>
+            </div>
+          ) : wishlist.map(r => (
+            <div key={r.id}
+              className="rounded-[16px] border p-5 flex items-center justify-between transition-all"
+              style={{ background: 'var(--bg2)', borderColor: 'var(--card-border)' }}>
+              <a href={`/restaurants/${r.slug}`} className="flex-1 no-underline">
+                <div className="text-[15px] font-semibold text-[var(--text)]">{r.name}</div>
+                <div className="text-[13px] text-[var(--text3)]">{r.cuisines?.map(c => c.name).join(', ')}</div>
+              </a>
+              <div className="flex items-center gap-3">
+                <span className="text-[13px] font-semibold text-[var(--gold)]">⭐ {Number(r.rating).toFixed(1)}</span>
+                <button
+                  onClick={async () => {
+                    await useWishlistStore.getState().toggle(r.id);
+                    setWishlist(prev => prev.filter(f => f.id !== r.id));
+                  }}
+                  className="w-8 h-8 rounded-full flex items-center justify-center text-[14px] cursor-pointer transition-all border-none"
+                  style={{ background: 'rgba(20,184,166,0.1)', color: '#14b8a6' }}
+                  title="Убрать из списка">
+                  ✕
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {guestTab === 'settings' && (
+        <div className="space-y-5">
+          {/* Privacy settings */}
+          <div className="rounded-[20px] border p-6" style={{ background: 'var(--bg2)', borderColor: 'var(--card-border)' }}>
+            <div className="flex items-center gap-3 mb-5">
+              <span className="w-9 h-9 rounded-[10px] flex items-center justify-center text-[18px]"
+                style={{ background: 'linear-gradient(135deg, #8b5cf6, #6366f1)', boxShadow: '0 4px 12px rgba(139,92,246,0.3)' }}>
+                🔒
+              </span>
+              <h2 className="text-[17px] font-semibold text-[var(--text)]">Приватность</h2>
+            </div>
+            <div className="space-y-4">
+              <label className="flex items-center justify-between p-4 rounded-[14px] cursor-pointer transition-all"
+                style={{ background: 'var(--bg3)' }}>
+                <div>
+                  <div className="text-[14px] font-semibold text-[var(--text)]">Скрыть из списков «Хочу сходить»</div>
+                  <div className="text-[12px] text-[var(--text3)] mt-0.5">Другие не увидят вас среди желающих посетить ресторан</div>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={user.hideFromWishlists || false}
+                  onChange={async (e) => {
+                    const val = e.target.checked;
+                    updateUser({ hideFromWishlists: val });
+                    try { await userApi.updateMe({ hideFromWishlists: val }); }
+                    catch { /* column may not exist yet */ }
+                  }}
+                  className="w-5 h-5 accent-[#8b5cf6] cursor-pointer"
+                />
+              </label>
+              <label className="flex items-center justify-between p-4 rounded-[14px] cursor-pointer transition-all"
+                style={{ background: 'var(--bg3)' }}>
+                <div>
+                  <div className="text-[14px] font-semibold text-[var(--text)]">Запретить входящие сообщения</div>
+                  <div className="text-[12px] text-[var(--text3)] mt-0.5">Никто не сможет начать с вами диалог</div>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={user.blockMessages || false}
+                  onChange={async (e) => {
+                    const val = e.target.checked;
+                    updateUser({ blockMessages: val });
+                    try { await userApi.updateMe({ blockMessages: val }); }
+                    catch { /* column may not exist yet */ }
+                  }}
+                  className="w-5 h-5 accent-[#8b5cf6] cursor-pointer"
+                />
+              </label>
+            </div>
+          </div>
+
+          {/* Notifications */}
+          <div className="rounded-[20px] border p-6" style={{ background: 'var(--bg2)', borderColor: 'var(--card-border)' }}>
+            <div className="flex items-center gap-3 mb-5">
+              <span className="w-9 h-9 rounded-[10px] flex items-center justify-center text-[18px]"
+                style={{ background: 'linear-gradient(135deg, #f59e0b, #f97316)', boxShadow: '0 4px 12px rgba(245,158,11,0.3)' }}>
+                🔔
+              </span>
+              <h2 className="text-[17px] font-semibold text-[var(--text)]">Уведомления</h2>
+            </div>
+            <div className="space-y-4">
+              <label className="flex items-center justify-between p-4 rounded-[14px] cursor-pointer transition-all"
+                style={{ background: 'var(--bg3)' }}>
+                <div>
+                  <div className="text-[14px] font-semibold text-[var(--text)]">Напоминания о бронированиях</div>
+                  <div className="text-[12px] text-[var(--text3)] mt-0.5">За 2 часа до визита</div>
+                </div>
+                <input type="checkbox" defaultChecked className="w-5 h-5 accent-[#f59e0b] cursor-pointer" />
+              </label>
+              <label className="flex items-center justify-between p-4 rounded-[14px] cursor-pointer transition-all"
+                style={{ background: 'var(--bg3)' }}>
+                <div>
+                  <div className="text-[14px] font-semibold text-[var(--text)]">Акции и спецпредложения</div>
+                  <div className="text-[12px] text-[var(--text3)] mt-0.5">Скидки и события от ресторанов из избранного</div>
+                </div>
+                <input type="checkbox" defaultChecked className="w-5 h-5 accent-[#f59e0b] cursor-pointer" />
+              </label>
+              <label className="flex items-center justify-between p-4 rounded-[14px] cursor-pointer transition-all"
+                style={{ background: 'var(--bg3)' }}>
+                <div>
+                  <div className="text-[14px] font-semibold text-[var(--text)]">Достижения программы лояльности</div>
+                  <div className="text-[12px] text-[var(--text3)] mt-0.5">Новый уровень, начисление баллов</div>
+                </div>
+                <input type="checkbox" defaultChecked className="w-5 h-5 accent-[#f59e0b] cursor-pointer" />
+              </label>
+            </div>
+          </div>
+
+          {/* Preferences */}
+          <div className="rounded-[20px] border p-6" style={{ background: 'var(--bg2)', borderColor: 'var(--card-border)' }}>
+            <div className="flex items-center gap-3 mb-5">
+              <span className="w-9 h-9 rounded-[10px] flex items-center justify-center text-[18px]"
+                style={{ background: 'linear-gradient(135deg, #06b6d4, #0ea5e9)', boxShadow: '0 4px 12px rgba(6,182,212,0.3)' }}>
+                🌐
+              </span>
+              <h2 className="text-[17px] font-semibold text-[var(--text)]">Предпочтения</h2>
+            </div>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between p-4 rounded-[14px]" style={{ background: 'var(--bg3)' }}>
+                <div>
+                  <div className="text-[14px] font-semibold text-[var(--text)]">Город по умолчанию</div>
+                  <div className="text-[12px] text-[var(--text3)] mt-0.5">Для фильтрации ресторанов при входе</div>
+                </div>
+                <select
+                  className="px-3 py-2 rounded-[10px] text-[13px] text-[var(--text)] border outline-none cursor-pointer font-sans"
+                  style={{ background: 'var(--bg2)', borderColor: 'var(--card-border)' }}
+                  defaultValue="">
+                  <option value="">Все города</option>
+                  <option value="msk">Москва</option>
+                  <option value="spb">Санкт-Петербург</option>
+                  <option value="ekb">Екатеринбург</option>
+                  <option value="kzn">Казань</option>
+                  <option value="nsk">Новосибирск</option>
+                </select>
+              </div>
+              <div className="flex items-center justify-between p-4 rounded-[14px]" style={{ background: 'var(--bg3)' }}>
+                <div>
+                  <div className="text-[14px] font-semibold text-[var(--text)]">Валюта</div>
+                  <div className="text-[12px] text-[var(--text3)] mt-0.5">Для отображения цен в меню и калькуляторе</div>
+                </div>
+                <select
+                  className="px-3 py-2 rounded-[10px] text-[13px] text-[var(--text)] border outline-none cursor-pointer font-sans"
+                  style={{ background: 'var(--bg2)', borderColor: 'var(--card-border)' }}
+                  defaultValue="rub">
+                  <option value="rub">₽ Рубли</option>
+                  <option value="usd">$ Доллары</option>
+                  <option value="eur">€ Евро</option>
+                </select>
+              </div>
+              <label className="flex items-center justify-between p-4 rounded-[14px] cursor-pointer transition-all"
+                style={{ background: 'var(--bg3)' }}>
+                <div>
+                  <div className="text-[14px] font-semibold text-[var(--text)]">Показывать КБЖУ в меню</div>
+                  <div className="text-[12px] text-[var(--text3)] mt-0.5">Калории, белки, жиры и углеводы блюд</div>
+                </div>
+                <input type="checkbox" defaultChecked className="w-5 h-5 accent-[#06b6d4] cursor-pointer" />
+              </label>
+            </div>
+          </div>
+
+          {/* Danger zone */}
+          <div className="rounded-[20px] border p-6" style={{ background: 'var(--bg2)', borderColor: 'rgba(239,68,68,0.15)' }}>
+            <h2 className="text-[15px] font-semibold text-red-400 mb-4">Опасная зона</h2>
+            <button onClick={handleLogout}
+              className="px-5 py-2.5 rounded-full text-[13px] font-semibold text-red-400 border cursor-pointer transition-all"
+              style={{ background: 'rgba(239,68,68,0.06)', borderColor: 'rgba(239,68,68,0.25)' }}>
+              Выйти из аккаунта
+            </button>
           </div>
         </div>
       )}
+
     </div>
   );
 }
