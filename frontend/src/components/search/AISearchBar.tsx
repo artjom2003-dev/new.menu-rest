@@ -53,6 +53,164 @@ function renderText(text: string, restaurants: AiRestaurant[]): React.ReactNode[
   });
 }
 
+const THINKING_PHRASES = [
+  'Листаем меню всех ресторанов города...',
+  'Разогреваем печь рекомендаций...',
+  'Опрашиваем шеф-поваров...',
+  'Заглядываем на кухню...',
+  'Бронируем лучший столик...',
+  'Проверяем свежесть ингредиентов...',
+  'Дегустируем варианты...',
+  'Сверяем с картой города...',
+  'Натираем бокалы до блеска...',
+  'Почти нашли идеальное место...',
+];
+
+function ThinkingBubble({ streamText, streamRestaurants, analyzingLabel }: {
+  streamText: string; streamRestaurants: AiRestaurant[]; analyzingLabel: string;
+}) {
+  const [phraseIdx, setPhraseIdx] = useState(0);
+  useEffect(() => {
+    if (streamText) return;
+    const interval = setInterval(() => setPhraseIdx(i => (i + 1) % THINKING_PHRASES.length), 2500);
+    return () => clearInterval(interval);
+  }, [streamText]);
+
+  return (
+    <div className="flex items-start gap-3" style={{ animation: 'fadeSlideIn 0.3s ease-out both' }}>
+      <div className="w-8 h-8 rounded-[10px] flex items-center justify-center text-[15px] shrink-0 mt-1 relative"
+        style={{ background: 'linear-gradient(135deg, var(--accent), #D44A20)', boxShadow: '0 3px 12px var(--accent-glow)' }}>
+        🧠
+        <div className="absolute inset-[-5px]" style={{ animation: 'spin 2.5s linear infinite' }}>
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full" style={{ background: 'var(--accent)', boxShadow: '0 0 6px var(--accent-glow)' }} />
+        </div>
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="rounded-[18px] rounded-tl-[6px] px-5 py-4 relative overflow-hidden"
+          style={{ background: 'var(--bg2)', boxShadow: '0 4px 20px rgba(0,0,0,0.15)', animation: 'borderPulse 2s ease-in-out infinite', border: '1px solid rgba(255,92,40,0.2)' }}>
+
+          {streamText ? (
+            <div className="text-[14px] text-[var(--text2)] whitespace-pre-line relative z-10" style={{ lineHeight: '1.55' }}>
+              {renderText(streamText, streamRestaurants)}
+              <span className="inline-block w-[2px] h-[1.1em] ml-0.5 align-text-bottom rounded-full"
+                style={{ background: 'var(--accent)', animation: 'pulse 1s infinite' }} />
+            </div>
+          ) : (
+            <div className="relative z-10">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-[13px] font-semibold" style={{ color: 'var(--accent)' }}>{analyzingLabel}</span>
+                <span className="inline-flex gap-[3px]">
+                  {[0, 1, 2].map(i => (
+                    <span key={i} className="inline-block w-[4px] h-[4px] rounded-full"
+                      style={{ background: 'var(--accent)', animation: 'pulse 1.4s infinite both', animationDelay: `${i * 0.2}s` }} />
+                  ))}
+                </span>
+              </div>
+              {/* Rotating phrases */}
+              <div className="h-[18px] overflow-hidden mb-3">
+                <div key={phraseIdx} className="text-[12px] text-[var(--text3)]"
+                  style={{ animation: 'thinkingText 2.5s ease-in-out' }}>
+                  {THINKING_PHRASES[phraseIdx]}
+                </div>
+              </div>
+              {/* Skeleton */}
+              <div className="space-y-2">
+                {[90, 70, 85, 50, 65].map((w, i) => (
+                  <div key={i} className="rounded-full overflow-hidden" style={{ height: 6, width: `${w}%`, background: 'var(--bg3)' }}>
+                    <div className="h-full rounded-full"
+                      style={{ width: '30%', background: 'linear-gradient(90deg, transparent, rgba(255,92,40,0.18), transparent)', animation: 'aiSweep 1.8s infinite linear', animationDelay: `${i * 0.12}s` }} />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function RestaurantStrip({ restaurants }: { restaurants: AiRestaurant[] }) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+
+  const checkScroll = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    setCanScrollLeft(el.scrollLeft > 10);
+    setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 10);
+  };
+
+  useEffect(() => { checkScroll(); }, [restaurants]);
+
+  const scroll = (dir: number) => {
+    scrollRef.current?.scrollBy({ left: dir * 320, behavior: 'smooth' });
+    setTimeout(checkScroll, 400);
+  };
+
+  if (!restaurants.length) return null;
+
+  return (
+    <div className="relative mt-3 pt-3" style={{ borderTop: '1px solid var(--card-border)' }}>
+      <div ref={scrollRef} onScroll={checkScroll}
+        className="flex gap-2.5 overflow-x-auto pb-1 scroll-smooth" style={{ scrollbarWidth: 'none' }}>
+        {restaurants.slice(0, 15).map(r => {
+          const cover = r.photos?.find(p => p.isCover) || r.photos?.[0];
+          const showImg = cover?.url && /^https?:\/\//.test(cover.url);
+          return (
+            <a key={r.slug} href={`/restaurants/${r.slug}`}
+              className="flex-shrink-0 w-[150px] rounded-[14px] overflow-hidden no-underline transition-all duration-300 group hover:-translate-y-1"
+              style={{ background: 'var(--bg2)', border: '1px solid var(--card-border)' }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,92,40,0.3)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(255,92,40,0.08)'; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--card-border)'; e.currentTarget.style.boxShadow = 'none'; }}>
+              <div className="h-[90px] relative overflow-hidden" style={{ background: 'var(--bg3)' }}>
+                {showImg ? (
+                  <img src={cover!.url} alt={r.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-[24px] opacity-40"
+                    style={{ background: `linear-gradient(135deg, hsl(${Math.abs(r.name.length * 47) % 360}, 35%, 16%), hsl(${(Math.abs(r.name.length * 47) + 40) % 360}, 30%, 20%))` }}>
+                    🍽️
+                  </div>
+                )}
+                <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, var(--bg2) 0%, transparent 40%)' }} />
+                {r.distanceKm !== undefined && (
+                  <div className="absolute bottom-1.5 left-2 text-[9px] font-bold px-1.5 py-0.5 rounded-full"
+                    style={{ background: 'rgba(0,0,0,0.55)', color: 'var(--accent)', backdropFilter: 'blur(4px)' }}>
+                    {r.distanceKm} км
+                  </div>
+                )}
+              </div>
+              <div className="px-2.5 py-2">
+                <div className="text-[12px] font-bold text-[var(--text)] truncate leading-tight">{r.name}</div>
+                <div className="text-[10px] text-[var(--text3)] truncate mt-0.5">
+                  {r.metroStation ? `м. ${r.metroStation}` : r.cuisines?.slice(0, 2).join(', ') || r.city || ''}
+                </div>
+              </div>
+            </a>
+          );
+        })}
+      </div>
+
+      {/* Scroll arrows */}
+      {canScrollLeft && (
+        <button onClick={() => scroll(-1)}
+          className="absolute left-0 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full flex items-center justify-center border-0 cursor-pointer z-10 text-[12px]"
+          style={{ background: 'var(--bg2)', color: 'var(--text)', boxShadow: '2px 0 12px rgba(0,0,0,0.3)', marginTop: 12 }}>
+          ‹
+        </button>
+      )}
+      {canScrollRight && (
+        <button onClick={() => scroll(1)}
+          className="absolute right-0 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full flex items-center justify-center border-0 cursor-pointer z-10 text-[12px]"
+          style={{ background: 'var(--bg2)', color: 'var(--text)', boxShadow: '-2px 0 12px rgba(0,0,0,0.3)', marginTop: 12 }}>
+          ›
+        </button>
+      )}
+    </div>
+  );
+}
+
 export function AISearchBar() {
   const { toast } = useToast();
   const t = useTranslations('search');
@@ -186,7 +344,7 @@ export function AISearchBar() {
                   /* ── AI ── */
                   <div className="flex items-start gap-3">
                     <div className="w-8 h-8 rounded-[10px] flex items-center justify-center text-[15px] shrink-0 mt-1"
-                      style={{ background: 'linear-gradient(135deg, var(--accent), #8b5cf6)', boxShadow: '0 3px 12px var(--accent-glow)' }}>
+                      style={{ background: 'linear-gradient(135deg, var(--accent), #D44A20)', boxShadow: '0 3px 12px var(--accent-glow)' }}>
                       🤖
                     </div>
                     <div className="flex-1 min-w-0">
@@ -198,46 +356,12 @@ export function AISearchBar() {
                         </div>
                       </div>
 
-                      {/* Restaurant cards — horizontal scroll */}
-                      {msg.restaurants && msg.restaurants.length > 0 && (
-                        <div className="flex gap-2.5 mt-3 overflow-x-auto pb-1 pl-1">
-                          {msg.restaurants.slice(0, 8).map(r => {
-                            const cover = r.photos?.find(p => p.isCover) || r.photos?.[0];
-                            const showImg = cover?.url && /^https?:\/\//.test(cover.url);
-                            return (
-                              <a key={r.slug} href={`/restaurants/${r.slug}`}
-                                className="flex-shrink-0 w-[150px] rounded-[14px] overflow-hidden no-underline transition-all duration-300 group hover:-translate-y-1"
-                                style={{ background: 'var(--bg2)', border: '1px solid var(--card-border)', boxShadow: '0 2px 12px rgba(0,0,0,0.1)' }}
-                                onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.boxShadow = '0 8px 24px var(--accent-glow)'; }}
-                                onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--card-border)'; e.currentTarget.style.boxShadow = '0 2px 12px rgba(0,0,0,0.1)'; }}>
-                                <div className="h-[85px] relative overflow-hidden" style={{ background: 'var(--bg3)' }}>
-                                  {showImg ? (
-                                    <img src={cover!.url} alt={r.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
-                                  ) : (
-                                    <div className="w-full h-full flex items-center justify-center text-[24px] opacity-40"
-                                      style={{ background: `linear-gradient(135deg, hsl(${Math.abs(r.name.length * 47) % 360}, 45%, 18%), hsl(${(Math.abs(r.name.length * 47) + 40) % 360}, 40%, 24%))` }}>
-                                      🍽️
-                                    </div>
-                                  )}
-                                  <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, var(--bg2) 0%, transparent 50%)' }} />
-                                  {r.distanceKm !== undefined && (
-                                    <div className="absolute bottom-1.5 left-2 text-[9px] font-bold px-1.5 py-0.5 rounded-full"
-                                      style={{ background: 'rgba(0,0,0,0.6)', color: 'var(--teal)', backdropFilter: 'blur(4px)' }}>
-                                      {r.distanceKm} км
-                                    </div>
-                                  )}
-                                </div>
-                                <div className="px-2.5 py-2">
-                                  <div className="text-[12px] font-bold text-[var(--text)] truncate leading-tight">{r.name}</div>
-                                  <div className="text-[10px] text-[var(--text3)] truncate mt-0.5">
-                                    {r.metroStation ? `м. ${r.metroStation}` : r.cuisines?.slice(0, 2).join(', ') || r.city || ''}
-                                  </div>
-                                </div>
-                              </a>
-                            );
-                          })}
-                        </div>
-                      )}
+                      {/* Restaurant cards — only those mentioned in AI text */}
+                      {msg.restaurants && msg.restaurants.length > 0 && (() => {
+                        const textLower = msg.text.toLowerCase();
+                        const mentioned = msg.restaurants.filter(r => textLower.includes(r.name.toLowerCase()));
+                        return mentioned.length > 0 ? <RestaurantStrip restaurants={mentioned} /> : null;
+                      })()}
                     </div>
                   </div>
                 )}
@@ -246,65 +370,7 @@ export function AISearchBar() {
 
             {/* ── Streaming / Thinking ── */}
             {isAnalyzing && (
-              <div className="flex items-start gap-3" style={{ animation: 'fadeSlideIn 0.3s ease-out both' }}>
-                <div className="w-8 h-8 rounded-[10px] flex items-center justify-center text-[15px] shrink-0 mt-1 relative"
-                  style={{ background: 'linear-gradient(135deg, var(--accent), #8b5cf6)', boxShadow: '0 3px 12px var(--accent-glow)' }}>
-                  🧠
-                  {/* Orbiting particle */}
-                  <div className="absolute inset-[-5px]" style={{ animation: 'spin 2s linear infinite' }}>
-                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-2 h-2 rounded-full" style={{ background: 'var(--lime)', boxShadow: '0 0 8px var(--lime-glow)' }} />
-                  </div>
-                  <div className="absolute inset-[-5px]" style={{ animation: 'spin 3s linear infinite reverse' }}>
-                    <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full" style={{ background: '#a78bfa', boxShadow: '0 0 6px rgba(167,139,250,0.5)' }} />
-                  </div>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="rounded-[18px] rounded-tl-[6px] px-5 py-4 border relative overflow-hidden"
-                    style={{ background: 'var(--bg2)', borderColor: 'var(--card-border)', boxShadow: '0 4px 20px rgba(0,0,0,0.15)' }}>
-
-                    {/* Animated border glow */}
-                    <div className="absolute inset-0 rounded-[18px] pointer-events-none"
-                      style={{ border: '1px solid transparent', background: 'linear-gradient(var(--bg2), var(--bg2)) padding-box, linear-gradient(135deg, var(--accent), #8b5cf6, var(--teal), var(--accent)) border-box', backgroundSize: '100% 100%, 300% 300%', animation: 'borderGlow 3s linear infinite' }} />
-
-                    {streamText ? (
-                      <div className="text-[14px] text-[var(--text2)] whitespace-pre-line relative z-10" style={{ lineHeight: '1.55' }}>
-                        {renderText(streamText, streamRestaurants)}
-                        <span className="inline-block w-[2px] h-[1.1em] ml-0.5 align-text-bottom rounded-full"
-                          style={{ background: 'linear-gradient(180deg, var(--accent), #8b5cf6)', animation: 'pulse 1s infinite' }} />
-                      </div>
-                    ) : (
-                      <div className="relative z-10">
-                        <div className="flex items-center gap-2 mb-3">
-                          <span className="text-[13px] font-semibold" style={{ color: 'var(--accent)' }}>{t('analyzing')}</span>
-                          <span className="inline-flex gap-[3px]">
-                            {[0, 1, 2].map(i => (
-                              <span key={i} className="inline-block w-[5px] h-[5px] rounded-full"
-                                style={{ background: 'var(--accent)', animation: 'pulse 1.4s infinite both', animationDelay: `${i * 0.2}s` }} />
-                            ))}
-                          </span>
-                        </div>
-                        <div className="text-[11px] text-[var(--text3)] mb-3">Ищем идеальное место для вас</div>
-                        {/* Skeleton with sweep */}
-                        <div className="space-y-2">
-                          {[90, 70, 85, 50, 65].map((w, i) => (
-                            <div key={i} className="rounded-full overflow-hidden" style={{ height: 7, width: `${w}%`, background: 'var(--bg3)' }}>
-                              <div className="h-full rounded-full"
-                                style={{ width: '30%', background: 'linear-gradient(90deg, transparent, rgba(255,92,40,0.2), rgba(139,92,246,0.15), transparent)', animation: 'aiSweep 1.8s infinite linear', animationDelay: `${i * 0.12}s` }} />
-                            </div>
-                          ))}
-                        </div>
-                        {/* Floating icons */}
-                        <div className="absolute top-2 right-3 flex gap-3">
-                          {['🍽️', '🔍', '⭐', '📍'].map((e, i) => (
-                            <span key={i} className="text-[13px] opacity-30"
-                              style={{ animation: `float ${2 + i * 0.4}s ease-in-out infinite`, animationDelay: `${i * 0.25}s` }}>{e}</span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
+              <ThinkingBubble streamText={streamText} streamRestaurants={streamRestaurants} analyzingLabel={t('analyzing')} />
             )}
           </div>
         </div>
@@ -338,9 +404,9 @@ export function AISearchBar() {
 
       <style>{`
         @keyframes aiSweep { 0% { transform: translateX(-100%); } 100% { transform: translateX(300%); } }
-        @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
         @keyframes fadeSlideIn { 0% { opacity: 0; transform: translateY(8px); } 100% { opacity: 1; transform: translateY(0); } }
-        @keyframes borderGlow { 0% { background-position: 100% 100%, 0% 50%; } 100% { background-position: 100% 100%, 300% 50%; } }
+        @keyframes borderPulse { 0%,100% { border-color: rgba(255,92,40,0.2); } 50% { border-color: rgba(255,92,40,0.45); } }
+        @keyframes thinkingText { 0% { opacity: 0; transform: translateY(4px); } 15% { opacity: 1; transform: translateY(0); } 85% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(-4px); } }
       `}</style>
     </div>
   );

@@ -364,18 +364,25 @@ export class AiSearchService {
       return true;
     });
 
-    // Load dishes separately for found restaurants (much faster than JOIN on full table)
+    // Load dishes and photos separately for found restaurants
     if (items.length > 0) {
       const ids = items.map(r => r.id);
-      const withDishes = await this.restaurantRepo
-        .createQueryBuilder('r')
-        .leftJoinAndSelect('r.restaurantDishes', 'rd')
-        .leftJoinAndSelect('rd.dish', 'd')
-        .where('r.id IN (:...ids)', { ids })
-        .getMany();
+      const [withDishes, withPhotos] = await Promise.all([
+        this.restaurantRepo.createQueryBuilder('r')
+          .leftJoinAndSelect('r.restaurantDishes', 'rd')
+          .leftJoinAndSelect('rd.dish', 'd')
+          .where('r.id IN (:...ids)', { ids })
+          .getMany(),
+        this.restaurantRepo.createQueryBuilder('r')
+          .leftJoinAndSelect('r.photos', 'p')
+          .where('r.id IN (:...ids)', { ids })
+          .getMany(),
+      ]);
       const dishMap = new Map(withDishes.map(r => [r.id, r.restaurantDishes]));
+      const photoMap = new Map(withPhotos.map(r => [r.id, r.photos]));
       for (const item of items) {
         item.restaurantDishes = dishMap.get(item.id) || [];
+        item.photos = photoMap.get(item.id) || [];
       }
     }
 
