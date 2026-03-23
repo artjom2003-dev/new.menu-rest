@@ -19,7 +19,9 @@
     "ownerMyRestaurant": "我的餐厅",
     "ownerPanel": "控制面板",
     "logout": "退出",
-    "ownerAnalytics": "分析"
+    "ownerAnalytics": "分析",
+    "ownerVacancies": "招聘与供应商",
+    "ownerServices": "服务"
   },
   "hero": {
     "line1": "找到你的",

@@ -19,7 +19,9 @@
     "ownerMyRestaurant": "マイレストラン",
     "ownerPanel": "管理パネル",
     "logout": "ログアウト",
-    "ownerAnalytics": "分析"
+    "ownerAnalytics": "分析",
+    "ownerVacancies": "求人とサプライヤー",
+    "ownerServices": "サービス"
   },
   "hero": {
     "line1": "あなたの",

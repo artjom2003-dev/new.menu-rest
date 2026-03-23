@@ -19,6 +19,7 @@ interface User {
   cityName?: string;
   favoriteCuisines?: string;
   favoriteDishes?: string;
+  restaurantSlug?: string;
 }
 
 interface AuthState {

@@ -11,7 +11,7 @@ import { useFavoritesStore } from '@/stores/favorites.store';
 import { useWishlistStore } from '@/stores/wishlist.store';
 import { AuthModal } from '@/components/auth/AuthModal';
 import { LanguageSwitcher } from './LanguageSwitcher';
-import { chatApi } from '@/lib/api';
+import { chatApi, ownerApi } from '@/lib/api';
 
 function NavLink({ href, label, isActive }: { href: string; label: string; isActive: boolean }) {
   return (
@@ -55,6 +55,7 @@ export function Header() {
   const loadWishlist = useWishlistStore(s => s.load);
   const wishlistLoaded = useWishlistStore(s => s.loaded);
   const [chatUnread, setChatUnread] = useState(0);
+  const [ownerSlug, setOwnerSlug] = useState<string | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -81,8 +82,16 @@ export function Header() {
     return () => clearInterval(interval);
   }, [isLoggedIn]);
 
-  const isBlogActive = pathname?.startsWith('/blog');
   const isOwner = user?.role === 'owner' || user?.role === 'admin';
+
+  useEffect(() => {
+    if (!isOwner || !isLoggedIn) { setOwnerSlug(null); return; }
+    ownerApi.getMyRestaurant()
+      .then(r => setOwnerSlug(r.data?.slug || null))
+      .catch(() => {});
+  }, [isOwner, isLoggedIn]);
+
+  const isBlogActive = pathname?.startsWith('/blog');
 
   const GUEST_NAV = [
     { href: '/restaurants', label: t('restaurants') },
@@ -91,7 +100,7 @@ export function Header() {
   ];
 
   const NAV_ITEMS = isOwner
-    ? GUEST_NAV.filter(i => i.href !== '/loyalty')
+    ? [...GUEST_NAV.filter(i => i.href !== '/loyalty'), { href: '/marketplace', label: t('ownerVacancies') || 'Вакансии и поставщики' }, { href: '/owner/services', label: t('ownerServices') }]
     : GUEST_NAV;
 
   const BLOG_ITEMS = [
@@ -251,8 +260,34 @@ export function Header() {
               </button>
             )}
 
-            {/* Chat */}
-            {mounted && isLoggedIn && (
+            {/* Open on site — owners only */}
+            {isOwner && mounted && ownerSlug && (
+              <Link
+                href={`/restaurants/${ownerSlug}`}
+                className="flex items-center gap-1.5 px-4 py-1.5 rounded-full text-[13px] font-semibold no-underline transition-all duration-300"
+                style={{
+                  background: 'linear-gradient(135deg, rgba(20,184,166,0.12), rgba(20,184,166,0.04))',
+                  color: 'var(--teal)',
+                  border: '1px solid rgba(20,184,166,0.25)',
+                }}
+                onMouseEnter={(e) => {
+                  const el = e.currentTarget as HTMLElement;
+                  el.style.background = 'linear-gradient(135deg, rgba(20,184,166,0.2), rgba(20,184,166,0.08))';
+                  el.style.borderColor = 'rgba(20,184,166,0.45)';
+                  el.style.transform = 'translateY(-1px)';
+                }}
+                onMouseLeave={(e) => {
+                  const el = e.currentTarget as HTMLElement;
+                  el.style.background = 'linear-gradient(135deg, rgba(20,184,166,0.12), rgba(20,184,166,0.04))';
+                  el.style.borderColor = 'rgba(20,184,166,0.25)';
+                  el.style.transform = 'none';
+                }}>
+                Открыть на сайте
+              </Link>
+            )}
+
+            {/* Chat — guests only */}
+            {mounted && isLoggedIn && !isOwner && (
               <Link
                 href="/chat"
                 className="relative flex items-center justify-center w-[36px] h-[36px] rounded-full transition-all no-underline"

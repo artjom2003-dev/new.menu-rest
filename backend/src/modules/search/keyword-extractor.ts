@@ -24,35 +24,35 @@ const LOCATION_MAP: Record<string, string> = {
   'тверской': 'tverskoy', 'тверская': 'tverskoy', 'тверскую': 'tverskoy',
   'патриарши': 'patriarshie', 'патриаршие': 'patriarshie', 'патриках': 'patriarshie',
   'арбат': 'arbat', 'арбате': 'arbat',
-  'китай-город': 'kitay-gorod', 'китайгород': 'kitay-gorod',
+  'китай-город': 'kitay-gorod', 'китайгород': 'kitay-gorod', 'китай город': 'kitay-gorod', 'китай-городе': 'kitay-gorod', 'китай городе': 'kitay-gorod',
   'таганка': 'taganskaya', 'таганке': 'taganskaya', 'таганской': 'taganskaya',
   'остоженка': 'ostozhenka', 'остоженке': 'ostozhenka',
   'замоскворечье': 'zamoskvorechye', 'замоскворечьe': 'zamoskvorechye',
   'хамовники': 'khamovniki', 'хамовниках': 'khamovniki',
   'бауманская': 'baumanskaya', 'бауманской': 'baumanskaya',
-  'красные ворота': 'krasnye-vorota',
+  'красные ворота': 'krasnye-vorota', 'красных воротах': 'krasnye-vorota', 'красных ворот': 'krasnye-vorota',
   'сретенка': 'sretenka', 'сретенке': 'sretenka',
   'чистые пруды': 'chistye-prudy', 'чистых прудов': 'chistye-prudy', 'чистых прудах': 'chistye-prudy',
-  'кузнецкий мост': 'kuznetsky-most',
+  'кузнецкий мост': 'kuznetsky-most', 'кузнецком мосту': 'kuznetsky-most',
+  'парк культуры': 'park-kultury', 'парке культуры': 'park-kultury',
+  'проспект мира': 'prospekt-mira', 'проспекте мира': 'prospekt-mira',
+  'цветной бульвар': 'tsvetnoy-bulvar', 'цветном бульваре': 'tsvetnoy-bulvar',
   'пушкинская': 'pushkinskaya', 'пушкинской': 'pushkinskaya',
   'маяковская': 'mayakovskaya', 'маяковской': 'mayakovskaya',
   'новослободская': 'novoslobodskaya',
   'сухаревская': 'sukharevskaya',
   'лубянка': 'lubyanka', 'лубянке': 'lubyanka',
   'кропоткинская': 'kropotkinskaya',
-  'парк культуры': 'park-kultury',
   'октябрьская': 'oktyabrskaya',
   'добрынинская': 'dobryninskaya',
   'павелецкая': 'paveletskaya',
   'курская': 'kurskaya', 'курской': 'kurskaya',
   'комсомольская': 'komsomolskaya',
-  'проспект мира': 'prospekt-mira',
   'сокол': 'sokol', 'соколе': 'sokol',
   'аэропорт': 'aeroport',
   'динамо': 'dinamo',
   'белорусская': 'belorusskaya', 'белорусской': 'belorusskaya',
   'менделеевская': 'mendeleevskaya',
-  'цветной бульвар': 'tsvetnoy-bulvar',
   'трубная': 'trubnaya',
   'сокольники': 'sokolniki', 'сокольниках': 'sokolniki',
   'красносельская': 'krasnoselskaya',
@@ -139,6 +139,19 @@ const DISH_MAP: Record<string, string> = {
   'вафл': 'вафли', 'штрудел': 'штрудель', 'профитрол': 'профитроли',
   'капкейк': 'капкейк', 'маффин': 'маффин', 'трюфел': 'трюфель',
   'пончик': 'пончик', 'донат': 'пончик',
+  // Напитки
+  'пиво': 'пиво', 'пива': 'пиво', 'пивк': 'пиво', 'пивн': 'пиво',
+  'коктейл': 'коктейль', 'мохито': 'мохито', 'маргарит': 'маргарита',
+  'виски': 'виски', 'вино': 'вино', 'вина': 'вино', 'шампанск': 'шампанское', 'просекко': 'просекко',
+  'кофе': 'кофе', 'капучин': 'капучино', 'латте': 'латте', 'эспрессо': 'эспрессо', 'американо': 'американо',
+  'чай': 'чай',
+  'лимонад': 'лимонад', 'смузи': 'смузи', 'фреш': 'фреш',
+  'глинтвейн': 'глинтвейн', 'сидр': 'сидр', 'эль': 'эль',
+  // Абстрактные понятия → конкретные блюда
+  'сладк': 'сладкое', 'сладенького': 'сладкое', 'сладеньк': 'сладкое',
+  'выпить': 'выпить', 'напиться': 'выпить', 'алкогол': 'выпить', 'бухн': 'выпить',
+  'мясо': 'мясо', 'мясн': 'мясо',
+  'рыб': 'рыба', 'рыбк': 'рыба',
 };
 
 // Semantically related dishes: when user searches X, also look for these
@@ -156,6 +169,16 @@ const RELATED_DISHES: Record<string, string[]> = {
   'паста': ['спагетти', 'карбонара', 'болоньезе', 'лазанья', 'пенне', 'феттучин'],
   'салат': ['цезарь', 'оливье', 'греческий', 'микс'],
   'завтрак': ['каша', 'сырники', 'блины', 'омлет', 'яичница', 'круассан', 'тост', 'бенедикт'],
+  // Напитки
+  'пиво': ['эль', 'лагер', 'крафт', 'стаут', 'пилзнер', 'нефильтрованн', 'сидр'],
+  'вино': ['просекко', 'шампанское', 'кьянти', 'мерло', 'каберне', 'пино'],
+  'коктейль': ['мохито', 'маргарита', 'негрони', 'аперол', 'дайкири', 'космополитен', 'виски'],
+  'кофе': ['капучино', 'латте', 'эспрессо', 'американо', 'раф', 'флэт-уайт'],
+  // Семантические (абстрактное → конкретное)
+  'сладкое': ['десерт', 'торт', 'тирамису', 'чизкейк', 'мороженое', 'брауни', 'эклер', 'панна-котт', 'медовик'],
+  'выпить': ['пиво', 'вино', 'коктейль', 'виски', 'эль', 'сидр'],
+  'мясо': ['стейк', 'рибай', 'шашлык', 'бургер', 'кебаб', 'отбивн', 'каре', 'медальон'],
+  'рыба': ['лосось', 'форель', 'сибас', 'дорада', 'тунец', 'судак', 'окунь'],
 };
 
 const DIETARY_MAP: Record<string, string> = {
@@ -193,7 +216,7 @@ const ATMOSPHERE_MAP: Record<string, string> = {
 const VENUE_MAP: Record<string, string> = {
   'ресторан': 'restaurant',
   'кафе': 'cafe',
-  'бар ': 'bar', 'баре': 'bar', 'бару': 'bar',
+  'бар': 'bar', 'баре': 'bar', 'бару': 'bar', 'барчик': 'bar',
   'кофейн': 'coffeehouse',
   'гастробар': 'gastropub', 'гастропаб': 'gastropub',
   'бистро': 'bistro',
@@ -236,6 +259,32 @@ function extractMetro(query: string): string | undefined {
   }
 }
 
+/**
+ * Extract all potential location words from query for DB-level metro_station search.
+ * Returns original Russian text (not slugified) so ILIKE can match against metro_station column.
+ */
+export function extractLocationWords(query: string): string[] {
+  const q = query.toLowerCase();
+  const words: string[] = [];
+
+  // Check LOCATION_MAP first
+  for (const key of Object.keys(LOCATION_MAP)) {
+    if (q.includes(key)) {
+      words.push(key);
+    }
+  }
+
+  // Extract "метро X" pattern
+  const metroMatch = q.match(/(?:метро|м\.)\s+([а-яё\-]+(?:\s+[а-яё\-]+)?)/i);
+  if (metroMatch) words.push(metroMatch[1]);
+
+  // Extract "на X" where X looks like a place name (capitalized in original or known pattern)
+  const onMatch = query.match(/(?:на|возле|около|рядом с|у)\s+([А-ЯЁ][а-яё\-]+(?:[\s-][А-ЯЁа-яё\-]+)*)/);
+  if (onMatch) words.push(onMatch[1].toLowerCase());
+
+  return [...new Set(words)];
+}
+
 // Extract location from preposition patterns: "на преображенской площади", "возле белорусской"
 function extractLocationPhrase(query: string): string | undefined {
   const t = query.toLowerCase();
@@ -263,9 +312,17 @@ export function extractKeywords(query: string): ExtractedParams {
     params.rawLocation = metro;
     hits++;
   } else {
-    const location = matchMap(query, LOCATION_MAP);
-    if (location) {
-      params.location = location;
+    const q = query.toLowerCase();
+    // Find which key matched to preserve original Russian text for DB search
+    let matchedKey: string | undefined;
+    let matchedSlug: string | undefined;
+    for (const [key, value] of Object.entries(LOCATION_MAP)) {
+      if (q.includes(key)) { matchedKey = key; matchedSlug = value; break; }
+    }
+    if (matchedSlug) {
+      params.location = matchedSlug;
+      // Store the original Russian key for ILIKE search in DB
+      params.rawLocation = matchedKey;
       hits++;
     } else {
       // Try to extract location phrase for fuzzy DB search

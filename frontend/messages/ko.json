@@ -19,7 +19,9 @@
     "ownerMyRestaurant": "내 레스토랑",
     "ownerPanel": "관리 패널",
     "logout": "로그아웃",
-    "ownerAnalytics": "분석"
+    "ownerAnalytics": "분석",
+    "ownerVacancies": "채용 및 공급업체",
+    "ownerServices": "서비스"
   },
   "hero": {
     "line1": "나만의",

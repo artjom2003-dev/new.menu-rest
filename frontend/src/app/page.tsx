@@ -1,20 +1,22 @@
-import type { Metadata } from 'next';
+'use client';
+
 import { HeroSection } from '@/components/layout/HeroSection';
 import { RestaurantGrid } from '@/components/restaurant/RestaurantGrid';
 import { CtaBanner } from '@/components/layout/CtaBanner';
-
-export const metadata: Metadata = {
-  title: 'Menu-Rest — Найди идеальный ресторан',
-  description:
-    'Умный поиск ресторанов по блюдам, аллергенам и бюджету. AI-поиск, КБЖУ, онлайн-бронирование.',
-};
+import { useSearchStore } from '@/stores/search.store';
 
 export default function HomePage() {
+  const hasAiResults = useSearchStore(s => s.results.length > 0 || s.recommendation.length > 0);
+
   return (
     <>
       <HeroSection />
-      <RestaurantGrid />
-      <CtaBanner />
+      {!hasAiResults && (
+        <>
+          <RestaurantGrid />
+          <CtaBanner />
+        </>
+      )}
     </>
   );
 }

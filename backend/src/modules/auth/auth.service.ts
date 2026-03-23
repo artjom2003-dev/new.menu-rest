@@ -10,6 +10,7 @@ import * as nodemailer from 'nodemailer';
 import { ConfigService } from '@nestjs/config';
 import { IsEmail, IsString, MinLength, IsOptional, IsNumber } from 'class-validator';
 import { User } from '@database/entities/user.entity';
+import { Restaurant } from '@database/entities/restaurant.entity';
 
 export class RegisterDto {
   @IsString()
@@ -61,6 +62,8 @@ export class AuthService {
   constructor(
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
+    @InjectRepository(Restaurant)
+    private readonly restaurantRepo: Repository<Restaurant>,
     private readonly jwtService: JwtService,
     private readonly config: ConfigService,
   ) {}
@@ -251,12 +254,22 @@ export class AuthService {
     return this.issueTokens(user);
   }
 
-  private issueTokens(user: User) {
+  private async issueTokens(user: User) {
     const payload = { sub: user.id, email: user.email, role: user.role || 'user' };
 
     const accessToken = this.jwtService.sign(payload, {
       expiresIn: this.config.get('JWT_EXPIRES_IN', '7d'),
     });
+
+    // For owners, include their restaurant slug
+    let restaurantSlug: string | undefined;
+    if (user.role === 'owner' || user.role === 'admin') {
+      const restaurant = await this.restaurantRepo.findOne({
+        where: { ownerId: user.id },
+        select: ['id', 'slug'],
+      });
+      if (restaurant) restaurantSlug = restaurant.slug;
+    }
 
     return {
       accessToken,
@@ -269,6 +282,7 @@ export class AuthService {
         loyaltyPoints: user.loyaltyPoints,
         role: user.role || 'user',
         referralCode: user.referralCode,
+        ...(restaurantSlug && { restaurantSlug }),
       },
     };
   }

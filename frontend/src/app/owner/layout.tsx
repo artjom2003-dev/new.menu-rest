@@ -17,7 +17,6 @@ const NAV = [
   { href: '/owner/bookings', label: 'Брони', icon: '📅' },
   { href: '/owner/reviews', label: 'Отзывы', icon: '⭐' },
   { href: '/owner/listings', label: 'Объявления', icon: '📋' },
-  { href: '/owner/services', label: 'Услуги', icon: '💼' },
 ];
 
 export default function OwnerLayout({ children }: { children: React.ReactNode }) {
@@ -67,12 +66,6 @@ export default function OwnerLayout({ children }: { children: React.ReactNode })
               </div>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              {myRestaurant && (
-                <Link href={`/restaurants/${myRestaurant.slug}`}
-                  style={{ fontSize: 11, color: 'var(--teal)', fontWeight: 600, textDecoration: 'none', padding: '5px 12px', borderRadius: 8, background: 'rgba(20,184,166,0.08)', border: '1px solid rgba(20,184,166,0.15)' }}>
-                  Открыть на сайте →
-                </Link>
-              )}
               <Link href="/profile"
                 style={{ fontSize: 11, color: 'var(--text3)', textDecoration: 'none', padding: '5px 12px', borderRadius: 8, background: 'var(--bg3)' }}>
                 Мой профиль

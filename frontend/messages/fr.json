@@ -19,7 +19,9 @@
     "ownerMyRestaurant": "Mon restaurant",
     "ownerPanel": "Panneau de gestion",
     "logout": "Déconnexion",
-    "ownerAnalytics": "Analytique"
+    "ownerAnalytics": "Analytique",
+    "ownerVacancies": "Emplois et fournisseurs",
+    "ownerServices": "Services"
   },
   "hero": {
     "line1": "Trouvez votre",

@@ -20,7 +20,8 @@
     "ownerPanel": "Панель управления",
     "logout": "Выйти",
     "ownerAnalytics": "Аналитика",
-    "ownerServices": "Про услуги"
+    "ownerVacancies": "Вакансии и поставщики",
+    "ownerServices": "Услуги"
   },
   "hero": {
     "line1": "Найди свое",
