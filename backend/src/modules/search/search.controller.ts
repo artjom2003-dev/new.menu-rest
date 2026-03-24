@@ -42,7 +42,7 @@ export class SearchController {
 
   @Post('ai-stream')
   @ApiOperation({ summary: 'AI-поиск со стримингом (SSE)' })
-  async aiSearchStream(@Body() body: { query: string; lat?: number; lng?: number; context?: { role: string; text: string }[] }, @Res() res: Response) {
+  async aiSearchStream(@Body() body: { query: string; lat?: number; lng?: number; city?: string; cityName?: string; context?: { role: string; text: string }[] }, @Res() res: Response) {
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
@@ -50,7 +50,7 @@ export class SearchController {
     res.flushHeaders();
 
     try {
-      for await (const chunk of this.aiSearchService.recommendStream(body.query || '', body.lat, body.lng, body.context)) {
+      for await (const chunk of this.aiSearchService.recommendStream(body.query || '', body.lat, body.lng, body.context, body.city, body.cityName)) {
         res.write(`data: ${chunk}\n\n`);
       }
     } catch (err) {

@@ -58,4 +58,10 @@ export class ChatController {
   ) {
     return this.service.markRead(conversationId, userId);
   }
+
+  @Get('unread-count')
+  @ApiOperation({ summary: 'Кол-во непрочитанных сообщений' })
+  getUnreadCount(@CurrentUser('id') userId: number) {
+    return this.service.getUnreadCount(userId);
+  }
 }

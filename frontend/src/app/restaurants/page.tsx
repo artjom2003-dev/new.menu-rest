@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, Suspense } from 'react';
+import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { restaurantApi } from '@/lib/api';
 import { RestaurantCard } from '@/components/restaurant/RestaurantCard';
@@ -12,6 +12,7 @@ interface RestaurantListItem {
   slug: string;
   name: string;
   description?: string;
+  address?: string;
   cuisines?: Array<{ name: string }>;
   city?: { name: string };
   rating: number;
@@ -30,6 +31,103 @@ interface PaginationMeta {
   pages: number;
 }
 
+function SearchWithSuggestions({ value, onChange, onSearch, onClear }: {
+  value: string;
+  onChange: (v: string) => void;
+  onSearch: (q: string) => void;
+  onClear?: () => void;
+}) {
+  const [suggestions, setSuggestions] = useState<Array<{ slug: string; name: string; city?: { name: string } }>>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout>>();
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
+
+  useEffect(() => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    if (value.trim().length < 2) { setSuggestions([]); return; }
+    timerRef.current = setTimeout(async () => {
+      try {
+        const res = await restaurantApi.list({ search: value.trim(), limit: 6 });
+        setSuggestions(res.data.items?.map((r: any) => ({ slug: r.slug, name: r.name, city: r.city })) || []);
+        setShowSuggestions(true);
+      } catch { setSuggestions([]); }
+    }, 250);
+    return () => { if (timerRef.current) clearTimeout(timerRef.current); };
+  }, [value]);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) setShowSuggestions(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  return (
+    <form
+      onSubmit={(e) => { e.preventDefault(); setShowSuggestions(false); onSearch(value); }}
+      className="flex gap-2 mb-4">
+      <div className="flex-1 relative" ref={wrapperRef}>
+        <input
+          type="text"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder="Название, кухня или блюдо..."
+          className="w-full px-5 py-3 pl-11 rounded-full text-[14px] text-[var(--text)] placeholder-[var(--text3)] outline-none border transition-all font-sans"
+          style={{ background: 'var(--bg3)', borderColor: 'var(--card-border)' }}
+          onFocus={(e) => { e.currentTarget.style.borderColor = 'var(--accent)'; if (suggestions.length) setShowSuggestions(true); }}
+          onBlur={(e) => { e.currentTarget.style.borderColor = ''; }}
+        />
+        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[15px] opacity-40">🔍</span>
+
+        {showSuggestions && suggestions.length > 0 && (
+          <div className="absolute top-full left-0 right-0 mt-1 rounded-[14px] border overflow-hidden z-50 shadow-lg"
+            style={{ background: 'var(--bg2)', borderColor: 'var(--card-border)' }}>
+            {suggestions.map((s, i) => (
+              <button
+                key={s.slug}
+                type="button"
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  setShowSuggestions(false);
+                  router.push(`/restaurants/${s.slug}`);
+                }}
+                className="w-full text-left px-4 py-2.5 flex items-center justify-between hover:bg-[var(--bg3)] transition-colors"
+                style={{ borderTop: i > 0 ? '1px solid var(--card-border)' : undefined }}>
+                <span className="text-[13px] text-[var(--text)] truncate">{s.name}</span>
+                {s.city?.name && <span className="text-[11px] text-[var(--text3)] ml-2 flex-shrink-0">{s.city.name}</span>}
+              </button>
+            ))}
+            <button
+              type="button"
+              onMouseDown={(e) => { e.preventDefault(); setShowSuggestions(false); onSearch(value); }}
+              className="w-full text-left px-4 py-2.5 text-[12px] font-medium text-[var(--accent)] hover:bg-[var(--bg3)] transition-colors"
+              style={{ borderTop: '1px solid var(--card-border)' }}>
+              Показать все результаты
+            </button>
+          </div>
+        )}
+      </div>
+      <button
+        type="submit"
+        className="px-6 py-3 rounded-full text-[13px] font-semibold text-white border-none cursor-pointer transition-all"
+        style={{ background: 'var(--accent)' }}>
+        Найти
+      </button>
+      {onClear && (
+        <button
+          type="button"
+          onClick={onClear}
+          className="px-4 py-3 rounded-full text-[13px] font-semibold border cursor-pointer transition-all"
+          style={{ background: 'var(--glass)', color: 'var(--text2)', borderColor: 'var(--glass-border)' }}>
+          Сбросить
+        </button>
+      )}
+    </form>
+  );
+}
+
 function RestaurantsPageInner() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -42,7 +140,7 @@ function RestaurantsPageInner() {
   const cuisine = searchParams.get('cuisine') || undefined;
   const priceLevelMin = searchParams.get('priceLevelMin') || undefined;
   const priceLevelMax = searchParams.get('priceLevelMax') || undefined;
-  const sortBy = searchParams.get('sortBy') || 'rating';
+  const sortBy = searchParams.get('sortBy') || undefined;
   const search = searchParams.get('search') || undefined;
   const features = searchParams.get('features') || undefined;
   const metro = searchParams.get('metro') || undefined;
@@ -82,6 +180,7 @@ function RestaurantsPageInner() {
     slug: r.slug,
     name: r.name,
     description: r.description,
+    address: r.address,
     cuisines: r.cuisines || [],
     locations: r.city ? [{ city: { name: r.city.name } }] : [],
     ratingAggregate: r.rating,
@@ -91,6 +190,7 @@ function RestaurantsPageInner() {
     photos: r.photos?.map(p => ({ url: p.url, isCover: p.is_cover })) || [],
     features: r.features || [],
     distanceKm: r.distanceKm,
+    branchCount: (r as any).branchCount,
   });
 
   return (
@@ -106,55 +206,24 @@ function RestaurantsPageInner() {
           </p>
         </div>
 
-        {/* Search */}
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
+        {/* Search with autocomplete */}
+        <SearchWithSuggestions
+          value={searchInput}
+          onChange={setSearchInput}
+          onSearch={(q) => {
             const params = new URLSearchParams(searchParams.toString());
-            if (searchInput.trim()) {
-              params.set('search', searchInput.trim());
-            } else {
-              params.delete('search');
-            }
+            if (q.trim()) { params.set('search', q.trim()); } else { params.delete('search'); }
             params.set('page', '1');
             router.push(`/restaurants?${params.toString()}`);
           }}
-          className="flex gap-2 mb-4">
-          <div className="flex-1 relative">
-            <input
-              type="text"
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              placeholder="Название, кухня или блюдо..."
-              className="w-full px-5 py-3 pl-11 rounded-full text-[14px] text-[var(--text)] placeholder-[var(--text3)] outline-none border transition-all font-sans"
-              style={{ background: 'var(--bg3)', borderColor: 'var(--card-border)' }}
-              onFocus={(e) => (e.currentTarget.style.borderColor = 'var(--accent)')}
-              onBlur={(e) => (e.currentTarget.style.borderColor = '')}
-            />
-            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[15px] opacity-40">🔍</span>
-          </div>
-          <button
-            type="submit"
-            className="px-6 py-3 rounded-full text-[13px] font-semibold text-white border-none cursor-pointer transition-all"
-            style={{ background: 'var(--accent)' }}>
-            Найти
-          </button>
-          {search && (
-            <button
-              type="button"
-              onClick={() => {
-                setSearchInput('');
-                const params = new URLSearchParams(searchParams.toString());
-                params.delete('search');
-                params.set('page', '1');
-                router.push(`/restaurants?${params.toString()}`);
-              }}
-              className="px-4 py-3 rounded-full text-[13px] font-semibold border cursor-pointer transition-all"
-              style={{ background: 'var(--glass)', color: 'var(--text2)', borderColor: 'var(--glass-border)' }}>
-              Сбросить
-            </button>
-          )}
-        </form>
+          onClear={search ? () => {
+            setSearchInput('');
+            const params = new URLSearchParams(searchParams.toString());
+            params.delete('search');
+            params.set('page', '1');
+            router.push(`/restaurants?${params.toString()}`);
+          } : undefined}
+        />
       </div>
 
       <FiltersBar />
@@ -166,24 +235,31 @@ function RestaurantsPageInner() {
             📍 По расстоянию
           </span>
         )}
-        {!lat && ['rating', 'created_at', 'name'].map((s) => (
-          <button
-            key={s}
-            onClick={() => {
-              const params = new URLSearchParams(searchParams.toString());
-              params.set('sortBy', s);
-              params.set('page', '1');
-              router.push(`/restaurants?${params.toString()}`);
-            }}
-            className="px-4 py-2 rounded-full text-[12px] font-semibold border transition-all cursor-pointer"
-            style={{
-              background: sortBy === s ? 'var(--accent)' : 'var(--glass)',
-              color: sortBy === s ? '#fff' : 'var(--text2)',
-              borderColor: sortBy === s ? 'var(--accent)' : 'var(--glass-border)',
-            }}>
-            {s === 'rating' ? '⭐ По рейтингу' : s === 'created_at' ? '🆕 Новые' : '🔤 По имени'}
-          </button>
-        ))
+        {!lat && ['rating', 'created_at', 'name'].map((s) => {
+          const isActive = sortBy === s;
+          return (
+            <button
+              key={s}
+              onClick={() => {
+                const params = new URLSearchParams(searchParams.toString());
+                if (isActive) {
+                  params.delete('sortBy');
+                } else {
+                  params.set('sortBy', s);
+                }
+                params.set('page', '1');
+                router.push(`/restaurants?${params.toString()}`);
+              }}
+              className="px-4 py-2 rounded-full text-[12px] font-semibold border transition-all cursor-pointer"
+              style={{
+                background: isActive ? 'var(--accent)' : 'var(--glass)',
+                color: isActive ? '#fff' : 'var(--text2)',
+                borderColor: isActive ? 'var(--accent)' : 'var(--glass-border)',
+              }}>
+              {s === 'rating' ? '⭐ По рейтингу' : s === 'created_at' ? '🆕 Новые' : '🔤 По имени'}
+            </button>
+          );
+        })
         }
 
         <div className="w-px h-5" style={{ background: 'var(--card-border)' }} />
@@ -215,7 +291,7 @@ function RestaurantsPageInner() {
           {/* Main content */}
           <div className="flex-1 min-w-0">
             {loading ? (
-              <div className="grid grid-cols-3 gap-5 max-lg:grid-cols-2 max-sm:grid-cols-1">
+              <div className="grid grid-cols-4 gap-4 max-xl:grid-cols-3 max-lg:grid-cols-2 max-sm:grid-cols-1">
                 {Array.from({ length: 12 }).map((_, i) => (
                   <div key={i} className="h-[300px] rounded-[20px] animate-pulse" style={{ background: 'var(--bg3)' }} />
                 ))}
@@ -227,7 +303,7 @@ function RestaurantsPageInner() {
                 <p className="text-[13px] text-[var(--text3)]">Попробуйте изменить фильтры</p>
               </div>
             ) : (
-              <div className="grid grid-cols-3 gap-5 max-lg:grid-cols-2 max-sm:grid-cols-1">
+              <div className="grid grid-cols-4 gap-4 max-xl:grid-cols-3 max-lg:grid-cols-2 max-sm:grid-cols-1">
                 {restaurants.map((r) => (
                   <RestaurantCard key={r.slug} restaurant={adaptRestaurant(r)} />
                 ))}
@@ -363,7 +439,7 @@ export default function RestaurantsPage() {
     <Suspense fallback={
       <div className="max-w-[1400px] mx-auto px-10 pt-10 pb-20">
         <div className="h-8 w-48 rounded bg-[var(--bg3)] animate-pulse mb-6" />
-        <div className="grid grid-cols-3 gap-5 max-lg:grid-cols-2 max-sm:grid-cols-1">
+        <div className="grid grid-cols-4 gap-4 max-xl:grid-cols-3 max-lg:grid-cols-2 max-sm:grid-cols-1">
           {Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className="h-[300px] rounded-[20px] animate-pulse" style={{ background: 'var(--bg3)' }} />
           ))}

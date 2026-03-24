@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useCallback, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useSearchStore } from '@/stores/search.store';
 import { useGeoStore } from '@/stores/geo.store';
+import { useCityStore } from '@/stores/city.store';
 import { referenceApi } from '@/lib/api';
 
 interface FilterOption {
@@ -45,7 +46,7 @@ function MiniDropdown({ icon, label, options, value, onChange, searchable }: {
         className="flex items-center gap-1.5 px-4 py-2 rounded-full text-[13px] font-medium cursor-pointer transition-all whitespace-nowrap font-sans border"
         style={{
           background: value ? 'var(--accent-glow)' : 'var(--bg3)',
-          borderColor: value ? 'rgba(255,92,40,0.3)' : 'var(--card-border)',
+          borderColor: value ? 'var(--chat-user-border)' : 'var(--card-border)',
           color: value ? 'var(--accent)' : 'var(--text2)',
         }}>
         {icon} {selected ? (selected.icon ? `${selected.icon} ${selected.label}` : selected.label) : label}
@@ -122,7 +123,7 @@ function CitySearch({ options, value, onChange }: {
       <div className="flex items-center gap-1.5 rounded-full border px-3 py-1.5"
         style={{
           background: value ? 'var(--accent-glow)' : 'var(--bg3)',
-          borderColor: value ? 'rgba(255,92,40,0.3)' : focused ? 'var(--accent)' : 'var(--card-border)',
+          borderColor: value ? 'var(--chat-user-border)' : focused ? 'var(--accent)' : 'var(--card-border)',
         }}>
         <span className="text-[13px]">📍</span>
         {value && selected ? (
@@ -214,7 +215,7 @@ function CuisineSelector({ cuisines, selected, onToggle }: {
             style={{
               background: activeHiddenCount > 0 ? 'var(--accent-glow)' : 'var(--glass)',
               color: activeHiddenCount > 0 ? 'var(--accent)' : 'var(--text3)',
-              borderColor: activeHiddenCount > 0 ? 'rgba(255,92,40,0.3)' : 'var(--glass-border)',
+              borderColor: activeHiddenCount > 0 ? 'var(--chat-user-border)' : 'var(--glass-border)',
             }}>
             {expanded ? 'Свернуть' : `Ещё +${hiddenCount}`}
             {activeHiddenCount > 0 && !expanded && (
@@ -277,7 +278,7 @@ function PriceRangeSelector({ minVal, maxVal, onChange }: {
         className="flex items-center gap-1.5 px-4 py-2 rounded-full text-[13px] font-medium cursor-pointer transition-all whitespace-nowrap font-sans border"
         style={{
           background: hasValue ? 'var(--accent-glow)' : 'var(--bg3)',
-          borderColor: hasValue ? 'rgba(255,92,40,0.3)' : 'var(--card-border)',
+          borderColor: hasValue ? 'var(--chat-user-border)' : 'var(--card-border)',
           color: hasValue ? 'var(--accent)' : 'var(--text2)',
         }}>
         💰 {displayLabel}
@@ -322,7 +323,7 @@ function ActiveTags({ tags, onRemove, onClear }: {
       {tags.map(t => (
         <span key={t.key}
           className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-semibold cursor-pointer transition-all"
-          style={{ background: 'var(--accent-glow)', color: 'var(--accent)', border: '1px solid rgba(255,92,40,0.2)' }}
+          style={{ background: 'var(--accent-glow)', color: 'var(--accent)', border: '1px solid var(--chat-user-border)' }}
           onClick={() => onRemove(t.key)}>
           {t.label} <span className="opacity-60">✕</span>
         </span>
@@ -346,7 +347,7 @@ function NearbyButton({ active, onToggle }: { active: boolean; onToggle: () => v
       className="flex items-center gap-1.5 px-4 py-2 rounded-full text-[13px] font-medium cursor-pointer transition-all whitespace-nowrap font-sans border"
       style={{
         background: active ? 'var(--accent-glow)' : 'var(--bg3)',
-        borderColor: active ? 'rgba(255,92,40,0.3)' : 'var(--card-border)',
+        borderColor: active ? 'var(--chat-user-border)' : 'var(--card-border)',
         color: active ? 'var(--accent)' : 'var(--text2)',
         opacity: isRequesting ? 0.6 : 1,
       }}>
@@ -382,6 +383,7 @@ function FiltersBarInner() {
   const geoStatus = useGeoStore(s => s.status);
   const geoLat = useGeoStore(s => s.lat);
   const geoLng = useGeoStore(s => s.lng);
+  const savedCitySlug = useCityStore(s => s.slug);
 
   // Geo is ready but NOT auto-activated — user must click "Рядом" manually
 
@@ -448,6 +450,18 @@ function FiltersBarInner() {
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Apply saved city from CityDetector when no city in URL
+  useEffect(() => {
+    const urlCity = searchParams.get('city');
+    if (!urlCity && savedCitySlug && !filters.city) {
+      setFilter('city', savedCitySlug);
+      const params = new URLSearchParams(searchParams.toString());
+      params.set('city', savedCitySlug);
+      params.set('page', '1');
+      router.replace(`/restaurants?${params.toString()}`);
+    }
+  }, [savedCitySlug]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Restore occasion/atmosphere/entertainment from URL once options are loaded
   useEffect(() => {
     const features = searchParams.get('features');
@@ -502,6 +516,11 @@ function FiltersBarInner() {
     setFilter('city', v);
     setSelectedMetro(undefined);
     setSelectedDistrict(undefined);
+    // Sync with global city store
+    if (v) {
+      const cityOption = cities.find(c => c.value === v);
+      if (cityOption) useCityStore.getState().setCity(v, cityOption.label);
+    }
     pushFilters({ city: v, metro: undefined, district: undefined });
   };
 

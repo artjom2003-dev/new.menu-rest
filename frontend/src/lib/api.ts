@@ -131,6 +131,13 @@ export const ownerApi = {
     api.patch(`/users/me/restaurant/menu/dishes/${id}`, data),
   deleteDish: (id: number) =>
     api.delete(`/users/me/restaurant/menu/dishes/${id}`),
+  uploadDishPhoto: (id: number, file: File) => {
+    const form = new FormData();
+    form.append('file', file);
+    return api.post(`/users/me/restaurant/menu/dishes/${id}/photo`, form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
   uploadMenuPdf: (file: File) => {
     const form = new FormData();
     form.append('file', file);

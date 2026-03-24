@@ -17,9 +17,9 @@ interface LeaderboardEntry {
 
 /* ───────── Constants ───────── */
 const LEVELS = [
-  { key: 'bronze', label: 'Бронза', min: 0, multiplier: 'x1', gradient: 'linear-gradient(135deg, #cd7f32 0%, #a0522d 100%)', color: '#cd7f32', glow: 'rgba(205,127,50,0.3)', perks: ['Накопление баллов за отзывы', 'Базовые рекомендации', 'Участие в рейтинге'] },
-  { key: 'silver', label: 'Серебро', min: 500, multiplier: 'x1.5', gradient: 'linear-gradient(135deg, #e8e8e8 0%, #a8a8a8 100%)', color: '#c0c0c0', glow: 'rgba(192,192,192,0.3)', perks: ['Бонус x1.5 к начислению', 'Приоритетное бронирование', 'Ранний доступ к акциям', 'Персональные рекомендации'] },
-  { key: 'gold', label: 'Золото', min: 2000, multiplier: 'x2', gradient: 'linear-gradient(135deg, #ffd700 0%, #daa520 100%)', color: '#ffd700', glow: 'rgba(255,215,0,0.35)', perks: ['Бонус x2 к начислению', 'Бесплатная отмена брони', 'Персональный менеджер', 'Эксклюзивные предложения', 'VIP-события'] },
+  { key: 'bronze', label: 'Бронза', min: 0, multiplier: 'x1', gradient: 'linear-gradient(135deg, #cd7f32 0%, #a0522d 100%)', color: '#cd7f32', glow: 'rgba(205,127,50,0.3)', perks: ['Базовое начисление баллов'] },
+  { key: 'silver', label: 'Серебро', min: 500, multiplier: 'x1.5', gradient: 'linear-gradient(135deg, #7a7a86 0%, #52525c 100%)', color: '#c0c0c0', glow: 'rgba(192,192,192,0.3)', perks: ['Бонус x1.5 к начислению'] },
+  { key: 'gold', label: 'Золото', min: 2000, multiplier: 'x2', gradient: 'linear-gradient(135deg, #c9981a 0%, #8a6914 100%)', color: '#ffd700', glow: 'rgba(255,215,0,0.35)', perks: ['Бонус x2 к начислению'] },
 ];
 
 const EARN_WAYS = [
@@ -71,6 +71,120 @@ function ProgressRing({ progress, size = 120, stroke = 8, color }: { progress: n
         strokeDasharray={circumference} strokeDashoffset={offset} strokeLinecap="round"
         style={{ transition: 'stroke-dashoffset 1.5s ease-out' }} />
     </svg>
+  );
+}
+
+/* ───────── Countdown Hook ───────── */
+function useCountdown(targetDate: Date) {
+  const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+
+  useEffect(() => {
+    function calc() {
+      const now = Date.now();
+      const diff = Math.max(targetDate.getTime() - now, 0);
+      setTimeLeft({
+        days: Math.floor(diff / 86400000),
+        hours: Math.floor((diff % 86400000) / 3600000),
+        minutes: Math.floor((diff % 3600000) / 60000),
+        seconds: Math.floor((diff % 60000) / 1000),
+      });
+    }
+    calc();
+    const id = setInterval(calc, 1000);
+    return () => clearInterval(id);
+  }, [targetDate]);
+
+  return timeLeft;
+}
+
+/* ───────── Weekly Giveaway ───────── */
+function WeeklyGiveaway({ userPoints }: { userPoints?: number }) {
+  // Target: 30 days from now (static per mount)
+  const [target] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 30);
+    d.setHours(20, 0, 0, 0);
+    return d;
+  });
+  const { days, hours, minutes, seconds } = useCountdown(target);
+
+  const pad = (n: number) => String(n).padStart(2, '0');
+
+  // Tickets: 1 per 100 points, minimum 1 if has any points
+  const tickets = !userPoints ? 0 : Math.max(1, Math.floor(userPoints / 100));
+
+  return (
+    <div className="loyalty-section" style={{ paddingTop: 0 }}>
+      <div className="giveaway-card">
+        {/* Decorative background */}
+        <div className="giveaway-bg" />
+
+        <div className="giveaway-inner">
+          {/* Left: Info */}
+          <div className="giveaway-info">
+            <div className="giveaway-badge">Еженедельный розыгрыш</div>
+            <h3 className="giveaway-title">Выиграйте ужин до <span className="giveaway-amount">10 000 ₽</span></h3>
+            <p className="giveaway-desc">
+              Каждую неделю среди участников, сделавших заказ через MenuRest, мы разыгрываем покрытие чека в любом ресторане-партнёре.
+            </p>
+            <div className="giveaway-how">
+              <div className="giveaway-how-title">Как это работает</div>
+              <div className="giveaway-how-row">
+                <span className="giveaway-how-icon">🎟️</span>
+                <span>Каждые <strong>100 баллов</strong> = 1 билет в розыгрыше</span>
+              </div>
+              <div className="giveaway-how-row">
+                <span className="giveaway-how-icon">📈</span>
+                <span>Баллы не списываются — копите и увеличивайте шансы</span>
+              </div>
+              <div className="giveaway-how-row">
+                <span className="giveaway-how-icon">♾️</span>
+                <span>Нет потолка — 5 000 баллов = 50 билетов</span>
+              </div>
+            </div>
+            {userPoints !== undefined && tickets > 0 && (
+              <div className="giveaway-your-tickets">
+                <span className="giveaway-ticket-icon">🎟️</span>
+                <span>У вас <strong>{tickets}</strong> {tickets === 1 ? 'билет' : tickets < 5 ? 'билета' : 'билетов'}</span>
+                <span className="giveaway-ticket-hint">+1 за каждые 100 баллов</span>
+              </div>
+            )}
+            {userPoints !== undefined && tickets === 0 && (
+              <div className="giveaway-your-tickets" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>
+                <span>Заработайте баллы, чтобы участвовать</span>
+              </div>
+            )}
+          </div>
+
+          {/* Right: Timer */}
+          <div className="giveaway-timer-wrap">
+            <div className="giveaway-timer-label">До розыгрыша</div>
+            <div className="giveaway-timer">
+              <div className="giveaway-timer-unit">
+                <div className="giveaway-timer-num">{pad(days)}</div>
+                <div className="giveaway-timer-sub">дней</div>
+              </div>
+              <div className="giveaway-timer-sep">:</div>
+              <div className="giveaway-timer-unit">
+                <div className="giveaway-timer-num">{pad(hours)}</div>
+                <div className="giveaway-timer-sub">часов</div>
+              </div>
+              <div className="giveaway-timer-sep">:</div>
+              <div className="giveaway-timer-unit">
+                <div className="giveaway-timer-num">{pad(minutes)}</div>
+                <div className="giveaway-timer-sub">минут</div>
+              </div>
+              <div className="giveaway-timer-sep">:</div>
+              <div className="giveaway-timer-unit">
+                <div className="giveaway-timer-num giveaway-timer-sec">{pad(seconds)}</div>
+                <div className="giveaway-timer-sub">секунд</div>
+              </div>
+            </div>
+            <div className="giveaway-prize-icon">🎁</div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -201,27 +315,128 @@ export default function LoyaltyPage() {
         /* ── Tier Cards ── */
         .tier-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
         .tier-card {
-          border-radius: 24px; padding: 32px 24px; position: relative; overflow: hidden;
+          border-radius: 18px; padding: 22px 20px; position: relative; overflow: hidden;
           transition: all 0.4s ease; cursor: default;
         }
-        .tier-card:hover { transform: translateY(-6px); }
-        .tier-card-active { box-shadow: 0 0 0 2px rgba(255,255,255,0.3), 0 20px 60px rgba(0,0,0,0.25); }
+        .tier-card:hover { transform: translateY(-4px); }
+        .tier-card-active { box-shadow: 0 0 0 2px rgba(255,255,255,0.3), 0 16px 48px rgba(0,0,0,0.25); }
         .tier-card-bg { position: absolute; inset: 0; opacity: 0.12; }
         .tier-card-content { position: relative; z-index: 1; }
         .tier-card-multiplier {
-          position: absolute; top: 20px; right: 20px; padding: 4px 12px; border-radius: 12px;
-          font-size: 13px; font-weight: 800; background: rgba(255,255,255,0.15); color: #fff;
+          position: absolute; top: 14px; right: 14px; padding: 3px 10px; border-radius: 10px;
+          font-size: 12px; font-weight: 800; background: rgba(255,255,255,0.15); color: #fff;
           backdrop-filter: blur(8px);
         }
-        .tier-card-label { font-size: 24px; font-weight: 800; color: #fff; margin-bottom: 4px; }
-        .tier-card-threshold { font-size: 12px; color: rgba(255,255,255,0.6); margin-bottom: 20px; }
+        .tier-card-label { font-size: 20px; font-weight: 800; color: #fff; margin-bottom: 2px; }
+        .tier-card-threshold { font-size: 11px; color: rgba(255,255,255,0.6); margin-bottom: 10px; }
         .tier-card-perk {
-          font-size: 13px; color: rgba(255,255,255,0.85); padding: 6px 0;
-          display: flex; align-items: center; gap: 8px;
+          font-size: 12px; color: rgba(255,255,255,0.85); padding: 3px 0;
+          display: flex; align-items: center; gap: 6px;
         }
         .tier-card-perk::before {
-          content: ''; width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,0.5);
+          content: ''; width: 5px; height: 5px; border-radius: 50%; background: rgba(255,255,255,0.5);
           flex-shrink: 0;
+        }
+
+        /* ── Giveaway ── */
+        .giveaway-card {
+          position: relative; border-radius: 24px; overflow: hidden;
+          border: 1px solid rgba(255,215,0,0.15);
+          background: linear-gradient(135deg, #1a1200 0%, #1a0f05 50%, #0d0d1a 100%);
+        }
+        .giveaway-bg {
+          position: absolute; inset: 0; pointer-events: none;
+          background:
+            radial-gradient(ellipse 500px 400px at 80% 20%, rgba(255,215,0,0.08), transparent),
+            radial-gradient(ellipse 400px 300px at 20% 80%, rgba(255,92,40,0.06), transparent);
+          animation: heroShimmer 6s ease-in-out infinite alternate;
+        }
+        .giveaway-inner {
+          position: relative; z-index: 1; display: flex; gap: 40px; padding: 40px;
+          align-items: center; flex-wrap: wrap;
+        }
+        .giveaway-info { flex: 1 1 340px; }
+        .giveaway-badge {
+          display: inline-flex; align-items: center; gap: 6px;
+          padding: 5px 14px; border-radius: 20px; font-size: 11px; font-weight: 700;
+          text-transform: uppercase; letter-spacing: 1px;
+          background: rgba(255,215,0,0.12); color: #ffd700;
+          border: 1px solid rgba(255,215,0,0.2); margin-bottom: 16px;
+        }
+        .giveaway-title {
+          font-family: var(--font-serif, Georgia, serif);
+          font-size: 26px; font-weight: 700; color: #fff; line-height: 1.2; margin: 0 0 12px;
+        }
+        .giveaway-amount {
+          background: linear-gradient(135deg, #ffd700, #ff8c00);
+          -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+        }
+        .giveaway-desc {
+          font-size: 13px; color: rgba(255,255,255,0.55); line-height: 1.6; margin: 0 0 20px;
+        }
+        .giveaway-how { margin-bottom: 20px; }
+        .giveaway-how-title {
+          font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.35);
+          text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;
+        }
+        .giveaway-how-row {
+          display: flex; align-items: center; gap: 10px;
+          font-size: 13px; color: rgba(255,255,255,0.65); padding: 5px 0;
+        }
+        .giveaway-how-row strong { color: #ffd700; }
+        .giveaway-how-icon { font-size: 16px; flex-shrink: 0; width: 20px; text-align: center; }
+        .giveaway-your-tickets {
+          display: inline-flex; align-items: center; gap: 8px;
+          padding: 8px 18px; border-radius: 14px;
+          font-size: 13px; color: #ffd700; background: rgba(255,215,0,0.08);
+          border: 1px solid rgba(255,215,0,0.18);
+        }
+        .giveaway-your-tickets strong { color: #fff; font-size: 16px; margin: 0 2px; }
+        .giveaway-ticket-icon { font-size: 18px; }
+        .giveaway-ticket-hint { font-size: 11px; color: rgba(255,255,255,0.3); margin-left: 4px; }
+
+        .giveaway-timer-wrap {
+          flex-shrink: 0; text-align: center; position: relative;
+        }
+        .giveaway-timer-label {
+          font-size: 12px; color: rgba(255,255,255,0.4); text-transform: uppercase;
+          letter-spacing: 2px; margin-bottom: 16px; font-weight: 600;
+        }
+        .giveaway-timer {
+          display: flex; align-items: flex-start; gap: 6px;
+        }
+        .giveaway-timer-unit { text-align: center; }
+        .giveaway-timer-num {
+          width: 64px; height: 72px; border-radius: 14px; display: flex; align-items: center; justify-content: center;
+          font-size: 32px; font-weight: 800; color: #fff;
+          background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08);
+          font-variant-numeric: tabular-nums; backdrop-filter: blur(8px);
+        }
+        .giveaway-timer-sec {
+          color: #ffd700;
+          animation: timerPulse 1s ease-in-out infinite;
+        }
+        @keyframes timerPulse { 0%,100% { opacity: 1; } 50% { opacity: 0.6; } }
+        .giveaway-timer-sub {
+          font-size: 10px; color: rgba(255,255,255,0.35); margin-top: 6px;
+          text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        .giveaway-timer-sep {
+          font-size: 28px; font-weight: 700; color: rgba(255,255,255,0.2);
+          padding-top: 16px;
+        }
+        .giveaway-prize-icon {
+          font-size: 48px; margin-top: 20px;
+          animation: giftBounce 2s ease-in-out infinite;
+        }
+        @keyframes giftBounce {
+          0%,100% { transform: translateY(0) scale(1); }
+          50% { transform: translateY(-6px) scale(1.05); }
+        }
+        @media (max-width: 768px) {
+          .giveaway-inner { flex-direction: column; padding: 28px 20px; gap: 28px; }
+          .giveaway-title { font-size: 22px; }
+          .giveaway-timer-num { width: 52px; height: 60px; font-size: 26px; }
         }
 
         /* ── Spend Section ── */
@@ -397,7 +612,7 @@ export default function LoyaltyPage() {
                 }}>
                 <div className="tier-card-content">
                   <div className="tier-card-multiplier">{level.multiplier}</div>
-                  <div style={{ fontSize: 36, marginBottom: 8 }}>{level.key === 'gold' ? '\uD83C\uDFC6' : level.key === 'silver' ? '\uD83E\uDD48' : '\uD83E\uDD49'}</div>
+                  <div style={{ fontSize: 28, marginBottom: 6 }}>{level.key === 'gold' ? '\uD83C\uDFC6' : level.key === 'silver' ? '\uD83E\uDD48' : '\uD83E\uDD49'}</div>
                   <div className="tier-card-label">{level.label}</div>
                   <div className="tier-card-threshold">от {level.min.toLocaleString('ru-RU')} баллов</div>
                   {level.perks.map((perk) => (
@@ -409,6 +624,9 @@ export default function LoyaltyPage() {
           })}
         </div>
       </div>
+
+      {/* ════════════ WEEKLY GIVEAWAY ════════════ */}
+      <WeeklyGiveaway userPoints={user?.loyaltyPoints} />
 
       {/* ════════════ HOW TO SPEND ════════════ */}
       <div className="loyalty-section" style={{ paddingTop: 0 }}>

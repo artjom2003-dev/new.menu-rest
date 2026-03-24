@@ -54,7 +54,17 @@ export class RestaurantService implements OnModuleInit {
     // Photos filter removed — show all published restaurants including those without photos
 
     if (search) {
-      qb.andWhere('(r.name ILIKE :search OR r.description ILIKE :search OR c.name ILIKE :search)', { search: `%${search}%` });
+      // Normalize: replace dashes/punctuation with spaces, split into words
+      const words = search.replace(/[-&.,;:!?]+/g, ' ').split(/\s+/).filter(w => w.length >= 2);
+      if (words.length > 1) {
+        // Multi-word: all words must appear in name (fast, uses index)
+        words.forEach((word, i) => {
+          const param = `sw${i}`;
+          qb.andWhere(`r.name ILIKE :${param}`, { [param]: `%${word}%` });
+        });
+      } else {
+        qb.andWhere('(r.name ILIKE :search OR c.name ILIKE :search)', { search: `%${search}%` });
+      }
     }
 
     if (city) {
@@ -137,7 +147,18 @@ export class RestaurantService implements OnModuleInit {
       };
     }
 
-    if (sortBy === 'rating') {
+    // When hasMenu filter is active, show restaurants with photos first
+    if (hasMenu === 'true') {
+      qb.addSelect(`(EXISTS (SELECT 1 FROM photos p WHERE p.restaurant_id = r.id AND p.is_cover = true))`, 'has_photo');
+      qb.orderBy('has_photo', 'DESC');
+      if (sortBy === 'rating') {
+        qb.addOrderBy('r.rating', 'DESC');
+      } else if (sortBy === 'created_at') {
+        qb.addOrderBy('r.createdAt', 'DESC');
+      } else {
+        qb.addOrderBy('r.name', 'ASC');
+      }
+    } else if (sortBy === 'rating') {
       qb.orderBy('r.rating', 'DESC');
     } else if (sortBy === 'created_at') {
       qb.orderBy('r.createdAt', 'DESC');
@@ -161,9 +182,24 @@ export class RestaurantService implements OnModuleInit {
       if (priceLevelMax) countQb.andWhere('r.priceLevel <= :priceLevelMax', { priceLevelMax });
       if (venueType) countQb.andWhere('r.venue_type = :venueType', { venueType });
       if (metro) countQb.andWhere('r.metro_station = :metro', { metro });
-      if (search) countQb.leftJoin('r.cuisines', 'cs').andWhere('(r.name ILIKE :search OR r.description ILIKE :search OR cs.name ILIKE :search)', { search: `%${search}%` });
+      if (search) {
+        const cWords = search.replace(/[-&.,;:!?]+/g, ' ').split(/\s+/).filter(w => w.length >= 2);
+        if (cWords.length > 1) {
+          cWords.forEach((word, i) => {
+            countQb.andWhere(`r.name ILIKE :csw${i}`, { [`csw${i}`]: `%${word}%` });
+          });
+        } else {
+          countQb.leftJoin('r.cuisines', 'cs');
+          countQb.andWhere('(r.name ILIKE :search OR cs.name ILIKE :search)', { search: `%${search}%` });
+        }
+      }
       if (hasMenu === 'true') countQb.andWhere('EXISTS (SELECT 1 FROM restaurant_dishes rd WHERE rd.restaurant_id = r.id)');
-      totalPromise = countQb.getCount().then(total => {
+
+      // Note: exact grouped count would require chain key logic in SQL which is complex.
+      // Using regular count — pagination might be approximate when grouping, but UX is fine.
+      const countFn = countQb.getCount();
+
+      totalPromise = countFn.then(total => {
         this.countCache.set(cacheKey, { total, expires: Date.now() + 60_000 });
         return total;
       });

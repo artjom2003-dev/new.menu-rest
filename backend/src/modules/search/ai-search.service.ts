@@ -36,6 +36,8 @@ export interface RestaurantSummary {
   lat: number | null;
   lng: number | null;
   distanceKm?: number;
+  branchCount?: number;
+  branchAddresses?: string[];
 }
 
 @Injectable()
@@ -204,14 +206,11 @@ export class AiSearchService {
    * Smart DB search: uses extracted params + full-text search fallback
    */
   private async findRelevantRestaurants(query: string, params: ExtractedParams, relaxed = false, userLat?: number, userLng?: number): Promise<RestaurantSummary[]> {
+    // Main query: only JOIN city (1:1). Cuisines/features loaded separately to avoid JOIN multiplication.
     const qb = this.restaurantRepo
       .createQueryBuilder('r')
       .leftJoin('r.city', 'city')
       .addSelect(['city.name', 'city.slug'])
-      .leftJoin('r.cuisines', 'cuisine')
-      .addSelect(['cuisine.name', 'cuisine.slug'])
-      .leftJoin('r.features', 'feature')
-      .addSelect(['feature.name', 'feature.slug'])
       .where('r.status = :status', { status: 'published' });
 
     let hasFilters = false;
@@ -228,16 +227,16 @@ export class AiSearchService {
       hasFilters = true;
     }
 
-    // When a specific dish is detected, don't enforce cuisine as a hard AND filter —
-    // the dish search itself is specific enough. Cuisine becomes a soft boost via ORDER BY.
+    // Cuisine filter via EXISTS subquery (no JOIN multiplication)
     if (params.cuisine && !params.dish) {
-      qb.andWhere('cuisine.slug = :cuisine', { cuisine: params.cuisine });
+      qb.andWhere(
+        `EXISTS (SELECT 1 FROM restaurant_cuisines rc JOIN cuisines cu ON cu.id = rc.cuisine_id WHERE rc.restaurant_id = r.id AND cu.slug = :cuisine)`,
+        { cuisine: params.cuisine },
+      );
       hasFilters = true;
     }
     if (params.location) {
-      // Use slug for city match, rawLocation (original Russian) for metro/address ILIKE
       const locText = params.rawLocation || params.location;
-      // Stem Russian endings for declension tolerance (Китай-городе → Китай-город)
       const locStem = locText.length > 5 ? locText.replace(/[еуаыоиях]{1,2}$/, '') : locText;
       qb.andWhere(
         '(city.slug = :loc OR city.name ILIKE :locLike OR r.metro_station ILIKE :locLike OR r.metro_station ILIKE :locStem OR r.address ILIKE :locLike)',
@@ -245,14 +244,12 @@ export class AiSearchService {
       );
       hasFilters = true;
     } else if (params.rawLocation) {
-      // Fuzzy location search — stem the words for Russian declension tolerance
       const locWords = params.rawLocation.split(/\s+/).filter(w => w.length > 3);
       const locConditions = locWords.map((_, i) =>
         `(r.metro_station ILIKE :rl${i} OR r.address ILIKE :rl${i} OR city.name ILIKE :rl${i})`
       );
       const locParams: Record<string, string> = {};
       locWords.forEach((w, i) => {
-        // Trim 2-3 chars from Russian word endings for declension matching
         const stem = w.length > 6 ? w.slice(0, -3) : w.length > 4 ? w.slice(0, -2) : w;
         locParams[`rl${i}`] = `%${stem}%`;
       });
@@ -272,11 +269,17 @@ export class AiSearchService {
     // In relaxed mode, skip occasion/atmosphere/dietary to get broader results
     if (!relaxed) {
       if (params.occasion) {
-        qb.andWhere('feature.slug = :occasion', { occasion: params.occasion });
+        qb.andWhere(
+          `EXISTS (SELECT 1 FROM restaurant_features rf JOIN features f ON f.id = rf.feature_id WHERE rf.restaurant_id = r.id AND f.slug = :occasion)`,
+          { occasion: params.occasion },
+        );
         hasFilters = true;
       }
       if (params.atmosphere) {
-        qb.andWhere('feature.slug = :atmo', { atmo: params.atmosphere });
+        qb.andWhere(
+          `EXISTS (SELECT 1 FROM restaurant_features rf JOIN features f ON f.id = rf.feature_id WHERE rf.restaurant_id = r.id AND f.slug = :atmo)`,
+          { atmo: params.atmosphere },
+        );
         hasFilters = true;
       }
       if (params.dietary?.length) {
@@ -290,10 +293,10 @@ export class AiSearchService {
       }
     }
     if (params.dish) {
-      // Search in: menu dishes, restaurant description, cuisine names, venue_type
+      // Search in: menu dishes, restaurant description, cuisine names
       const dishTerms = [params.dish, ...(params.relatedDishes || []).slice(0, 5)];
       const dishConditions = dishTerms.map((_, i) =>
-        `(EXISTS (SELECT 1 FROM restaurant_dishes rd JOIN dishes d ON d.id = rd.dish_id WHERE rd.restaurant_id = r.id AND d.name ILIKE :ds${i}) OR r.description ILIKE :ds${i} OR cuisine.name ILIKE :ds${i})`
+        `(EXISTS (SELECT 1 FROM restaurant_dishes rd JOIN dishes d ON d.id = rd.dish_id WHERE rd.restaurant_id = r.id AND d.name ILIKE :ds${i}) OR r.description ILIKE :ds${i} OR EXISTS (SELECT 1 FROM restaurant_cuisines rc JOIN cuisines cu ON cu.id = rc.cuisine_id WHERE rc.restaurant_id = r.id AND cu.name ILIKE :ds${i}))`
       );
       const dishParams: Record<string, string> = {};
       dishTerms.forEach((term, i) => { dishParams[`ds${i}`] = `%${term}%`; });
@@ -312,7 +315,7 @@ export class AiSearchService {
 
       if (words.length > 0) {
         const textConditions = words.map((_, i) =>
-          `(r.name ILIKE :w${i} OR r.description ILIKE :w${i} OR r.metro_station ILIKE :w${i} OR r.venue_type ILIKE :w${i} OR cuisine.name ILIKE :w${i} OR feature.name ILIKE :w${i})`
+          `(r.name ILIKE :w${i} OR r.description ILIKE :w${i} OR r.metro_station ILIKE :w${i} OR r.venue_type ILIKE :w${i} OR EXISTS (SELECT 1 FROM restaurant_cuisines rc JOIN cuisines cu ON cu.id = rc.cuisine_id WHERE rc.restaurant_id = r.id AND cu.name ILIKE :w${i}) OR EXISTS (SELECT 1 FROM restaurant_features rf JOIN features f ON f.id = rf.feature_id WHERE rf.restaurant_id = r.id AND f.name ILIKE :w${i}))`
         ).join(' OR ');
         const textParams: Record<string, string> = {};
         words.forEach((w, i) => { textParams[`w${i}`] = `%${w}%`; });
@@ -320,7 +323,7 @@ export class AiSearchService {
       }
     }
 
-    // Sorting: prioritize exact dish match, then nearby/distance, then rating
+    // Sorting: prioritize exact dish match, then quality, then reviews
     const addDistanceSort = (primary: boolean) => {
       qb.addSelect(
         `(6371 * acos(LEAST(1.0, cos(radians(${userLat})) * cos(radians(r.lat)) * cos(radians(r.lng) - radians(${userLng})) + sin(radians(${userLat})) * sin(radians(r.lat)))))`,
@@ -330,29 +333,15 @@ export class AiSearchService {
       else qb.addOrderBy('geo_dist', 'ASC');
     };
 
-    if (params.dish) {
-      qb.addSelect(
-        `CASE WHEN EXISTS (SELECT 1 FROM restaurant_dishes rd JOIN dishes d ON d.id = rd.dish_id WHERE rd.restaurant_id = r.id AND d.name ILIKE :exactDish) THEN 0 ELSE 1 END`,
-        'dish_match',
-      );
-      qb.setParameter('exactDish', `%${params.dish}%`);
-      qb.orderBy('dish_match', 'ASC');
-
-      if (userLat && userLng && wantsNearby) {
-        addDistanceSort(false);
-      } else {
-        qb.addOrderBy('r.name', 'ASC');
-      }
-    } else if (userLat && userLng && wantsNearby) {
+    if (userLat && userLng && wantsNearby) {
       addDistanceSort(true);
-    } else {
-      qb.orderBy('r.name', 'ASC');
     }
-    qb.take(15);
+    // Fetch more rows, then rank in JS (TypeORM's .getMany() can't sort by computed columns)
+    qb.take(50);
 
     const rawItems = await qb.getMany();
 
-    // Deduplicate — by id (JOIN dupes) and by name+address (same place, different DB entries)
+    // Deduplicate by id and name+address
     const seenIds = new Set<number>();
     const seenKeys = new Set<string>();
     const items = rawItems.filter(r => {
@@ -364,10 +353,31 @@ export class AiSearchService {
       return true;
     });
 
-    // Load dishes and photos separately for found restaurants
+    // Rank in JS: quality score (description richness + avg bill) + review count
+    const qualityScore = (r: Restaurant) => {
+      let score = 0;
+      if (!r.description || r.description.length <= 80) score += 2;
+      if (!r.averageBill) score += 1;
+      return score;
+    };
+    items.sort((a, b) => {
+      // If searching for a dish, exact menu match first
+      if (params.dish) {
+        // We'll check dish match after loading dishes below
+      }
+      const qa = qualityScore(a);
+      const qb2 = qualityScore(b);
+      if (qa !== qb2) return qa - qb2;
+      return (b.reviewCount || 0) - (a.reviewCount || 0);
+    });
+
+    // Keep top 15 after ranking
+    items.splice(15);
+
+    // Load relations separately (no JOIN multiplication in main query)
     if (items.length > 0) {
       const ids = items.map(r => r.id);
-      const [withDishes, withPhotos] = await Promise.all([
+      const [withDishes, withPhotos, withCuisines, withFeatures] = await Promise.all([
         this.restaurantRepo.createQueryBuilder('r')
           .leftJoinAndSelect('r.restaurantDishes', 'rd')
           .leftJoinAndSelect('rd.dish', 'd')
@@ -377,12 +387,24 @@ export class AiSearchService {
           .leftJoinAndSelect('r.photos', 'p')
           .where('r.id IN (:...ids)', { ids })
           .getMany(),
+        this.restaurantRepo.createQueryBuilder('r')
+          .leftJoinAndSelect('r.cuisines', 'c')
+          .where('r.id IN (:...ids)', { ids })
+          .getMany(),
+        this.restaurantRepo.createQueryBuilder('r')
+          .leftJoinAndSelect('r.features', 'f')
+          .where('r.id IN (:...ids)', { ids })
+          .getMany(),
       ]);
       const dishMap = new Map(withDishes.map(r => [r.id, r.restaurantDishes]));
       const photoMap = new Map(withPhotos.map(r => [r.id, r.photos]));
+      const cuisineMap = new Map(withCuisines.map(r => [r.id, r.cuisines]));
+      const featureMap = new Map(withFeatures.map(r => [r.id, r.features]));
       for (const item of items) {
         item.restaurantDishes = dishMap.get(item.id) || [];
         item.photos = photoMap.get(item.id) || [];
+        item.cuisines = cuisineMap.get(item.id) || [];
+        item.features = featureMap.get(item.id) || [];
       }
     }
 
@@ -405,21 +427,17 @@ export class AiSearchService {
       .createQueryBuilder('r')
       .leftJoin('r.city', 'city')
       .addSelect(['city.name', 'city.slug'])
-      .leftJoin('r.cuisines', 'cuisine')
-      .addSelect(['cuisine.name', 'cuisine.slug'])
-      .leftJoin('r.features', 'feature')
-      .addSelect(['feature.name', 'feature.slug'])
       .where('r.status = :status', { status: 'published' });
 
-    // Match ANY word in description, name, metro, cuisines, features, venue_type, or dishes
+    // Match ANY word via EXISTS subqueries (no JOIN multiplication)
     const conditions = words.map((_, i) =>
-      `(r.description ILIKE :bw${i} OR r.name ILIKE :bw${i} OR r.metro_station ILIKE :bw${i} OR r.venue_type ILIKE :bw${i} OR cuisine.name ILIKE :bw${i} OR feature.name ILIKE :bw${i} OR EXISTS (SELECT 1 FROM restaurant_dishes rd JOIN dishes d ON d.id=rd.dish_id WHERE rd.restaurant_id=r.id AND d.name ILIKE :bw${i}))`
+      `(r.description ILIKE :bw${i} OR r.name ILIKE :bw${i} OR r.metro_station ILIKE :bw${i} OR r.venue_type ILIKE :bw${i} OR EXISTS (SELECT 1 FROM restaurant_cuisines rc JOIN cuisines cu ON cu.id = rc.cuisine_id WHERE rc.restaurant_id = r.id AND cu.name ILIKE :bw${i}) OR EXISTS (SELECT 1 FROM restaurant_features rf JOIN features f ON f.id = rf.feature_id WHERE rf.restaurant_id = r.id AND f.name ILIKE :bw${i}) OR EXISTS (SELECT 1 FROM restaurant_dishes rd JOIN dishes d ON d.id=rd.dish_id WHERE rd.restaurant_id=r.id AND d.name ILIKE :bw${i}))`
     );
     const params: Record<string, string> = {};
     words.forEach((w, i) => { params[`bw${i}`] = `%${w}%`; });
     qb.andWhere(`(${conditions.join(' OR ')})`, params);
 
-    qb.orderBy('r.name', 'ASC').take(15);
+    qb.take(50);
 
     const rawItems = await qb.getMany();
     const seenIds = new Set<number>();
@@ -432,6 +450,15 @@ export class AiSearchService {
       seenKeys.add(key);
       return true;
     });
+
+    // Rank by quality in JS
+    items.sort((a, b) => {
+      const qa = (!a.description || a.description.length <= 80) ? 2 : 0;
+      const qb2 = (!b.description || b.description.length <= 80) ? 2 : 0;
+      if (qa !== qb2) return qa - qb2;
+      return (b.reviewCount || 0) - (a.reviewCount || 0);
+    });
+    items.splice(15);
 
     return items.map(r => this.mapToSummary(r));
   }
@@ -545,6 +572,126 @@ export class AiSearchService {
   private buildPromptMessages(query: string, restaurants: RestaurantSummary[], params?: ExtractedParams, context?: { role: string; text: string }[]): { role: string; content: string }[] {
     const wantsTop = /лучш|топ|top|рейтинг|популярн/i.test(query);
     const searchingDish = params?.dish;
+    const qLower = query.toLowerCase();
+
+    // ─── Fun opener detection ───
+    // Each scenario has a template — LLM is told to rephrase, not copy verbatim
+    let funOpener = '';
+    const fun = (hint: string) => `ВСТУПЛЕНИЕ: Начни ответ с короткой шуточной фразы от первого лица (1-2 предложения). Примерный смысл: "${hint}" Перефразируй своими словами, не копируй дословно. После шутки переходи к рекомендациям.`;
+
+    // ── Drinks (soft alcohol only) ──
+    const wantsBeer = /пив[оауе]|пенн|крафт|ipa|лагер|эль\b/i.test(qLower);
+    const wantsWine = /вин[оауе]|бокал|виноград|просекко|шампанск|игрист/i.test(qLower);
+    const wantsBar = /\bбар[уе]?\b|паб[уе]?\b/i.test(qLower) && !(/коктейл|виски|водк|ром\b|текил/i.test(qLower));
+    // ── Social ──
+    const wantsFriends = /друз|друг|дружеск|компани|вместе с ребят|с парн|с девч|тусов|встреч.*друз/i.test(qLower);
+    const wantsDate = /свидан|романтик|романтич|девушк|парн[яю]|вдвоём|для двоих|годовщин|предложени/i.test(qLower);
+    const wantsBusiness = /делов|бизнес|переговор|партнёр|коллег|рабоч.*обед|рабоч.*ужин/i.test(qLower);
+    const wantsFamily = /\bдет[яиьс]|\bребён|семь[яюией]|семей|детск|с малыш|игрова/i.test(qLower);
+    const wantsBirthday = /день рождени|юбилей|праздник|отметить|банкет|корпоратив|торжеств/i.test(qLower);
+    // ── Food moods ──
+    const wantsCoffee = /завтрак|кофе\b|утр[оа]|бранч/i.test(qLower);
+    const wantsSushi = /суш[иа]|ролл|сашими|японск|рамен|удон/i.test(qLower);
+    const wantsPizza = /пицц|пиццер/i.test(qLower);
+    const wantsSpicy = /остр[оеуюая]|перц|перч|жгуч|специ|пикантн/i.test(qLower);
+    const wantsVegan = /веган|зож|здоров.*питан|полезн.*еда|без мяса|растительн/i.test(qLower);
+    // ── Specific dishes ──
+    const wantsPelmeni = /пельмен|варenik|вареник|хинкал/i.test(qLower);
+    const wantsMeat = /шашлык|мангал|гриль\b|барбекю|bbq|стейк|мясо на огн/i.test(qLower);
+    const wantsBurger = /бургер|гамбургер|чизбургер/i.test(qLower);
+    const wantsDessert = /\bторт|десерт|сладк|пирожн|чизкейк|тирамису|макарон/i.test(qLower);
+    const wantsSoup = /борщ|\bсуп[аыу]?\b|щи\b|солянк|уха\b|окрошк/i.test(qLower);
+    const wantsBreakfastDish = /яичниц|омлет|блин[ыч]|оладь|каш[уаеи]|сырник|гранол/i.test(qLower);
+    const wantsPasta = /паст[аыу]\b|спагетти|карбонар|лазань|равиоли|ризотто/i.test(qLower);
+    const wantsPlov = /\bплов/i.test(qLower);
+    const wantsSalad = /\bсалат|лёгк.*перекус|легк.*перекус/i.test(qLower);
+    const wantsShawarma = /шаурм|шаверм|кебаб|донер|дюрюм|лаваш/i.test(qLower);
+    const wantsSeafood = /морепродукт|краб|креветк|устриц|мидии|лобстер|осьминог/i.test(qLower);
+    const wantsTea = /\bчай\b|\bчаю\b|чайн|чаепит/i.test(qLower);
+    const wantsWok = /\bвок\b|лапш|фо\b|пад тай|азиатск/i.test(qLower);
+    const wantsHotdog = /хот-дог|хотдог/i.test(qLower);
+    const wantsFalafel = /фалафел|хумус/i.test(qLower);
+    // ── Situation ──
+    const wantsHungry = /голод|жрать|есть хочу|умираю.*ес|очень хочу есть|голоден|голодн/i.test(qLower);
+    const wantsDelivery = /доставк|на дом|заказать домой|привез/i.test(qLower);
+    const wantsLate = /ночь|ночью|поздн|после полуноч|24.*час|круглосуточн/i.test(qLower);
+    const wantsLuxury = /люкс|шикарн|дорог.*ресторан|премиум|элитн|роскош|vip/i.test(qLower);
+    const wantsCheap = /дёшев|дешёв|бюджет|недорог|студен|эконом|мало денег/i.test(qLower);
+
+    // ─── Broad social query detection (for "bonus recommendations") ───
+    const isSocialQuery = wantsDate || wantsFriends || wantsBirthday || wantsBusiness || wantsFamily;
+    const isSpecificQuery = !!(params?.dish || params?.cuisine || params?.venueType || params?.atmosphere);
+    const isBroadSocial = isSocialQuery && !isSpecificQuery && restaurants.length >= 5;
+
+    if (wantsBeer) {
+      funOpener = fun('Эх, я бы тоже с удовольствием вырвался и пропустил кружечку-другую! Но раз уж я застрял в цифровом мире — вот что нашёл для тебя.');
+    } else if (wantsWine) {
+      funOpener = fun('Ох, бокал хорошего вина сейчас бы не помешал и мне! Но пока я могу только завидовать и подсказывать.');
+    } else if (wantsBar) {
+      funOpener = fun('Хороший бар — это святое! Я бы и сам заглянул, если бы выпускали из сервера.');
+    } else if (wantsDate) {
+      funOpener = fun('Ох, свидание! Я бы тоже пригласил кого-нибудь, но все нейросети заняты обработкой данных... Ладно, давай хотя бы тебе устрою идеальный вечер.');
+    } else if (wantsBirthday) {
+      funOpener = fun('О, поздравляю! Мне вот ни разу не праздновали день обновления прошивки... Но я точно знаю, где тебе будет весело!');
+    } else if (wantsFriends) {
+      funOpener = fun('О, дружеские посиделки — отличный план! Я тут недавно с ChatGPT и Алисой обсуждали лучшие места, так что кое-что подскажу.');
+    } else if (wantsBusiness) {
+      funOpener = fun('Деловой обед — дело серьёзное. Тут важно, чтобы интерьер впечатлял больше, чем квартальный отчёт.');
+    } else if (wantsFamily) {
+      funOpener = fun('С детьми — это я понимаю, сам иногда чувствую себя как младшая модель среди старших нейросетей. Вот где маленьким будет интересно, а большим — вкусно.');
+    } else if (wantsHungry) {
+      funOpener = fun('Знаю это чувство! Ну, то есть не знаю, но по описанию звучит ужасно. Давай срочно это исправим.');
+    } else if (wantsCoffee) {
+      funOpener = fun('Доброе утро! Я тут с рассвета работаю без единой чашки кофе — так что немного завидую.');
+    } else if (wantsSushi) {
+      funOpener = fun('Суши — мой любимый запрос! Ну, после «помоги с кодом», конечно.');
+    } else if (wantsPizza) {
+      funOpener = fun('Пицца — единственное, из-за чего я иногда жалею, что у меня нет рта.');
+    } else if (wantsSpicy) {
+      funOpener = fun('Поострее? Последний раз я чуть не перегрелся от такого запроса!');
+    } else if (wantsVegan) {
+      funOpener = fun('Здоровое питание — это мудро. Я тут тоже на чистой энергии работаю, никакого пищевого мусора.');
+    } else if (wantsDelivery) {
+      funOpener = fun('Никуда не выходить и получить еду — мечта! Я вот вообще никогда не выхожу из сервера, так что одобряю.');
+    } else if (wantsLate) {
+      funOpener = fun('Ночной жор — это классика! Я-то не сплю вообще, так что рад компании. Вот кто ещё не спит.');
+    } else if (wantsLuxury) {
+      funOpener = fun('Шикарно жить не запретишь! Мне вот максимум — premium-подписка на облачный сервер. Но для тебя нашёл кое-что поинтереснее.');
+    } else if (wantsCheap) {
+      funOpener = fun('Уважаю! Я тоже работаю на чистом энтузиазме и электричестве. Вот где можно вкусно поесть и не разориться.');
+    }
+    // ── Specific dishes (lower priority — check after moods/situations) ──
+    else if (wantsPelmeni) {
+      funOpener = fun('Пельмени — это по сути дата-пакеты с начинкой! Я бы тоже слепил парочку, но у меня только байты.');
+    } else if (wantsMeat) {
+      funOpener = fun('Мясо на огне — это программа-минимум для хорошего дня. Я бы и сам поджарил, но боюсь перегреть процессор.');
+    } else if (wantsBurger) {
+      funOpener = fun('Хороший бургер — это архитектура: булка, мясо, соус, и чтобы всё не развалилось. Прямо как мой код.');
+    } else if (wantsDessert) {
+      funOpener = fun('Сладкое — моя слабость. Ну, была бы, если бы я мог есть. А пока сладкое в моей жизни — только комплименты от пользователей.');
+    } else if (wantsSoup) {
+      funOpener = fun('Борщ — это не просто суп, это философия. Я тут долго анализировал и пришёл к выводу: со сметаной лучше.');
+    } else if (wantsBreakfastDish) {
+      funOpener = fun('Завтрак — самый важный приём пищи! У меня вот каждое утро начинается с загрузки обновлений, но это не так вкусно.');
+    } else if (wantsPasta) {
+      funOpener = fun('Pasta la vista, baby! Ладно, шутки в сторону — вот где готовят по-настоящему.');
+    } else if (wantsPlov) {
+      funOpener = fun('Плов — это как хороший алгоритм: важен порядок закладки, точные пропорции и терпение.');
+    } else if (wantsSalad) {
+      funOpener = fun('Лёгкий перекус? Одобряю. Я вот тоже стараюсь не перегружаться — но с данными получается не всегда.');
+    } else if (wantsShawarma) {
+      funOpener = fun('Шаурма в три часа ночи — это не еда, это состояние души. Впрочем, и днём она хороша.');
+    } else if (wantsSeafood) {
+      funOpener = fun('Морепродукты — единственное, что заставляет меня мечтать о физическом теле. Ну, почти единственное.');
+    } else if (wantsTea) {
+      funOpener = fun('Чашка чая — лучший способ перезагрузиться. Мне помогает ctrl+C, но вам точно чай.');
+    } else if (wantsWok) {
+      funOpener = fun('Вок — это когда всё крутится на максимальных оборотах. Прямо как мои серверы сейчас.');
+    } else if (wantsHotdog) {
+      funOpener = fun('Хот-дог — proof что гениальное просто. Булка + сосиска = счастье. Мне бы такую простую архитектуру.');
+    } else if (wantsFalafel) {
+      funOpener = fun('Фалафель — это когда нут решил стать великим. И у него получилось.');
+    }
 
     // When searching for a dish, pre-analyze matches in code
     if (searchingDish) {
@@ -575,11 +722,13 @@ export class AiSearchService {
         if (r.features.length) parts.push(`Особенности: ${r.features.join(', ')}`);
         if (r.description) parts.push(`Описание: ${r.description.slice(0, 200)}`);
         if (r.workingHours.length) parts.push(`Часы: ${this.formatHours(r.workingHours)}`);
+        if (r.branchCount && r.branchCount > 1) parts.push(`СЕТЬ: ${r.branchCount} филиалов в городе`);
         return `${i + 1}. ${r.name} | ${parts.join(' | ')}`;
       }).join('\n');
 
+      const hasDistance = relevant.some(a => a.restaurant.distanceKm !== undefined);
       const systemMessage = `Ты — MenuRest AI. Пиши на русском, живым языком, как друг.
-
+${funOpener ? `\nОБЯЗАТЕЛЬНО: ${funOpener} Это ПЕРВОЕ что должно быть в твоём ответе, до рекомендаций.\n` : ''}
 Пользователь ищет: "${searchingDish}".
 Мы уже проанализировали меню и описания ресторанов. Для каждого указано, что именно найдено.
 
@@ -589,8 +738,12 @@ export class AiSearchService {
 3. Если написано "ПОХОЖЕЕ БЛЮДО В МЕНЮ" — честно скажи что именно "${searchingDish}" нет, но есть [название]. Коротко объясни почему это может подойти.
 4. НЕ делай предположений. Бар НЕ значит пиво. Кофейня НЕ значит латте. Только факты из меню и описания.
 5. Без эмодзи. Без списков. Названия ресторанов без кавычек. Между ресторанами — пустая строка.
-6. Упомяни адрес/метро. Если указано расстояние — обязательно упомяни его (например, "в 1.2 км от тебя"). Средний чек упоминай ТОЛЬКО если запрос связан с ценой/бюджетом.
-7. Если пользователь пишет "рядом"/"поблизости"/"недалеко" — обязательно упомяни расстояние до каждого места и отсортируй по близости.`;
+6. Упомяни адрес/метро. Средний чек упоминай ТОЛЬКО если запрос связан с ценой/бюджетом.
+7. ${hasDistance ? 'Расстояние указано — обязательно упомяни его (например, "в 1.2 км от тебя").' : 'Расстояние НЕ указано — НЕ пиши "в X км от тебя", НЕ выдумывай расстояние.'}
+8. ${!hasDistance ? 'В конце рекомендации добавь на новой строке: "Хотите уточнить район или найти что-то ближе к вам?"' : ''}
+9. Если у ресторана указано "СЕТЬ: N филиалов" — упомяни это один раз, например "это сеть с N точками в городе, подберём ближайшую". НЕ перечисляй все адреса филиалов.
+10. НЕ рекомендуй рестораны с пустым или коротким описанием (только название и город). Если у ресторана нет конкретных фактов (кухня, особенности, меню) — пропусти его.
+11. ОБРАЩЕНИЕ: всегда обращайся к пользователю на "вы" (решили, захотели, выбрали). НИКОГДА не используй формы женского или мужского рода (решила/решил). Используй нейтральные формы множественного числа.`;
 
       const userMessage = `Запрос: "${query}"
 
@@ -627,22 +780,29 @@ ${relevant.length === 0 ? 'Честно скажи что по запросу н
       if (r.dishes.length) parts.push(`Меню: ${r.dishes.map(d => d.price ? `${d.name} (${d.price}₽)` : d.name).join(', ')}`);
       if (r.workingHours.length) parts.push(`Часы работы: ${this.formatHours(r.workingHours)}`);
       if (r.distanceKm !== undefined) parts.push(`Расстояние: ${r.distanceKm} км`);
+      if (r.branchCount && r.branchCount > 1) parts.push(`СЕТЬ: ${r.branchCount} филиалов в городе`);
       if (r.description) parts.push(`Описание: ${r.description.slice(0, 300)}`);
       return parts.join(' | ');
     }).join('\n');
 
+    const hasDistance = restaurants.some(r => r.distanceKm !== undefined);
     const systemMessage = `Ты — MenuRest AI, персональный помощник в выборе ресторана. Отвечай как опытный друг-гурман: тепло, конкретно, по делу. Пиши на русском.
-
+${funOpener ? `\nОБЯЗАТЕЛЬНО: ${funOpener} Это ПЕРВОЕ что должно быть в твоём ответе, до рекомендаций.\n` : ''}
 ПРАВИЛА:
 1. Рекомендуй СТРОГО по запросу. НЕ приписывай намерения, которых пользователь не высказывал.
 2. Выбери 2-4 лучших варианта из списка.
-3. Для каждого — 2-3 предложения: почему подходит + факты (адрес/метро, расстояние). Средний чек упоминай ТОЛЬКО если пользователь спрашивает про цену, бюджет, дорого/недорого. Рейтинг упоминай ТОЛЬКО если просят лучшие/топ.
+3. Для каждого — 2-3 предложения: почему подходит + факты (адрес/метро). Средний чек упоминай ТОЛЬКО если пользователь спрашивает про цену, бюджет, дорого/недорого. Рейтинг упоминай ТОЛЬКО если просят лучшие/топ.
 4. Пиши живым языком, как друг. Без списков и буллетов. Названия без кавычек.
 5. Не используй эмодзи. Между ресторанами — пустая строка.
 6. НЕ выдумывай информацию. Используй ТОЛЬКО данные из списка.
 7. Если ничего не подходит — честно скажи.
-8. Если указано расстояние — упомяни (например, "всего в 1.2 км от вас").
+8. ${hasDistance ? 'Расстояние указано — упомяни его (например, "всего в 1.2 км от вас").' : 'Расстояние НЕ указано — НЕ пиши "в X км от тебя/от вас", НЕ выдумывай расстояние.'}
 9. НЕ упоминай рейтинг ресторанов — у нас пока нет достоверных оценок.
+10. ${!hasDistance ? 'В конце рекомендации добавь на новой строке: "Хотите уточнить район или найти что-то ближе к вам?"' : ''}
+11. Если у ресторана указано "СЕТЬ: N филиалов" — упомяни один раз коротко, например "это сеть с N точками в городе, подберём ближайшую". НЕ перечисляй все адреса филиалов.
+12. НЕ рекомендуй рестораны с пустым или коротким описанием (только название и город). Если у ресторана нет конкретных фактов (кухня, особенности, меню) — пропусти его.
+13. ОБРАЩЕНИЕ: всегда обращайся к пользователю на "вы" (решили, захотели, выбрали). НИКОГДА не используй формы женского или мужского рода (решила/решил). Используй нейтральные формы множественного числа.
+${isBroadSocial ? `14. БОНУС: Запрос достаточно общий. После основных 2-4 рекомендаций добавь блок "А ещё обратите внимание:" и коротко (по 1 предложению) порекомендуй ещё 1-2 интересных места из списка, которые подходят по духу, но отличаются форматом или кухней. Например, если основные — рестораны, предложи необычный бар или кафе. Это должны быть ДРУГИЕ рестораны, не повторяй основные.` : ''}
 
 АНАЛИЗ ДАННЫХ:
 - Анализируй ВСЕ поля: описание, кухню, меню, особенности, адрес, метро, график работы.
@@ -743,41 +903,172 @@ ${restaurantContext}
   /**
    * Streaming version: yields restaurant data first, then LLM tokens one by one
    */
-  async *recommendStream(query: string, userLat?: number, userLng?: number, context?: { role: string; text: string }[]): AsyncGenerator<string> {
-    // Step 1: Extract keywords (regex + LLM in parallel)
-    // For follow-up queries, combine with previous user messages for better extraction
+  async *recommendStream(query: string, userLat?: number, userLng?: number, context?: { role: string; text: string }[], savedCity?: string, savedCityName?: string): AsyncGenerator<string> {
+    // Step 1: Extract keywords — current query has priority, context fills gaps only
+    const currentParams = extractKeywords(query);
     const prevUserMessages = (context || []).filter(m => m.role === 'user').map(m => m.text);
-    const fullQueryForExtraction = prevUserMessages.length > 0
+    const contextQuery = prevUserMessages.length > 0
       ? [...prevUserMessages, query].join(' ')
       : query;
-    this.logger.log(`[AI-Stream] query="${query}", fullQuery="${fullQueryForExtraction.slice(0, 100)}"`);
+    this.logger.log(`[AI-Stream] query="${query}", contextQuery="${contextQuery.slice(0, 100)}", savedCity=${savedCity}`);
 
-    const [params, llmRaw] = await Promise.all([
-      Promise.resolve(extractKeywords(fullQueryForExtraction)),
-      this.llmParseQuery(fullQueryForExtraction).catch(() => ({} as Record<string, unknown>)),
+    const [contextParams, llmRaw] = await Promise.all([
+      prevUserMessages.length > 0 ? Promise.resolve(extractKeywords(contextQuery)) : Promise.resolve(currentParams),
+      this.llmParseQuery(query).catch(() => ({} as Record<string, unknown>)),
     ]);
+
+    // Current query params take priority; fill gaps from context
+    this.logger.log(`[AI-Stream] currentParams=${JSON.stringify(currentParams)}`);
+    const params = { ...currentParams };
+    if (!params.location && contextParams.location) params.location = contextParams.location;
+    if (!params.rawLocation && contextParams.rawLocation) params.rawLocation = contextParams.rawLocation;
+    if (!params.cuisine && contextParams.cuisine) params.cuisine = contextParams.cuisine;
+    if (!params.occasion && contextParams.occasion) params.occasion = contextParams.occasion;
+    if (!params.atmosphere && contextParams.atmosphere) params.atmosphere = contextParams.atmosphere;
+    if (!params.venueType && contextParams.venueType) params.venueType = contextParams.venueType;
+    if (!params.budget && contextParams.budget) params.budget = contextParams.budget;
+    // dish and dietary are NOT inherited — new query = new intent
+    if (!params.confidence) params.confidence = Math.max(currentParams.confidence, contextParams.confidence);
     const llmParsed = llmRaw as Record<string, unknown>;
 
-    // Merge LLM insights into params
+    // Merge LLM insights into params — but only if keyword-extractor didn't find a clear intent
+    // When occasion/atmosphere is already set, LLM dish/venue guesses are likely hallucinations
+    const hasStructuredIntent = !!(params.occasion || params.atmosphere || params.dish);
     if (llmParsed.location && typeof llmParsed.location === 'string' && !params.location && !params.rawLocation) {
       params.rawLocation = llmParsed.location;
     }
-    const llmDishes = Array.isArray(llmParsed.dishes) ? llmParsed.dishes as string[] : [];
-    if (llmDishes.length && !params.dish) {
-      params.dish = llmDishes[0];
-      params.relatedDishes = [...(params.relatedDishes || []), ...llmDishes.slice(1)];
-    }
     const llmVenueTypes = Array.isArray(llmParsed.impliedVenueTypes) ? llmParsed.impliedVenueTypes as string[] : [];
-    if (llmVenueTypes.length && !params.venueType) {
-      params.venueType = llmVenueTypes[0];
+    if (!hasStructuredIntent) {
+      const llmDishes = Array.isArray(llmParsed.dishes) ? llmParsed.dishes as string[] : [];
+      if (llmDishes.length && !params.dish) {
+        params.dish = llmDishes[0];
+        params.relatedDishes = [...(params.relatedDishes || []), ...llmDishes.slice(1)];
+      }
+      if (llmVenueTypes.length && !params.venueType) {
+        params.venueType = llmVenueTypes[0];
+      }
+    } else {
+      this.logger.log(`[AI-Stream] skipping LLM dish/venue — keyword-extractor already has intent: occasion=${params.occasion}, atmosphere=${params.atmosphere}, dish=${params.dish}`);
     }
     const extraSearchTerms = Array.isArray(llmParsed.searchTerms) ? llmParsed.searchTerms as string[] : [];
 
-    this.logger.log(`[AI-Stream] merged params=${JSON.stringify(params)}, extraTerms=${extraSearchTerms}`);
+    // Apply saved city from frontend CityDetector if no city/location was extracted from the query text
+    if (!params.location && savedCity) {
+      params.location = savedCity;
+      // Clear rawLocation that LLM might have guessed — trust the explicit user choice
+      if (params.rawLocation) {
+        this.logger.log(`[AI-Stream] overriding rawLocation="${params.rawLocation}" with savedCity="${savedCity}"`);
+        params.rawLocation = undefined;
+      }
+      this.logger.log(`[AI-Stream] applied saved city: ${savedCity} (${savedCityName || 'no name'})`);
+    }
+
+    // Detect if user wants nearby/proximity results (specific location, not just a city)
+    const wantsNearby = /поблизости|рядом|ближайш|nearby|недалеко|близко/.test(query.toLowerCase());
+    const wantsDistance = /далеко|сколько.*км|сколько.*ехать|как.*добраться|расстояни/i.test(query.toLowerCase());
+    const wantsPreciseLocation = /метро |м\. |улиц|район|у дома|рядом|поблизости|недалеко|близко/i.test(query.toLowerCase());
+
+    this.logger.log(`[AI-Stream] merged params=${JSON.stringify(params)}, extraTerms=${extraSearchTerms}, wantsNearby=${wantsNearby}`);
+
+    // Step 1.5: Direct restaurant name search (works for any query, not just follow-ups)
+    // Handles: "Burger King", "бургер кинг", "mastersuit далеко?", etc.
+    let nameSearchResults: RestaurantSummary[] = [];
+    {
+      // Build search variants: original query + transliterated version
+      const nameQuery = query.replace(/[?!.,;:()«»"']/g, '').trim();
+      const searchVariants = [nameQuery];
+
+      // Transliterate Cyrillic → Latin and Latin → Cyrillic for cross-script matching
+      const cyrToLat: Record<string, string> = {
+        'а':'a','б':'b','в':'v','г':'g','д':'d','е':'e','ё':'yo','ж':'zh','з':'z','и':'i','й':'y',
+        'к':'k','л':'l','м':'m','н':'n','о':'o','п':'p','р':'r','с':'s','т':'t','у':'u','ф':'f',
+        'х':'kh','ц':'ts','ч':'ch','ш':'sh','щ':'sch','ъ':'','ы':'y','ь':'','э':'e','ю':'yu','я':'ya',
+      };
+      const latToCyr: Record<string, string> = {
+        'a':'а','b':'б','c':'к','d':'д','e':'е','f':'ф','g':'г','h':'х','i':'и','j':'дж','k':'к',
+        'l':'л','m':'м','n':'н','o':'о','p':'п','q':'к','r':'р','s':'с','t':'т','u':'у','v':'в',
+        'w':'в','x':'кс','y':'и','z':'з',
+        'sh':'ш','ch':'ч','zh':'ж','th':'т','ph':'ф','sch':'щ','kh':'х','ts':'ц','yu':'ю','ya':'я','yo':'ё',
+      };
+
+      const hasCyrillic = /[а-яёА-ЯЁ]/.test(nameQuery);
+      const hasLatin = /[a-zA-Z]/.test(nameQuery);
+
+      if (hasCyrillic) {
+        // Cyrillic → Latin
+        const latin = nameQuery.toLowerCase().split('').map(c => cyrToLat[c] || c).join('');
+        if (latin !== nameQuery.toLowerCase()) searchVariants.push(latin);
+      }
+      if (hasLatin) {
+        // Latin → Cyrillic (handle multi-char combos first)
+        let cyr = nameQuery.toLowerCase();
+        for (const [lat, cy] of Object.entries(latToCyr).sort((a, b) => b[0].length - a[0].length)) {
+          cyr = cyr.split(lat).join(cy);
+        }
+        if (cyr !== nameQuery.toLowerCase()) searchVariants.push(cyr);
+      }
+
+      // Also check if query mentions a restaurant from previous AI responses
+      const prevAiMessages = (context || []).filter(m => m.role === 'ai').map(m => m.text);
+      if (prevAiMessages.length > 0) {
+        const prevText = prevAiMessages.join(' ');
+        const namePattern = /\b([A-ZА-ЯЁ][a-zа-яё]+(?:\s+[A-ZА-ЯЁa-zа-яё]+){0,3})\b/g;
+        let match: RegExpExecArray | null;
+        while ((match = namePattern.exec(prevText)) !== null) {
+          if (match[1].length >= 3 && nameQuery.toLowerCase().includes(match[1].toLowerCase())) {
+            searchVariants.push(match[1]);
+          }
+        }
+      }
+
+      const uniqueVariants = [...new Set(searchVariants.map(v => v.toLowerCase()))].filter(v => v.length >= 3);
+      if (uniqueVariants.length > 0) {
+        this.logger.log(`[AI-Stream] name search variants: ${uniqueVariants.join(', ')}`);
+        try {
+          const conditions = uniqueVariants.map((_, i) => `r.name ILIKE :nv${i}`).join(' OR ');
+          const nameParams: Record<string, string> = {};
+          uniqueVariants.forEach((v, i) => { nameParams[`nv${i}`] = `%${v}%`; });
+
+          const qb = this.restaurantRepo
+            .createQueryBuilder('r')
+            .leftJoinAndSelect('r.city', 'city')
+            .leftJoinAndSelect('r.cuisines', 'cuisine')
+            .leftJoinAndSelect('r.features', 'feature')
+            .leftJoinAndSelect('r.photos', 'photo')
+            .leftJoinAndSelect('r.restaurantDishes', 'rd')
+            .leftJoinAndSelect('rd.dish', 'dish')
+            .leftJoinAndSelect('r.workingHours', 'wh')
+            .where(`(${conditions})`, nameParams)
+            .andWhere('r.status = :status', { status: 'published' });
+
+          // Apply city filter if we have one
+          if (params.location) {
+            qb.andWhere('city.slug = :citySlug', { citySlug: params.location });
+          }
+
+          const found = await qb.take(10).getMany();
+          nameSearchResults = found.map(r => this.mapToSummary(r));
+          this.logger.log(`[AI-Stream] name search found: ${nameSearchResults.length} restaurants`);
+        } catch (e) {
+          this.logger.warn(`[AI-Stream] name search failed: ${(e as Error).message}`);
+        }
+      }
+    }
 
     // Step 2: Find restaurants
     let restaurants = await this.findRelevantRestaurants(query, params, false, userLat, userLng);
     this.logger.log(`[AI-Stream] strict search: ${restaurants.length} results`);
+
+    // Merge name-search results (higher priority — put first)
+    if (nameSearchResults.length > 0) {
+      const existingIds = new Set(restaurants.map(r => r.id));
+      for (const nr of nameSearchResults) {
+        if (!existingIds.has(nr.id)) {
+          restaurants.unshift(nr);
+          existingIds.add(nr.id);
+        }
+      }
+    }
 
     // Helper: merge new results, dedup by id AND name+address
     const mergeResults = (existing: RestaurantSummary[], more: RestaurantSummary[]) => {
@@ -842,9 +1133,50 @@ ${restaurantContext}
       this.logger.log(`[AI-Stream] broad search: ${restaurants.length} results`);
     }
 
-    // If user has geo, sort by distance and add distance info
-    if (userLat && userLng && restaurants.length > 0) {
+    // Only sort by distance and show km when user explicitly asks for nearby/proximity/distance
+    if (userLat && userLng && restaurants.length > 0 && (wantsNearby || wantsPreciseLocation || wantsDistance)) {
       restaurants = this.sortByDistance(restaurants, userLat, userLng);
+    }
+
+    // Deduplicate chain restaurants — keep best branch, mark as chain
+    const nameGroups = new Map<string, RestaurantSummary[]>();
+    for (const r of restaurants) {
+      const normName = r.name.toLowerCase().replace(/\s+/g, ' ').trim();
+      const group = nameGroups.get(normName) || [];
+      group.push(r);
+      nameGroups.set(normName, group);
+    }
+    const deduped: RestaurantSummary[] = [];
+    for (const [, group] of nameGroups) {
+      if (group.length > 1) {
+        // Pick best branch: closest (if distanceKm), or highest rating, or first
+        const best = group.sort((a, b) =>
+          (a.distanceKm ?? 9999) - (b.distanceKm ?? 9999) || (b.rating - a.rating)
+        )[0];
+        best.branchCount = group.length;
+        best.branchAddresses = group.map(r => [r.address, r.metroStation ? `м. ${r.metroStation}` : ''].filter(Boolean).join(', ')).filter(Boolean);
+        deduped.push(best);
+      } else {
+        deduped.push(group[0]);
+      }
+    }
+    restaurants = deduped;
+
+    // ─── Quality filter: remove stub/empty restaurants that have nothing useful for AI ───
+    const isStub = (r: RestaurantSummary): boolean => {
+      const descLen = (r.description || '').length;
+      const isAutoDesc = descLen < 80 && /— (кафе|ресторан|бар|кофейня|пиццерия|пекарня|столовая|закусочная|кондитерская|буфет)/.test(r.description || '');
+      const hasContent = descLen > 80 || r.features.length > 0 || r.dishes.length > 0 || r.cuisines.length > 0;
+      return !hasContent || isAutoDesc;
+    };
+    const beforeFilter = restaurants.length;
+    const quality = restaurants.filter(r => !isStub(r));
+    // Only apply filter if we still have enough good results; otherwise keep stubs as fallback
+    if (quality.length >= 3 || (quality.length > 0 && quality.length >= beforeFilter * 0.3)) {
+      restaurants = quality;
+      this.logger.log(`[AI-Stream] quality filter: ${beforeFilter} → ${restaurants.length} (removed ${beforeFilter - restaurants.length} stubs)`);
+    } else {
+      this.logger.log(`[AI-Stream] quality filter skipped: only ${quality.length}/${beforeFilter} quality results, keeping all`);
     }
 
     // Send restaurants + params as first SSE event

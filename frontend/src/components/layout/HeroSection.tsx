@@ -13,7 +13,7 @@ export function HeroSection() {
         className="absolute rounded-full pointer-events-none animate-orb-float"
         style={{
           width: 600, height: 600,
-          background: 'rgba(255,92,40,0.08)',
+          background: 'var(--orb-accent)',
           filter: 'blur(80px)',
           top: -200, left: -100,
         }}
@@ -22,7 +22,7 @@ export function HeroSection() {
         className="absolute rounded-full pointer-events-none animate-orb-float"
         style={{
           width: 500, height: 500,
-          background: 'rgba(57,255,209,0.05)',
+          background: 'var(--orb-teal)',
           filter: 'blur(80px)',
           bottom: -150, right: -50,
           animationDelay: '-4s',
@@ -41,14 +41,14 @@ export function HeroSection() {
             className="block w-full text-justify animate-shimmer"
             style={{
               fontSize: 'clamp(52px,7.5vw,105px)',
-              background: 'linear-gradient(135deg,var(--accent),var(--accent2),var(--lime))',
+              background: 'linear-gradient(135deg,var(--accent),var(--accent2),var(--gold))',
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
               backgroundSize: '200% auto',
             }}>
             {t('line2')}
           </span>
-          <span className="block w-full text-justify text-[var(--text3)]"
+          <span className="block w-full text-justify hero-line3"
             style={{ fontSize: 'clamp(40px,5.5vw,80px)' }}>
             {t('line3')}
           </span>

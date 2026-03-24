@@ -69,9 +69,9 @@ export function DishCard({ dish }: { dish: Dish }) {
       style={{ background: 'var(--bg2)', borderColor: 'var(--card-border)' }}
       onClick={() => hasDetails && setExpanded(!expanded)}
       onMouseEnter={(e) => {
-        e.currentTarget.style.borderColor = 'rgba(255,92,40,0.2)';
+        e.currentTarget.style.borderColor = 'var(--chat-user-border)';
         e.currentTarget.style.transform = 'translateY(-2px)';
-        e.currentTarget.style.boxShadow = '0 16px 48px rgba(0,0,0,0.3)';
+        e.currentTarget.style.boxShadow = '0 8px 32px rgba(0,0,0,0.08)';
       }}
       onMouseLeave={(e) => {
         e.currentTarget.style.borderColor = 'var(--card-border)';
@@ -87,7 +87,7 @@ export function DishCard({ dish }: { dish: Dish }) {
       <div className="w-[90px] h-[90px] rounded-[12px] flex-shrink-0 relative z-10 overflow-hidden"
         style={{ background: 'var(--bg3)' }}>
         {hasImage ? (
-          <Image src={dish.imageUrl!} alt={dish.name} fill className="object-cover"
+          <Image src={dish.imageUrl!} alt={dish.name} fill sizes="90px" className="object-cover"
             onError={() => setImgError(true)} />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-[36px]">
@@ -124,7 +124,7 @@ export function DishCard({ dish }: { dish: Dish }) {
         {/* Composition — expanded */}
         {expanded && dish.composition && (
           <div className="text-[11px] text-[var(--text3)] leading-[1.5] mb-2 px-2.5 py-2 rounded-lg border"
-            style={{ background: 'rgba(255,255,255,0.02)', borderColor: 'var(--card-border)' }}>
+            style={{ background: 'var(--card)', borderColor: 'var(--card-border)' }}>
             <span className="text-[10px] uppercase tracking-wider text-[var(--text3)] opacity-60">Состав: </span>
             {dish.composition}
           </div>
@@ -170,7 +170,7 @@ export function DishCard({ dish }: { dish: Dish }) {
       <button
         onClick={(e) => { e.stopPropagation(); handleAdd(); }}
         className="absolute bottom-4 right-4 z-10 w-[34px] h-[34px] rounded-full text-white text-[18px] flex items-center justify-center border-none transition-all duration-200 cursor-pointer"
-        style={{ background: 'var(--accent)', boxShadow: '0 4px 16px rgba(255,92,40,0.3)' }}
+        style={{ background: 'var(--accent)', boxShadow: '0 4px 16px var(--accent-glow)' }}
         onMouseEnter={(e) => (e.currentTarget as HTMLElement).style.transform = 'scale(1.15)'}
         onMouseLeave={(e) => (e.currentTarget as HTMLElement).style.transform = ''}>
         +

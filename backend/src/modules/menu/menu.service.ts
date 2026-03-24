@@ -1,35 +1,73 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { IsInt, IsOptional, IsString, IsBoolean, IsNumber } from 'class-validator';
 import { Dish } from '@database/entities/dish.entity';
 import { RestaurantDish } from '@database/entities/restaurant-dish.entity';
 
 export class CreateRestaurantDishDto {
+  @IsInt()
   dishId: number;
+
+  @IsOptional() @IsString()
   categoryName?: string;
+
+  @IsInt()
   price: number; // в копейках
+
+  @IsOptional() @IsBoolean()
   isAvailable?: boolean;
+
+  @IsOptional() @IsInt()
   sortOrder?: number;
 }
 
 export class CreateDishFullDto {
+  @IsString()
   name: string;
+
+  @IsOptional() @IsString()
   description?: string;
+
+  @IsOptional() @IsString()
   composition?: string;
+
+  @IsOptional() @IsString()
   categoryName?: string;
+
+  @IsInt()
   price: number;
+
+  @IsOptional() @IsNumber()
   weightGrams?: number;
+
+  @IsOptional() @IsNumber()
   volumeMl?: number;
+
+  @IsOptional() @IsNumber()
   calories?: number;
+
+  @IsOptional() @IsNumber()
   protein?: number;
+
+  @IsOptional() @IsNumber()
   fat?: number;
+
+  @IsOptional() @IsNumber()
   carbs?: number;
 }
 
 export class UpdateRestaurantDishDto {
+  @IsOptional() @IsString()
   categoryName?: string;
+
+  @IsOptional() @IsInt()
   price?: number;
+
+  @IsOptional() @IsBoolean()
   isAvailable?: boolean;
+
+  @IsOptional() @IsInt()
   sortOrder?: number;
 }
 
@@ -49,12 +87,41 @@ export class MenuService {
       order: { sortOrder: 'ASC' },
     });
 
+    // Filter out junk: dishes without a proper name
+    const valid = items.filter(i => i.dish?.name && i.dish.name.trim().length > 0);
+
+    // If fewer than 5 valid dishes, don't show menu at all
+    if (valid.length < 5) return [];
+
+    // Fix broken categories: if categoryName == dish name, it's not a real category
+    for (const item of valid) {
+      const cat = (item.categoryName ?? '').trim();
+      const name = (item.dish?.name ?? '').trim();
+      if (cat && name && cat === name) {
+        item.categoryName = null;
+      }
+    }
+
     // Group by categoryName
-    const grouped: Record<string, typeof items> = {};
-    for (const item of items) {
-      const cat = item.categoryName ?? 'Без категории';
+    const grouped: Record<string, typeof valid> = {};
+    for (const item of valid) {
+      const cat = item.categoryName ?? 'Основное меню';
       if (!grouped[cat]) grouped[cat] = [];
       grouped[cat].push(item);
+    }
+
+    // Merge tiny categories (1-2 items) into "Основное меню"
+    const MERGE_THRESHOLD = 2;
+    const merged = grouped['Основное меню'] || [];
+    for (const [cat, dishes] of Object.entries(grouped)) {
+      if (cat === 'Основное меню') continue;
+      if (dishes.length <= MERGE_THRESHOLD) {
+        merged.push(...dishes);
+        delete grouped[cat];
+      }
+    }
+    if (merged.length > 0) {
+      grouped['Основное меню'] = merged;
     }
 
     return Object.entries(grouped).map(([category, dishes]) => ({ category, dishes }));

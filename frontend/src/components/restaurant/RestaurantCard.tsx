@@ -21,7 +21,9 @@ interface Restaurant {
   averageBill?: number;
   photos?: Array<{ url: string; isCover: boolean }>;
   features?: Array<{ slug: string; name: string; category?: string; icon?: string }>;
+  address?: string;
   distanceKm?: number;
+  branchCount?: number;
 }
 
 const PRICE_SYMBOLS = ['', '₽', '₽₽', '₽₽₽', '₽₽₽₽'];
@@ -76,7 +78,7 @@ function GeneratedCover({ name, cuisines }: { name: string; cuisines?: Array<{ n
       <div className="absolute rounded-full opacity-10"
         style={{ width: 120, height: 120, bottom: -20, left: -20, background: `hsl(${(h + 60) % 360},${s}%,${l + 15}%)` }} />
       {/* Emoji */}
-      <span className="text-[64px] opacity-80 relative z-10 select-none" style={{ filter: 'drop-shadow(0 4px 12px rgba(0,0,0,0.3))' }}>
+      <span className="text-[48px] opacity-80 relative z-10 select-none" style={{ filter: 'drop-shadow(0 4px 12px rgba(0,0,0,0.3))' }}>
         {emoji}
       </span>
     </div>
@@ -158,8 +160,10 @@ export function RestaurantCard({ restaurant }: { restaurant: Restaurant }) {
   const [imgError, setImgError] = useState(false);
   const location = restaurant.locations?.[0];
   const city = location?.city?.name;
-  const district = location?.district?.name;
-  const locationLine = [city, district].filter(Boolean).join(', ');
+  const address = restaurant.address;
+  // Show street (first part of address before comma) + city
+  const street = address?.split(',')[0]?.trim();
+  const locationLine = [city, street].filter(Boolean).join(', ');
 
   const nationalCuisines = restaurant.cuisines?.filter(c => isNationalCuisine(c.name)) || [];
   const cuisineLabel = nationalCuisines.length
@@ -176,12 +180,12 @@ export function RestaurantCard({ restaurant }: { restaurant: Restaurant }) {
   return (
     <Link href={`/restaurants/${restaurant.slug}`}>
       <article
-        className="bg-[var(--bg2)] border border-[var(--card-border)] rounded-[20px] overflow-hidden cursor-pointer"
+        className="bg-[var(--bg2)] border border-[var(--card-border)] rounded-[16px] overflow-hidden cursor-pointer flex flex-col h-full"
         style={{ transition: 'transform 0.45s, border-color 0.45s, box-shadow 0.45s' }}
         onMouseEnter={(e) => {
-          (e.currentTarget as HTMLElement).style.transform = 'translateY(-6px) scale(1.01)';
-          (e.currentTarget as HTMLElement).style.boxShadow = '0 24px 60px rgba(0,0,0,0.35)';
-          (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.1)';
+          (e.currentTarget as HTMLElement).style.transform = 'translateY(-4px) scale(1.01)';
+          (e.currentTarget as HTMLElement).style.boxShadow = '0 12px 40px rgba(0,0,0,0.1)';
+          (e.currentTarget as HTMLElement).style.borderColor = 'var(--glass-border)';
         }}
         onMouseLeave={(e) => {
           (e.currentTarget as HTMLElement).style.transform = 'none';
@@ -189,14 +193,14 @@ export function RestaurantCard({ restaurant }: { restaurant: Restaurant }) {
           (e.currentTarget as HTMLElement).style.borderColor = 'var(--card-border)';
         }}>
         {/* Image */}
-        <div className="h-[210px] relative bg-[var(--bg3)] flex-shrink-0">
+        <div className="h-[160px] relative bg-[var(--bg3)] flex-shrink-0">
           {showImage ? (
-            <Image src={cover} alt={restaurant.name} fill className="object-cover" onError={() => setImgError(true)} />
+            <Image src={cover} alt={restaurant.name} fill sizes="(max-width: 768px) 100vw, 400px" className="object-cover" onError={() => setImgError(true)} />
           ) : (
             <GeneratedCover name={restaurant.name} cuisines={restaurant.cuisines} />
           )}
           <div className="absolute inset-0"
-            style={{ background: 'linear-gradient(to top, var(--bg2), transparent 50%)' }} />
+            style={{ background: 'linear-gradient(to top, var(--card-fade) 0%, transparent 60%)' }} />
 
           {/* Badges */}
           <div className="absolute top-3.5 left-3.5 z-10 flex gap-1.5">
@@ -218,15 +222,8 @@ export function RestaurantCard({ restaurant }: { restaurant: Restaurant }) {
           <WishlistButton restaurantId={restaurant.id} />
           <FavoriteButton restaurantId={restaurant.id} />
 
-          {/* Rating badge on image */}
+          {/* Bottom badges on image */}
           <div className="absolute bottom-3 left-4 z-10 flex items-center gap-2">
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full"
-              style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(8px)' }}>
-              <span className="text-[12px] font-semibold text-[var(--gold)]">
-                ⭐ {Number(restaurant.ratingAggregate).toFixed(1)}
-              </span>
-              <span className="text-[11px] text-white/50">({restaurant.reviewCount})</span>
-            </div>
             {restaurant.distanceKm != null && (
               <div className="flex items-center gap-1 px-2.5 py-1 rounded-full"
                 style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(8px)' }}>
@@ -241,8 +238,8 @@ export function RestaurantCard({ restaurant }: { restaurant: Restaurant }) {
         </div>
 
         {/* Body */}
-        <div className="px-4 pt-3 pb-4 relative z-[2]">
-          <h3 className="text-[16px] font-semibold text-[var(--text)] leading-tight truncate">{restaurant.name}</h3>
+        <div className="px-3.5 pt-2.5 pb-3 relative z-[2] flex-1 flex flex-col">
+          <h3 className="text-[14px] font-semibold text-[var(--text)] leading-tight truncate">{restaurant.name}</h3>
           {locationLine && (
             <p className="text-[12px] text-[var(--text3)] mt-1 truncate">{locationLine}</p>
           )}
@@ -266,9 +263,9 @@ export function RestaurantCard({ restaurant }: { restaurant: Restaurant }) {
               )}
             </div>
           )}
-          <div className="flex items-center justify-between mt-2">
-            <span className="text-[12px] text-[var(--text3)] truncate">{cuisineLabel}</span>
-            <span className="text-[12px] text-[var(--text3)] flex-shrink-0 ml-2">
+          <div className="flex items-center justify-between mt-auto pt-2">
+            <span className="text-[11px] text-[var(--text3)] truncate">{cuisineLabel}</span>
+            <span className="text-[11px] text-[var(--text3)] flex-shrink-0 ml-2">
               {restaurant.averageBill
                 ? `~${restaurant.averageBill.toLocaleString('ru-RU')} ₽`
                 : PRICE_SYMBOLS[restaurant.priceLevel || 2]}

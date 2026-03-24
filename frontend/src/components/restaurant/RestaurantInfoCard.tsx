@@ -116,6 +116,7 @@ function PhotoSlider({ photos, name, cuisines }: {
         src={sorted[realIndex].url}
         alt={`${name} — фото ${displayIndex + 1}`}
         fill
+        sizes="(max-width: 768px) 100vw, 600px"
         className="object-cover"
         priority={displayIndex === 0}
         onError={() => setErrors(prev => new Set(prev).add(realIndex))}
@@ -259,7 +260,6 @@ export function RestaurantInfoCard({ restaurant }: { restaurant: Restaurant }) {
   const metaItems = [
     { icon: '📍', label: t('address'), value: fullAddress || undefined },
     ...(metroStation ? [{ icon: '🚇', label: 'Метро', value: metroStation }] : []),
-    { icon: '⭐', label: t('rating'), value: `${Number(restaurant.ratingAggregate).toFixed(1)} (${restaurant.reviewCount} ${t('reviews')})` },
     { icon: '🕐', label: t('schedule'), value: todayHours || t('callToCheck') },
     {
       icon: '💰', label: t('avgBill'),
@@ -345,13 +345,13 @@ export function RestaurantInfoCard({ restaurant }: { restaurant: Restaurant }) {
         {/* Owner claim */}
         {!isOwnerAccount && (
           <div className="mt-4 px-4 py-3 rounded-2xl border flex items-center justify-between gap-3"
-            style={{ background: 'rgba(255,255,255,0.02)', borderColor: 'rgba(255,255,255,0.06)' }}>
+            style={{ background: 'var(--card)', borderColor: 'var(--card-border)' }}>
             <p className="text-[12px] text-[var(--text3)] leading-relaxed">{t('claimTitle')}</p>
             <button onClick={() => setClaimOpen(true)}
               className="flex-shrink-0 px-4 py-2 rounded-full text-[12px] font-semibold border transition-all cursor-pointer"
-              style={{ color: 'var(--accent)', borderColor: 'rgba(255,92,40,0.25)', background: 'rgba(255,92,40,0.06)' }}
-              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,92,40,0.12)'; e.currentTarget.style.borderColor = 'var(--accent)'; }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,92,40,0.06)'; e.currentTarget.style.borderColor = 'rgba(255,92,40,0.25)'; }}>
+              style={{ color: 'var(--accent)', borderColor: 'var(--chat-user-border)', background: 'var(--accent-glow)' }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'var(--chat-user-bg)'; e.currentTarget.style.borderColor = 'var(--accent)'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'var(--accent-glow)'; e.currentTarget.style.borderColor = 'var(--chat-user-border)'; }}>
               {t('claimButton')}
             </button>
           </div>

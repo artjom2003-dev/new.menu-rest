@@ -30,7 +30,7 @@ const LIMIT = parseInt(getArg('limit') || '1000', 10);
 const OFFSET = parseInt(getArg('offset') || '0', 10);
 const CITY_FILTER = getArg('city') || null;
 const PDF_DIR = resolve('data/raw/menu_pdfs_scraped');
-const DELAY_MS = 2000; // Between restaurants
+const DELAY_MS = parseInt(getArg('delay') || '500', 10); // Between restaurants
 const PAGE_TIMEOUT = 15000;
 
 // Skip these domains — already scraped
@@ -217,126 +217,134 @@ function normalizeUrl(url) {
   return url;
 }
 
+// Quick fetch with hard timeout wrapper
+async function quickFetch(url) {
+  return Promise.race([
+    _doFetch(url),
+    new Promise(resolve => setTimeout(() => resolve(null), 8000)),
+  ]);
+}
+
+async function _doFetch(url) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 6000);
+  try {
+    const resp = await fetch(url, {
+      signal: controller.signal,
+      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+      redirect: 'follow',
+    });
+    clearTimeout(timer);
+    if (!resp.ok) return null;
+    const ct = resp.headers.get('content-type') || '';
+    if (ct.includes('pdf')) return { type: 'pdf', url };
+    if (!ct.includes('html') && !ct.includes('text')) return null;
+    const html = await Promise.race([
+      resp.text(),
+      new Promise((_, rej) => setTimeout(() => rej(new Error('body timeout')), 5000)),
+    ]);
+    if (html.length < 500) return null;
+    return { type: 'html', html };
+  } catch { clearTimeout(timer); return null; }
+}
+
 // Strategy 1: Fetch HTML and extract menu items
 async function scrapeHtml(baseUrl, browser) {
   const dishes = [];
-  const page = await browser.newPage();
-  page.setDefaultTimeout(PAGE_TIMEOUT);
 
-  try {
-    // Try menu pages
-    const urlsToTry = [baseUrl, ...MENU_PATHS.map(p => baseUrl + p)];
-    let menuPageUrl = null;
-    let menuHtml = null;
+  // Phase 1: Quick fetch — try /menu and base in parallel
+  let menuHtml = null;
 
-    for (const url of urlsToTry) {
-      try {
-        const response = await page.goto(url, { waitUntil: 'domcontentloaded', timeout: PAGE_TIMEOUT });
-        if (!response || response.status() >= 400) continue;
+  const fetches = ['/menu', ''].map(async (path) => {
+    const result = await quickFetch(baseUrl + path);
+    if (!result) return null;
+    if (result.type === 'pdf') return null;
+    const hasMenu = /(?:меню|menu|блюд|dish|₽|руб|price|цена)/i.test(result.html);
+    return (hasMenu && result.html.length > 3000) ? result.html : null;
+  });
 
-        const html = await page.content();
-        // Check if this page has menu-like content
-        const hasMenuContent = /(?:меню|menu|catalog|блюд|dish|price|цена|₽|руб)/i.test(html);
-        if (hasMenuContent && html.length > 5000) {
-          menuPageUrl = url;
-          menuHtml = html;
-          break;
-        }
-      } catch { continue; }
-    }
+  const results = await Promise.all(fetches);
+  menuHtml = results.find(r => r) || null;
 
-    if (!menuHtml) { await page.close(); return []; }
-
-    // Wait for dynamic content
-    await page.waitForTimeout(2000);
-    menuHtml = await page.content();
-
-    // Try to intercept API calls
-    const apiDishes = [];
-    page.on('response', async (response) => {
-      try {
-        const ct = response.headers()['content-type'] || '';
-        if (!ct.includes('json')) return;
-        const json = await response.json();
-        extractDishesFromJson(json, apiDishes);
-      } catch {}
-    });
-
-    // Scroll to load lazy content
-    await autoScroll(page);
-    await page.waitForTimeout(1000);
-
-    if (apiDishes.length > 3) {
-      await page.close();
-      return apiDishes;
-    }
-
-    // Parse HTML
-    menuHtml = await page.content();
-    await page.close();
-
-    const $ = cheerio.load(menuHtml);
-    let currentCategory = '';
-
-    // Common menu patterns
-    $('[class*="menu"], [class*="catalog"], [class*="dish"], [class*="product"], [class*="item"]').each((_, el) => {
-      const $el = $(el);
-      const text = $el.text().trim();
-
-      // Category detection
-      const $cat = $el.find('[class*="categ"], [class*="title"], [class*="section"], h2, h3');
-      if ($cat.length) {
-        const catText = $cat.first().text().trim();
-        if (catText.length > 1 && catText.length < 80) currentCategory = catText;
-      }
-
-      // Dish detection
-      const $name = $el.find('[class*="name"], [class*="title"], [class*="dish-name"], [class*="product-name"], h4, h5');
-      const $price = $el.find('[class*="price"], [class*="cost"], [class*="rub"]');
-      const $desc = $el.find('[class*="desc"], [class*="composition"], [class*="ingredient"]');
-
-      const name = $name.length ? $name.first().text().trim() : '';
-      const priceText = $price.length ? $price.first().text().trim() : '';
-      const desc = $desc.length ? $desc.first().text().trim() : '';
-
-      if (name && name.length > 1 && name.length < 200) {
-        const price = extractPrice(priceText);
-        dishes.push({
-          name,
-          description: desc.length > 3 && desc.length < 500 ? desc : null,
-          category: currentCategory || null,
-          price: price ? price * 100 : 0, // to kopecks
-          weightGrams: extractWeight(text),
-        });
-      }
-    });
-
-    // Fallback: simple regex extraction from text
-    if (dishes.length < 3) {
-      const fullText = $('body').text();
-      const lines = fullText.split('\n').map(l => l.trim()).filter(l => l.length > 3);
-
-      for (const line of lines) {
-        const m = line.match(/^(.{3,80})\s+(\d{2,5})\s*(?:₽|руб|р\.?)?$/);
-        if (m) {
-          const name = cleanDishName(m[1]);
-          const price = parseInt(m[2], 10);
-          if (name && price > 50 && price < 50000) {
-            dishes.push({
-              name,
-              category: null,
-              price: price * 100,
-              weightGrams: extractWeight(line),
-            });
+  // Phase 2: Playwright fallback — skip for now (use --playwright flag to enable)
+  if (!menuHtml && args.includes('--playwright') && browser) {
+    let page;
+    try {
+      page = await browser.newPage();
+      page.setDefaultTimeout(10000);
+      for (const path of ['/menu', '']) {
+        try {
+          const resp = await page.goto(baseUrl + path, { waitUntil: 'domcontentloaded', timeout: 10000 });
+          if (!resp || resp.status() >= 400) continue;
+          await page.waitForTimeout(1500);
+          const html = await page.content();
+          if (/(?:меню|menu|блюд|₽|руб)/i.test(html) && html.length > 3000) {
+            menuHtml = html;
+            break;
           }
-        }
+        } catch { continue; }
       }
-    }
-  } catch (err) {
-    // Page error — skip
+    } catch {} finally { try { await page.close(); } catch {} }
   }
 
-  try { await page.close(); } catch {}
+  if (!menuHtml) return [];
+
+  // Parse HTML with cheerio
+  const $ = cheerio.load(menuHtml);
+  let currentCategory = '';
+
+  $('[class*="menu"], [class*="catalog"], [class*="dish"], [class*="product"], [class*="item"]').each((_, el) => {
+    const $el = $(el);
+    const text = $el.text().trim();
+
+    const $cat = $el.find('[class*="categ"], [class*="title"], [class*="section"], h2, h3');
+    if ($cat.length) {
+      const catText = $cat.first().text().trim();
+      if (catText.length > 1 && catText.length < 80) currentCategory = catText;
+    }
+
+    const $name = $el.find('[class*="name"], [class*="title"], [class*="dish-name"], [class*="product-name"], h4, h5');
+    const $price = $el.find('[class*="price"], [class*="cost"], [class*="rub"]');
+    const $desc = $el.find('[class*="desc"], [class*="composition"], [class*="ingredient"]');
+
+    const name = $name.length ? $name.first().text().trim() : '';
+    const priceText = $price.length ? $price.first().text().trim() : '';
+    const desc = $desc.length ? $desc.first().text().trim() : '';
+
+    if (name && name.length > 1 && name.length < 200) {
+      const price = extractPrice(priceText);
+      dishes.push({
+        name,
+        description: desc.length > 3 && desc.length < 500 ? desc : null,
+        category: currentCategory || null,
+        price: price ? price * 100 : 0,
+        weightGrams: extractWeight(text),
+      });
+    }
+  });
+
+  // Fallback: regex extraction from text
+  if (dishes.length < 3) {
+    const fullText = $('body').text();
+    const lines = fullText.split('\n').map(l => l.trim()).filter(l => l.length > 3);
+
+    for (const line of lines) {
+      const m = line.match(/^(.{3,80})\s+(\d{2,5})\s*(?:₽|руб|р\.?)?$/);
+      if (m) {
+        const name = cleanDishName(m[1]);
+        const price = parseInt(m[2], 10);
+        if (name && price > 50 && price < 50000) {
+          dishes.push({
+            name,
+            category: null,
+            price: price * 100,
+            weightGrams: extractWeight(line),
+          });
+        }
+      }
+    }
+  }
+
   return dishes;
 }
 
@@ -426,7 +434,10 @@ async function main() {
     return;
   }
 
-  const browser = await chromium.launch({ headless: true });
+  const usePlaywright = args.includes('--playwright');
+  const browser = usePlaywright ? await chromium.launch({ headless: true }) : null;
+  if (usePlaywright) console.log('🎭 Playwright включён\n');
+  else console.log('⚡ Режим fetch-only (быстрый). Добавьте --playwright для JS-рендеринга.\n');
   const stats = { processed: 0, scraped: 0, totalDishes: 0, failed: 0, skipped: 0 };
 
   for (const r of restaurants) {
@@ -440,7 +451,10 @@ async function main() {
     process.stdout.write(`[${stats.processed}/${restaurants.length}] ${r.name} → ${url} ... `);
 
     try {
-      const dishes = await scrapeHtml(url, browser);
+      const dishes = await Promise.race([
+        scrapeHtml(url, browser),
+        new Promise(resolve => setTimeout(() => resolve([]), 30000)), // 30s max per restaurant
+      ]);
 
       if (dishes.length >= 3) {
         const saved = await saveDishes(db, r.id, dishes);
@@ -460,7 +474,7 @@ async function main() {
     await new Promise(r => setTimeout(r, DELAY_MS));
   }
 
-  await browser.close();
+  if (browser) await browser.close();
   await db.end();
 
   console.log('\n═══ ИТОГИ ═══');

@@ -78,7 +78,9 @@ export class ChatService {
             name: other.name,
             avatarUrl: other.avatarUrl,
           },
-          lastMessage: lastMessage ? { text: lastMessage.text, createdAt: lastMessage.createdAt } : null,
+          lastMessage: lastMessage
+            ? { text: lastMessage.text, createdAt: lastMessage.createdAt, senderId: lastMessage.senderId }
+            : null,
           unreadCount,
           lastMessageAt: conv.lastMessageAt,
           createdAt: conv.createdAt,
@@ -105,10 +107,19 @@ export class ChatService {
       take: limit,
     });
 
-    return { items, meta: { total, page, limit, pages: Math.ceil(total / limit) } };
+    const mapped = items.map(m => ({
+      id: m.id,
+      text: m.text,
+      senderId: m.senderId,
+      conversationId: m.conversationId,
+      createdAt: m.createdAt,
+      read: !!m.readAt,
+    }));
+
+    return { items: mapped, meta: { total, page, limit, pages: Math.ceil(total / limit) } };
   }
 
-  async sendMessage(conversationId: number, senderId: number, text: string): Promise<Message> {
+  async sendMessage(conversationId: number, senderId: number, text: string) {
     const conversation = await this.conversationRepo.findOneBy({ id: conversationId });
     if (!conversation) throw new NotFoundException('Диалог не найден');
     if (conversation.participant1Id !== senderId && conversation.participant2Id !== senderId) {
@@ -125,7 +136,14 @@ export class ChatService {
     conversation.lastMessageAt = new Date();
     await this.conversationRepo.save(conversation);
 
-    return saved;
+    return {
+      id: saved.id,
+      text: saved.text,
+      senderId: saved.senderId,
+      conversationId: saved.conversationId,
+      createdAt: saved.createdAt,
+      read: false,
+    };
   }
 
   async markRead(conversationId: number, userId: number): Promise<void> {
@@ -143,6 +161,17 @@ export class ChatService {
       .andWhere('sender_id != :userId', { userId })
       .andWhere('read_at IS NULL')
       .execute();
+  }
+
+  async getUnreadCount(userId: number): Promise<{ count: number }> {
+    const count = await this.messageRepo
+      .createQueryBuilder('m')
+      .innerJoin('m.conversation', 'c')
+      .where('(c.participant1_id = :userId OR c.participant2_id = :userId)', { userId })
+      .andWhere('m.sender_id != :userId', { userId })
+      .andWhere('m.read_at IS NULL')
+      .getCount();
+    return { count };
   }
 
   getOtherUserId(conversation: Conversation, userId: number): number {

@@ -49,8 +49,8 @@ export function LanguageSwitcher() {
           gap: 5,
           padding: '5px 10px 5px 7px',
           borderRadius: 11,
-          border: `1px solid ${btnActive ? 'rgba(255,92,40,0.3)' : 'rgba(255,255,255,0.07)'}`,
-          background: btnActive ? 'rgba(255,92,40,0.08)' : 'rgba(255,255,255,0.03)',
+          border: `1px solid ${btnActive ? 'var(--chat-user-border)' : 'var(--glass-border)'}`,
+          background: btnActive ? 'var(--accent-glow)' : 'var(--nav-bg)',
           color: btnActive ? 'var(--text)' : 'var(--text3)',
           cursor: 'pointer',
           transition: 'all 0.25s cubic-bezier(.4,0,.2,1)',
@@ -100,10 +100,10 @@ export function LanguageSwitcher() {
         left: 0,
         minWidth: 200,
         borderRadius: 16,
-        border: '1px solid rgba(255,255,255,0.08)',
-        background: 'rgba(12,12,18,0.98)',
+        border: '1px solid var(--dropdown-border)',
+        background: 'var(--dropdown-bg)',
         backdropFilter: 'blur(40px) saturate(1.4)',
-        boxShadow: '0 24px 80px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.03) inset',
+        boxShadow: 'var(--dropdown-shadow)',
         padding: 5,
         opacity: open ? 1 : 0,
         visibility: open ? 'visible' as const : 'hidden' as const,
@@ -123,7 +123,7 @@ export function LanguageSwitcher() {
           letterSpacing: '0.08em',
           textTransform: 'uppercase' as const,
           color: 'var(--text4)',
-          borderBottom: '1px solid rgba(255,255,255,0.04)',
+          borderBottom: '1px solid var(--card-border)',
           marginBottom: 3,
         }}>
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
@@ -155,8 +155,8 @@ export function LanguageSwitcher() {
                   borderRadius: 10,
                   border: 'none',
                   background: isActive
-                    ? (isHov ? 'rgba(255,92,40,0.14)' : 'rgba(255,92,40,0.08)')
-                    : (isHov ? 'rgba(255,255,255,0.06)' : 'transparent'),
+                    ? (isHov ? 'var(--chat-user-bg)' : 'var(--accent-glow)')
+                    : (isHov ? 'var(--nav-hover)' : 'transparent'),
                   color: isActive || isHov ? 'var(--text)' : 'var(--text3)',
                   cursor: 'pointer',
                   transition: 'all 0.15s ease',

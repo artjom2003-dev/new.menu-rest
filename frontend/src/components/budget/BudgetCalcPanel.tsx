@@ -236,7 +236,7 @@ export function BudgetCalcPanel() {
 
       {/* Header */}
       <div className="px-6 py-[22px] flex justify-between items-center sticky top-0 z-[2] border-b"
-        style={{ background: 'var(--bg2)', borderColor: 'rgba(255,255,255,0.05)' }}>
+        style={{ background: 'var(--bg2)', borderColor: 'var(--card-border)' }}>
         <div>
           <h3 className="font-serif text-[20px] font-bold text-[var(--text)]">🍽️ Хватит на ужин?</h3>
           {restaurantName && (
@@ -262,7 +262,7 @@ export function BudgetCalcPanel() {
       </div>
 
       {/* Budget + guests */}
-      <div className="px-6 py-[18px] border-b" style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
+      <div className="px-6 py-[18px] border-b" style={{ borderColor: 'var(--card-border)' }}>
         <div className="flex gap-3 mb-3">
           {/* Budget */}
           <div className="flex-1">
@@ -372,7 +372,7 @@ export function BudgetCalcPanel() {
           </div>
         ) : (
           items.map((item, i) => (
-            <div key={i} className="flex items-center gap-2.5 py-3 border-b" style={{ borderColor: 'rgba(255,255,255,0.04)' }}>
+            <div key={i} className="flex items-center gap-2.5 py-3 border-b" style={{ borderColor: 'var(--card-border)' }}>
               <span className="text-[22px] w-8 text-center">{item.icon}</span>
               <div className="flex-1">
                 <div className="text-[13px] font-medium text-[var(--text)]">{item.name}</div>
@@ -401,7 +401,7 @@ export function BudgetCalcPanel() {
       </div>
 
       {/* Footer */}
-      <div className="px-6 py-5 border-t" style={{ background: 'var(--bg3)', borderColor: 'rgba(255,255,255,0.06)' }}>
+      <div className="px-6 py-5 border-t" style={{ background: 'var(--bg3)', borderColor: 'var(--card-border)' }}>
         {items.length > 0 && (
           <div className="flex gap-3.5 justify-center p-3 rounded-[10px] mb-3.5 border" style={{ background: 'var(--bg2)', borderColor: 'var(--card-border)' }}>
             {[

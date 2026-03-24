@@ -97,9 +97,10 @@ export function ChatWidget() {
     chatApi.getMessages(activeId, 1)
       .then(r => {
         const d = r.data;
-        const m = Array.isArray(d) ? d : d.messages || d.data || [];
-        setMsgs(m.reverse ? m.reverse() : m);
-        setHasMore(Array.isArray(d) ? m.length >= 30 : !!d.hasMore);
+        const m = Array.isArray(d) ? d : d.items || d.messages || d.data || [];
+        setMsgs(m);
+        const meta = d.meta;
+        setHasMore(meta ? meta.page < meta.pages : m.length >= 20);
         setMsgsLoading(false);
         setTimeout(scrollBottom, 100);
       })
@@ -114,9 +115,10 @@ export function ChatWidget() {
     setMsgsLoading(true);
     chatApi.getMessages(activeId, np).then(r => {
       const d = r.data;
-      const m = Array.isArray(d) ? d : d.messages || d.data || [];
-      setMsgs(p => [...(m.reverse ? m.reverse() : m), ...p]);
-      setHasMore(Array.isArray(d) ? m.length >= 30 : !!d.hasMore);
+      const m = Array.isArray(d) ? d : d.items || d.messages || d.data || [];
+      setMsgs(p => [...m, ...p]);
+      const meta = d.meta;
+      setHasMore(meta ? meta.page < meta.pages : m.length >= 20);
       setPage(np);
       setMsgsLoading(false);
     }).catch(() => setMsgsLoading(false));
@@ -207,7 +209,7 @@ export function ChatWidget() {
               return (
                 <button key={c.id} onClick={() => setActiveId(c.id)}
                   style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '9px 10px', borderRadius: 12, border: 'none', background: act ? 'linear-gradient(135deg, rgba(255,92,40,0.1), rgba(255,92,40,0.04))' : 'transparent', cursor: 'pointer', transition: 'all 0.15s', textAlign: 'left', marginBottom: 2, fontFamily: 'inherit', boxShadow: act ? 'inset 0 0 0 1px rgba(255,92,40,0.2)' : 'none' }}
-                  onMouseEnter={e => { if (!act) e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; }}
+                  onMouseEnter={e => { if (!act) e.currentTarget.style.background = 'var(--nav-hover)'; }}
                   onMouseLeave={e => { if (!act) e.currentTarget.style.background = 'transparent'; }}>
                   <div style={{ position: 'relative', flexShrink: 0 }}>
                     <div style={{ width: 36, height: 36, borderRadius: '50%', overflow: 'hidden', background: 'var(--bg3)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: act ? '2px solid var(--accent)' : '2px solid var(--card-border)' }}>

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import slugify from 'slugify';
@@ -358,6 +358,23 @@ export class UserService {
     await this.restaurantDishRepo.save(entry);
 
     return this.restaurantDishRepo.findOne({ where: { id: entryId }, relations: ['dish'] }) as Promise<RestaurantDish>;
+  }
+
+  async uploadDishPhoto(userId: number, entryId: number, file: Express.Multer.File) {
+    const restaurant = await this.restaurantRepo.findOneBy({ ownerId: userId });
+    if (!restaurant) throw new NotFoundException('У вас нет привязанного ресторана');
+
+    const entry = await this.restaurantDishRepo.findOne({ where: { id: entryId, restaurantId: restaurant.id }, relations: ['dish'] });
+    if (!entry) throw new NotFoundException('Позиция меню не найдена');
+
+    if (!file) throw new BadRequestException('Файл не передан');
+    const allowed = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!allowed.includes(file.mimetype)) throw new BadRequestException('Допустимые форматы: JPEG, PNG, WebP');
+
+    const { original } = await this.storage.upload(file, `dishes/${entry.dishId}`);
+    await this.dishRepo.update(entry.dishId, { imageUrl: original });
+
+    return this.restaurantDishRepo.findOne({ where: { id: entryId }, relations: ['dish'] });
   }
 
   async deleteMyDish(userId: number, entryId: number): Promise<void> {

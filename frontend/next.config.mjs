@@ -20,6 +20,9 @@ const nextConfig = {
       { protocol: 'https', hostname: 'cdn1.flamp.ru' },
       { protocol: 'https', hostname: '*.rl0.ru' },
       { protocol: 'https', hostname: '*.afisha.ru' },
+      { protocol: 'https', hostname: 'avatars.mds.yandex.net' },
+      { protocol: 'https', hostname: '*.selstorage.ru' },
+      { protocol: 'https', hostname: 'mangocafe.ru' },
     ],
   },
   async rewrites() {

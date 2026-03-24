@@ -10,7 +10,7 @@ export function CtaBanner() {
       <div className="rounded-[24px] px-12 py-14 flex items-center justify-between gap-9 relative overflow-hidden"
         style={{
           background: 'linear-gradient(135deg, var(--accent), #D44A20)',
-          boxShadow: '0 24px 80px rgba(255,92,40,0.2)',
+          boxShadow: '0 24px 80px var(--accent-glow)',
         }}>
         <div
           className="absolute rounded-full"
@@ -25,7 +25,7 @@ export function CtaBanner() {
         <div className="relative z-10 flex flex-col items-center gap-2">
           <button
             className="px-10 py-4 text-[15px] font-bold rounded-full transition-all duration-300"
-            style={{ background: 'var(--lime)', color: 'var(--bg)' }}
+            style={{ background: 'white', color: 'var(--accent)' }}
             onMouseEnter={(e) => {
               (e.currentTarget as HTMLElement).style.boxShadow = '0 0 40px var(--lime-glow)';
               (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px)';

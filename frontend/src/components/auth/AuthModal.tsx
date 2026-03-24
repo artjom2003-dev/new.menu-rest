@@ -16,6 +16,8 @@ export function AuthModal({ open, onClose }: AuthModalProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
   const { setUser } = useAuthStore();
 
   const [form, setForm] = useState({ name: '', email: '', password: '', code: '', newPassword: '' });
@@ -70,26 +72,56 @@ export function AuthModal({ open, onClose }: AuthModalProps) {
     value: string,
     onChange: (v: string) => void,
     placeholder: string,
-    extra?: { required?: boolean; minLength?: number; maxLength?: number; inputMode?: string },
-  ) => (
-    <div className="mb-3.5">
-      <label className="text-[11px] font-semibold text-[var(--text2)] block mb-1.5">{label}</label>
-      <input
-        type={type}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        required={extra?.required !== false}
-        minLength={extra?.minLength}
-        maxLength={extra?.maxLength}
-        inputMode={extra?.inputMode as React.HTMLAttributes<HTMLInputElement>['inputMode']}
-        className={inputClass}
-        style={{ background: 'var(--bg3)', borderColor: 'var(--card-border)' }}
-        onFocus={(e) => (e.currentTarget.style.borderColor = 'var(--accent)')}
-        onBlur={(e) => (e.currentTarget.style.borderColor = '')}
-      />
-    </div>
-  );
+    extra?: { required?: boolean; minLength?: number; maxLength?: number; inputMode?: string; passwordToggle?: [boolean, (v: boolean) => void] },
+  ) => {
+    const isPassword = type === 'password';
+    const [visible, setVisible] = isPassword && extra?.passwordToggle ? extra.passwordToggle : [false, () => {}];
+
+    return (
+      <div className="mb-3.5">
+        <label className="text-[11px] font-semibold text-[var(--text2)] block mb-1.5">{label}</label>
+        <div className="relative">
+          <input
+            type={isPassword && visible ? 'text' : type}
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder={placeholder}
+            required={extra?.required !== false}
+            minLength={extra?.minLength}
+            maxLength={extra?.maxLength}
+            inputMode={extra?.inputMode as React.HTMLAttributes<HTMLInputElement>['inputMode']}
+            className={inputClass}
+            style={{ background: 'var(--bg3)', borderColor: 'var(--card-border)', paddingRight: isPassword ? '44px' : undefined }}
+            onFocus={(e) => (e.currentTarget.style.borderColor = 'var(--accent)')}
+            onBlur={(e) => (e.currentTarget.style.borderColor = '')}
+          />
+          {isPassword && (
+            <button
+              type="button"
+              onClick={() => setVisible(!visible)}
+              className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-full border-0 cursor-pointer transition-colors"
+              style={{ background: 'transparent', color: 'var(--text3)' }}
+              tabIndex={-1}
+              title={visible ? 'Скрыть пароль' : 'Показать пароль'}>
+              {visible ? (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+                  <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+                  <path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/>
+                  <line x1="1" y1="1" x2="23" y2="23"/>
+                </svg>
+              ) : (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                  <circle cx="12" cy="12" r="3"/>
+                </svg>
+              )}
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  };
 
   const titles: Record<Mode, string> = {
     login: 'Вход',
@@ -155,7 +187,7 @@ export function AuthModal({ open, onClose }: AuthModalProps) {
             'Пароль', 'password', form.password,
             (v) => setForm({ ...form, password: v }),
             'Минимум 8 символов',
-            { minLength: 8 },
+            { minLength: 8, passwordToggle: [showPassword, setShowPassword] },
           )}
 
           {/* Код из письма — reset */}
@@ -171,7 +203,7 @@ export function AuthModal({ open, onClose }: AuthModalProps) {
             'Новый пароль', 'password', form.newPassword,
             (v) => setForm({ ...form, newPassword: v }),
             'Минимум 8 символов',
-            { minLength: 8 },
+            { minLength: 8, passwordToggle: [showNewPassword, setShowNewPassword] },
           )}
 
           {error && <p className="text-[12px] text-red-400 mb-3">{error}</p>}

@@ -37,11 +37,13 @@ export default function OwnerMenuPage() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editForm, setEditForm] = useState<DishForm>({ ...emptyForm });
   const [uploadingPdf, setUploadingPdf] = useState(false);
+  const [uploadingPhotoId, setUploadingPhotoId] = useState<number | null>(null);
   const [showExtra, setShowExtra] = useState(false);
   const [showKbzhu, setShowKbzhu] = useState(false);
   const [editShowExtra, setEditShowExtra] = useState(false);
   const [editShowKbzhu, setEditShowKbzhu] = useState(false);
   const pdfRef = useRef<HTMLInputElement>(null);
+  const photoRefs = useRef<Record<number, HTMLInputElement | null>>({});
 
   // Load menu
   useEffect(() => {
@@ -146,6 +148,18 @@ export default function OwnerMenuPage() {
       setDishes(prev => prev.filter(d => d.id !== id));
       toast('Блюдо удалено', 'success');
     } catch { toast('Ошибка удаления', 'error'); }
+  };
+
+  const handlePhotoUpload = async (dishId: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingPhotoId(dishId);
+    try {
+      const res = await ownerApi.uploadDishPhoto(dishId, file);
+      setDishes(prev => prev.map(d => d.id === dishId ? res.data : d));
+      toast('Фото загружено', 'success');
+    } catch { toast('Ошибка загрузки фото', 'error'); }
+    finally { setUploadingPhotoId(null); if (photoRefs.current[dishId]) photoRefs.current[dishId]!.value = ''; }
   };
 
   const handlePdfUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -329,8 +343,30 @@ export default function OwnerMenuPage() {
                       </div>
                     ) : (
                       /* View mode */
-                      <div className="flex items-center justify-between rounded-[10px] px-4 py-3 transition-all"
+                      <div className="flex items-center gap-3 rounded-[10px] px-4 py-3 transition-all"
                         style={{ background: d.isAvailable ? 'var(--bg)' : 'rgba(255,60,60,0.03)', border: '1px solid var(--card-border)' }}>
+                        {/* Photo thumbnail */}
+                        <div className="shrink-0 relative group/photo cursor-pointer"
+                          onClick={() => photoRefs.current[d.id]?.click()}
+                          style={{ width: 48, height: 48, borderRadius: 8, overflow: 'hidden', background: 'var(--bg3)' }}>
+                          {d.dish.imageUrl ? (
+                            <img src={d.dish.imageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-[18px] opacity-30">🍽️</div>
+                          )}
+                          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/photo:opacity-100 transition-opacity"
+                            style={{ background: 'rgba(0,0,0,0.5)' }}>
+                            <span className="text-white text-[12px]">{uploadingPhotoId === d.id ? '...' : '📷'}</span>
+                          </div>
+                          <input
+                            ref={el => { photoRefs.current[d.id] = el; }}
+                            type="file"
+                            accept="image/jpeg,image/png,image/webp"
+                            onChange={(e) => handlePhotoUpload(d.id, e)}
+                            style={{ display: 'none' }}
+                          />
+                        </div>
+
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
                             <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{d.dish.name}</span>

@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { useSearchStore } from '@/stores/search.store';
 import { useGeoStore } from '@/stores/geo.store';
+import { useCityStore } from '@/stores/city.store';
 import { useToast } from '@/components/ui/Toast';
 
 interface AiRestaurant {
@@ -24,32 +25,54 @@ interface ChatMessage {
 
 function RestaurantInlineCard({ restaurant }: { restaurant: AiRestaurant }) {
   const cover = restaurant.photos?.find(p => p.isCover) || restaurant.photos?.[0];
-  const showImg = cover?.url && /^https?:\/\//.test(cover.url);
+  const showImg = !!cover?.url;
   return (
-    <a href={`/restaurants/${restaurant.slug}`}
-      className="inline-flex items-center gap-1.5 mx-0.5 px-2 py-0.5 rounded-[8px] no-underline transition-all duration-200 hover:brightness-125 align-middle"
-      style={{ background: 'linear-gradient(135deg, rgba(255,92,40,0.1), rgba(139,92,246,0.06))', border: '1px solid rgba(255,92,40,0.15)' }}>
+    <a href={`/restaurants/${restaurant.slug}`} target="_blank" rel="noopener noreferrer"
+      className="inline-flex items-center gap-1 mx-0.5 px-1.5 py-px rounded-[6px] no-underline transition-all duration-200 hover:brightness-110 align-middle"
+      style={{ background: 'linear-gradient(135deg, var(--chat-inline-bg), var(--chat-inline-bg2))', border: '1px solid var(--chat-inline-border)' }}>
       {showImg ? (
-        <img src={cover!.url} alt={restaurant.name} className="w-5 h-5 rounded-[5px] object-cover" />
+        <img src={cover!.url} alt={restaurant.name} className="w-4 h-4 rounded-[4px] object-cover"
+          onError={(e) => { e.currentTarget.style.display = 'none'; }} />
       ) : (
-        <span className="w-5 h-5 rounded-[5px] flex items-center justify-center text-[10px]" style={{ background: 'var(--bg3)' }}>🍽️</span>
+        <span className="w-4 h-4 rounded-[4px] flex items-center justify-center text-[9px]" style={{ background: 'var(--bg3)' }}>🍽️</span>
       )}
-      <span className="text-[13px] font-bold text-[var(--accent)] whitespace-nowrap">{restaurant.name}</span>
+      <span className="text-[12px] font-bold text-[var(--accent)] whitespace-nowrap">{restaurant.name}</span>
     </a>
   );
 }
 
 function renderText(text: string, restaurants: AiRestaurant[]): React.ReactNode[] {
+  // Strip markdown formatting
   text = text.replace(/\*\*([^*]+)\*\*/g, '$1').replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '$1').replace(/^[*\-•]\s+/gm, '').replace(/^#{1,4}\s+/gm, '');
-  if (!restaurants.length) return [text];
-  const sorted = [...restaurants].sort((a, b) => b.name.length - a.name.length);
-  const escaped = sorted.map(r => r.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
-  const pattern = new RegExp(`(${escaped.join('|')})`, 'gi');
-  const parts = text.split(pattern);
-  const map = new Map(sorted.map(r => [r.name.toLowerCase(), r]));
-  return parts.map((part, i) => {
-    const m = map.get(part.toLowerCase());
-    return m ? <RestaurantInlineCard key={`c-${i}`} restaurant={m} /> : <span key={`t-${i}`}>{part}</span>;
+  // Collapse 3+ newlines to 2, then 2 newlines become paragraph break
+  text = text.replace(/\n{3,}/g, '\n\n').trim();
+
+  // Split into paragraphs (double newline), render each with tight margin
+  const paragraphs = text.split(/\n\n/);
+  const sorted = restaurants.length ? [...restaurants].sort((a, b) => b.name.length - a.name.length) : [];
+  const map = sorted.length ? new Map(sorted.map(r => [r.name.toLowerCase(), r])) : null;
+  const pattern = sorted.length
+    ? new RegExp(`(${sorted.map(r => r.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})`, 'gi')
+    : null;
+
+  return paragraphs.map((para, pi) => {
+    // Single newlines within a paragraph become <br>
+    const lines = para.split('\n');
+    const lineNodes: React.ReactNode[] = [];
+    lines.forEach((line, li) => {
+      if (li > 0) lineNodes.push(<br key={`br-${pi}-${li}`} />);
+      if (pattern && map) {
+        const parts = line.split(pattern);
+        parts.forEach((part, ci) => {
+          const m = map.get(part.toLowerCase());
+          if (m) lineNodes.push(<RestaurantInlineCard key={`c-${pi}-${li}-${ci}`} restaurant={m} />);
+          else if (part) lineNodes.push(<span key={`t-${pi}-${li}-${ci}`}>{part}</span>);
+        });
+      } else {
+        lineNodes.push(<span key={`t-${pi}-${li}`}>{line}</span>);
+      }
+    });
+    return <p key={`p-${pi}`} style={{ margin: pi > 0 ? '6px 0 0' : '0' }}>{lineNodes}</p>;
   });
 }
 
@@ -77,8 +100,8 @@ function ThinkingBubble({ streamText, streamRestaurants, analyzingLabel }: {
   }, [streamText]);
 
   return (
-    <div className="flex items-start gap-3" style={{ animation: 'fadeSlideIn 0.3s ease-out both' }}>
-      <div className="w-8 h-8 rounded-[10px] flex items-center justify-center text-[15px] shrink-0 mt-1 relative"
+    <div className="flex items-start gap-2.5" style={{ animation: 'fadeSlideIn 0.3s ease-out both' }}>
+      <div className="w-7 h-7 rounded-[9px] flex items-center justify-center text-[13px] shrink-0 mt-0.5 relative"
         style={{ background: 'linear-gradient(135deg, var(--accent), #D44A20)', boxShadow: '0 3px 12px var(--accent-glow)' }}>
         🧠
         <div className="absolute inset-[-5px]" style={{ animation: 'spin 2.5s linear infinite' }}>
@@ -86,11 +109,11 @@ function ThinkingBubble({ streamText, streamRestaurants, analyzingLabel }: {
         </div>
       </div>
       <div className="flex-1 min-w-0">
-        <div className="rounded-[18px] rounded-tl-[6px] px-5 py-4 relative overflow-hidden"
-          style={{ background: 'var(--bg2)', boxShadow: '0 4px 20px rgba(0,0,0,0.15)', animation: 'borderPulse 2s ease-in-out infinite', border: '1px solid rgba(255,92,40,0.2)' }}>
+        <div className="rounded-[16px] rounded-tl-[5px] px-4 py-3 relative overflow-hidden"
+          style={{ background: 'var(--bg2)', boxShadow: '0 2px 12px rgba(0,0,0,0.06)', animation: 'borderPulse 2s ease-in-out infinite', border: '1px solid var(--chat-user-border)' }}>
 
           {streamText ? (
-            <div className="text-[14px] text-[var(--text2)] whitespace-pre-line relative z-10" style={{ lineHeight: '1.55' }}>
+            <div className="text-[13px] text-[var(--text2)] relative z-10" style={{ lineHeight: '1.45' }}>
               {renderText(streamText, streamRestaurants)}
               <span className="inline-block w-[2px] h-[1.1em] ml-0.5 align-text-bottom rounded-full"
                 style={{ background: 'var(--accent)', animation: 'pulse 1s infinite' }} />
@@ -152,28 +175,30 @@ function RestaurantStrip({ restaurants }: { restaurants: AiRestaurant[] }) {
   if (!restaurants.length) return null;
 
   return (
-    <div className="relative mt-3 pt-3" style={{ borderTop: '1px solid var(--card-border)' }}>
+    <div className="relative mt-2 pt-2" style={{ borderTop: '1px solid var(--card-border)' }}>
       <div ref={scrollRef} onScroll={checkScroll}
-        className="flex gap-2.5 overflow-x-auto pb-1 scroll-smooth" style={{ scrollbarWidth: 'none' }}>
+        className="flex gap-2 overflow-x-auto pb-1 scroll-smooth" style={{ scrollbarWidth: 'none' }}>
         {restaurants.slice(0, 15).map(r => {
           const cover = r.photos?.find(p => p.isCover) || r.photos?.[0];
-          const showImg = cover?.url && /^https?:\/\//.test(cover.url);
+          const showImg = !!cover?.url;
           return (
-            <a key={r.slug} href={`/restaurants/${r.slug}`}
-              className="flex-shrink-0 w-[150px] rounded-[14px] overflow-hidden no-underline transition-all duration-300 group hover:-translate-y-1"
+            <a key={r.slug} href={`/restaurants/${r.slug}`} target="_blank" rel="noopener noreferrer"
+              className="flex-shrink-0 w-[130px] rounded-[12px] overflow-hidden no-underline transition-all duration-300 group hover:-translate-y-1"
               style={{ background: 'var(--bg2)', border: '1px solid var(--card-border)' }}
-              onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,92,40,0.3)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(255,92,40,0.08)'; }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--chat-user-border)'; e.currentTarget.style.boxShadow = '0 6px 20px var(--accent-glow)'; }}
               onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--card-border)'; e.currentTarget.style.boxShadow = 'none'; }}>
-              <div className="h-[90px] relative overflow-hidden" style={{ background: 'var(--bg3)' }}>
+              <div className="h-[72px] relative overflow-hidden" style={{ background: 'var(--bg3)' }}>
                 {showImg ? (
-                  <img src={cover!.url} alt={r.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                  <img src={cover!.url} alt={r.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                  />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-[24px] opacity-40"
                     style={{ background: `linear-gradient(135deg, hsl(${Math.abs(r.name.length * 47) % 360}, 35%, 16%), hsl(${(Math.abs(r.name.length * 47) + 40) % 360}, 30%, 20%))` }}>
                     🍽️
                   </div>
                 )}
-                <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, var(--bg2) 0%, transparent 40%)' }} />
+                <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, var(--card-fade) 0%, transparent 50%)' }} />
                 {r.distanceKm !== undefined && (
                   <div className="absolute bottom-1.5 left-2 text-[9px] font-bold px-1.5 py-0.5 rounded-full"
                     style={{ background: 'rgba(0,0,0,0.55)', color: 'var(--accent)', backdropFilter: 'blur(4px)' }}>
@@ -181,9 +206,9 @@ function RestaurantStrip({ restaurants }: { restaurants: AiRestaurant[] }) {
                   </div>
                 )}
               </div>
-              <div className="px-2.5 py-2">
-                <div className="text-[12px] font-bold text-[var(--text)] truncate leading-tight">{r.name}</div>
-                <div className="text-[10px] text-[var(--text3)] truncate mt-0.5">
+              <div className="px-2 py-1.5">
+                <div className="text-[11px] font-bold text-[var(--text)] truncate leading-tight">{r.name}</div>
+                <div className="text-[9px] text-[var(--text3)] truncate mt-0.5">
                   {r.metroStation ? `м. ${r.metroStation}` : r.cuisines?.slice(0, 2).join(', ') || r.city || ''}
                 </div>
               </div>
@@ -196,14 +221,14 @@ function RestaurantStrip({ restaurants }: { restaurants: AiRestaurant[] }) {
       {canScrollLeft && (
         <button onClick={() => scroll(-1)}
           className="absolute left-0 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full flex items-center justify-center border-0 cursor-pointer z-10 text-[12px]"
-          style={{ background: 'var(--bg2)', color: 'var(--text)', boxShadow: '2px 0 12px rgba(0,0,0,0.3)', marginTop: 12 }}>
+          style={{ background: 'var(--bg2)', color: 'var(--text)', boxShadow: '2px 0 12px rgba(0,0,0,0.1)', marginTop: 12 }}>
           ‹
         </button>
       )}
       {canScrollRight && (
         <button onClick={() => scroll(1)}
           className="absolute right-0 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full flex items-center justify-center border-0 cursor-pointer z-10 text-[12px]"
-          style={{ background: 'var(--bg2)', color: 'var(--text)', boxShadow: '-2px 0 12px rgba(0,0,0,0.3)', marginTop: 12 }}>
+          style={{ background: 'var(--bg2)', color: 'var(--text)', boxShadow: '-2px 0 12px rgba(0,0,0,0.1)', marginTop: 12 }}>
           ›
         </button>
       )}
@@ -220,9 +245,66 @@ export function AISearchBar() {
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const [streamText, setStreamText] = useState('');
   const [streamRestaurants, setStreamRestaurants] = useState<AiRestaurant[]>([]);
+  const [isListening, setIsListening] = useState(false);
+  const recognitionRef = useRef<any>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const geoLat = useGeoStore(s => s.lat);
   const geoLng = useGeoStore(s => s.lng);
+  const savedCitySlug = useCityStore(s => s.slug);
+  const savedCityName = useCityStore(s => s.name);
+
+  const [hasSpeech, setHasSpeech] = useState(false);
+  useEffect(() => {
+    setHasSpeech(!!(window as any).webkitSpeechRecognition || !!(window as any).SpeechRecognition);
+  }, []);
+
+  const toggleVoice = useCallback(() => {
+    if (isListening) {
+      recognitionRef.current?.stop();
+      setIsListening(false);
+      return;
+    }
+
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) { toast('Голосовой ввод не поддерживается в этом браузере', 'error'); return; }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'ru-RU';
+    recognition.interimResults = true;
+    recognition.continuous = false;
+    recognition.maxAlternatives = 1;
+    recognitionRef.current = recognition;
+
+    let finalTranscript = '';
+
+    recognition.onresult = (event: any) => {
+      let interim = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        if (event.results[i].isFinal) {
+          finalTranscript += event.results[i][0].transcript;
+        } else {
+          interim += event.results[i][0].transcript;
+        }
+      }
+      setQuery(finalTranscript + interim);
+    };
+
+    recognition.onend = () => {
+      setIsListening(false);
+      if (finalTranscript.trim()) {
+        // Auto-focus input so user can hit Enter or edit
+        setTimeout(() => inputRef.current?.focus(), 100);
+      }
+    };
+
+    recognition.onerror = (event: any) => {
+      setIsListening(false);
+      if (event.error === 'not-allowed') toast('Разрешите доступ к микрофону', 'error');
+    };
+
+    recognition.start();
+    setIsListening(true);
+  }, [isListening, toast]);
 
   const hasStarted = chatHistory.length > 0 || isAnalyzing;
 
@@ -249,7 +331,7 @@ export function AISearchBar() {
       const response = await fetch(`${apiUrl}/search/ai-stream`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: q, ...(geoLat && geoLng ? { lat: geoLat, lng: geoLng } : {}), ...(context.length > 0 ? { context } : {}) }),
+        body: JSON.stringify({ query: q, ...(geoLat && geoLng ? { lat: geoLat, lng: geoLng } : {}), ...(savedCitySlug ? { city: savedCitySlug, cityName: savedCityName } : {}), ...(context.length > 0 ? { context } : {}) }),
       });
       if (!response.ok || !response.body) throw new Error('Stream failed');
       const reader = response.body.getReader();
@@ -279,7 +361,7 @@ export function AISearchBar() {
       setIsAnalyzing(false);
       setTimeout(() => inputRef.current?.focus(), 100);
     }
-  }, [query, isAnalyzing, chatHistory, geoLat, geoLng, toast, t]);
+  }, [query, isAnalyzing, chatHistory, geoLat, geoLng, savedCitySlug, savedCityName, toast, t]);
 
   const handleReset = () => {
     setChatHistory([]); setStreamText(''); setStreamRestaurants([]);
@@ -298,16 +380,41 @@ export function AISearchBar() {
 
       {/* Search input — initial position (before first search) */}
       {!hasStarted && (
-        <div className="rounded-[20px] border p-1.5 flex transition-all relative"
+        <div className="rounded-[20px] border p-1.5 flex items-center transition-all relative"
           style={{
             background: 'var(--bg3)',
-            borderColor: 'rgba(255,92,40,0.2)',
-            boxShadow: '0 8px 40px rgba(0,0,0,0.4), 0 0 80px var(--accent-glow)',
+            borderColor: isListening ? 'var(--accent)' : 'var(--search-border)',
+            boxShadow: isListening ? '0 0 20px var(--accent-glow)' : 'var(--search-shadow)',
           }}>
+          {isListening && (
+            <div className="absolute top-0 left-0 right-0 h-[2px] rounded-t-[20px] overflow-hidden">
+              <div className="h-full rounded-full" style={{ background: 'var(--accent)', width: '40%', animation: 'voiceSweep 1.2s ease-in-out infinite alternate' }} />
+            </div>
+          )}
           <input ref={inputRef} value={query} onChange={e => setQuery(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && handleSearch()}
-            placeholder={t('placeholder')}
-            className="flex-1 bg-transparent border-none outline-none px-5 py-4 text-[15px] text-[var(--text)] placeholder-[var(--text3)] font-sans" />
+            placeholder={isListening ? 'Говорите...' : t('placeholder')}
+            className="flex-1 bg-transparent border-none outline-none px-5 py-4 text-[15px] text-[var(--text)] placeholder-[var(--text3)] font-sans"
+            style={isListening && !query ? { caretColor: 'transparent' } : {}} />
+          {hasSpeech && (
+            <button onClick={toggleVoice} type="button"
+              className="w-11 h-11 rounded-full flex items-center justify-center border-0 cursor-pointer self-center mr-1 transition-all duration-200 relative"
+              style={{
+                background: isListening ? 'var(--accent)' : 'var(--nav-hover)',
+                color: isListening ? '#fff' : 'var(--text3)',
+              }}
+              title={isListening ? 'Остановить запись' : 'Голосовой ввод'}>
+              {isListening && (
+                <span className="absolute inset-[-4px] rounded-full border-2" style={{ borderColor: 'var(--accent)', animation: 'voiceRing 1.5s ease-out infinite' }} />
+              )}
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                <line x1="12" y1="19" x2="12" y2="23"/>
+                <line x1="8" y1="23" x2="16" y2="23"/>
+              </svg>
+            </button>
+          )}
           <button onClick={() => handleSearch()} disabled={isAnalyzing}
             className="btn btn-glow rounded-[16px] px-7 py-3.5 flex-shrink-0">
             {t('find')}
@@ -317,41 +424,41 @@ export function AISearchBar() {
 
       {/* ═══ CONVERSATION ═══ */}
       {hasStarted && (
-        <div className="mt-6">
+        <div className="mt-4">
           {/* Accent line connector */}
-          <div className="flex items-center gap-3 mb-4">
+          <div className="flex items-center gap-3 mb-3">
             <div className="h-px flex-1" style={{ background: 'linear-gradient(90deg, var(--accent), transparent)' }} />
             <span className="text-[11px] font-bold tracking-wider uppercase" style={{ color: 'var(--accent)' }}>AI-диалог</span>
             <div className="h-px flex-1" style={{ background: 'linear-gradient(90deg, transparent, var(--accent))' }} />
           </div>
 
-          <div className="space-y-4">
+          <div className="space-y-2.5">
             {chatHistory.map((msg, i) => (
               <div key={i} style={{ animation: 'fadeSlideIn 0.3s ease-out both', animationDelay: `${Math.min(i * 0.05, 0.2)}s` }}>
                 {msg.role === 'user' ? (
                   /* ── User ── */
                   <div className="flex justify-end">
-                    <div className="rounded-[18px] rounded-br-[6px] px-5 py-3 max-w-[80%] relative overflow-hidden"
+                    <div className="rounded-[16px] rounded-br-[5px] px-4 py-2 max-w-[80%] relative overflow-hidden"
                       style={{
-                        background: 'linear-gradient(135deg, rgba(255,92,40,0.14), rgba(255,140,66,0.08))',
-                        border: '1px solid rgba(255,92,40,0.2)',
-                        boxShadow: '0 2px 16px rgba(255,92,40,0.06)',
+                        background: 'linear-gradient(135deg, var(--chat-user-bg), var(--chat-user-bg2))',
+                        border: '1px solid var(--chat-user-border)',
+                        boxShadow: '0 2px 16px var(--accent-glow)',
                       }}>
-                      <div className="text-[14px] font-medium text-[var(--text)]">{msg.text}</div>
+                      <div className="text-[13px] font-medium text-[var(--text)]">{msg.text}</div>
                     </div>
                   </div>
                 ) : (
                   /* ── AI ── */
-                  <div className="flex items-start gap-3">
-                    <div className="w-8 h-8 rounded-[10px] flex items-center justify-center text-[15px] shrink-0 mt-1"
+                  <div className="flex items-start gap-2.5">
+                    <div className="w-7 h-7 rounded-[9px] flex items-center justify-center text-[13px] shrink-0 mt-0.5"
                       style={{ background: 'linear-gradient(135deg, var(--accent), #D44A20)', boxShadow: '0 3px 12px var(--accent-glow)' }}>
                       🤖
                     </div>
                     <div className="flex-1 min-w-0">
                       {/* Text */}
-                      <div className="rounded-[18px] rounded-tl-[6px] px-5 py-4 border relative"
-                        style={{ background: 'linear-gradient(180deg, var(--bg2), rgba(var(--bg2-rgb, 18,18,24), 0.95))', borderColor: 'var(--card-border)', boxShadow: '0 4px 20px rgba(0,0,0,0.15)' }}>
-                        <div className="text-[14px] text-[var(--text2)] whitespace-pre-line" style={{ lineHeight: '1.55' }}>
+                      <div className="rounded-[16px] rounded-tl-[5px] px-4 py-3 border relative"
+                        style={{ background: 'var(--bg2)', borderColor: 'var(--chat-ai-border)', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
+                        <div className="text-[13px] text-[var(--text2)]" style={{ lineHeight: '1.45' }}>
                           {renderText(msg.text, msg.restaurants || [])}
                         </div>
                       </div>
@@ -378,25 +485,50 @@ export function AISearchBar() {
 
       {/* Search input — bottom position (after conversation started) */}
       {hasStarted && (
-        <div className="mt-4 rounded-[20px] border p-1.5 flex transition-all relative"
+        <div className="mt-3 rounded-[16px] border p-1 flex items-center transition-all relative"
           style={{
             background: 'var(--bg2)',
-            borderColor: 'var(--card-border)',
-            boxShadow: '0 2px 12px rgba(0,0,0,0.15)',
+            borderColor: isListening ? 'var(--accent)' : 'var(--card-border)',
+            boxShadow: isListening ? '0 0 16px var(--accent-glow)' : '0 2px 12px rgba(0,0,0,0.15)',
           }}>
+          {isListening && (
+            <div className="absolute top-0 left-0 right-0 h-[2px] rounded-t-[16px] overflow-hidden">
+              <div className="h-full rounded-full" style={{ background: 'var(--accent)', width: '40%', animation: 'voiceSweep 1.2s ease-in-out infinite alternate' }} />
+            </div>
+          )}
           <input ref={inputRef} value={query} onChange={e => setQuery(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && handleSearch()}
-            placeholder="Уточните: подешевле, ближе, другая кухня..."
-            className="flex-1 bg-transparent border-none outline-none px-5 py-4 text-[15px] text-[var(--text)] placeholder-[var(--text3)] font-sans" />
+            placeholder={isListening ? 'Говорите...' : 'Уточните: подешевле, ближе, другая кухня...'}
+            className="flex-1 bg-transparent border-none outline-none px-4 py-3 text-[13px] text-[var(--text)] placeholder-[var(--text3)] font-sans"
+            style={isListening && !query ? { caretColor: 'transparent' } : {}} />
+          {hasSpeech && (
+            <button onClick={toggleVoice} type="button"
+              className="w-9 h-9 rounded-full flex items-center justify-center border-0 cursor-pointer self-center mr-1 transition-all duration-200 relative"
+              style={{
+                background: isListening ? 'var(--accent)' : 'var(--nav-hover)',
+                color: isListening ? '#fff' : 'var(--text3)',
+              }}
+              title={isListening ? 'Остановить запись' : 'Голосовой ввод'}>
+              {isListening && (
+                <span className="absolute inset-[-3px] rounded-full border-2" style={{ borderColor: 'var(--accent)', animation: 'voiceRing 1.5s ease-out infinite' }} />
+              )}
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                <line x1="12" y1="19" x2="12" y2="23"/>
+                <line x1="8" y1="23" x2="16" y2="23"/>
+              </svg>
+            </button>
+          )}
           {!isAnalyzing && (
             <button onClick={handleReset}
               className="px-3 py-1.5 rounded-full text-[11px] font-medium border-0 cursor-pointer self-center mr-1"
-              style={{ background: 'rgba(255,255,255,0.06)', color: 'var(--text3)' }}>
+              style={{ background: 'var(--nav-hover)', color: 'var(--text3)' }}>
               Сбросить
             </button>
           )}
           <button onClick={() => handleSearch()} disabled={isAnalyzing}
-            className="btn btn-glow rounded-[16px] px-7 py-3.5 flex-shrink-0">
+            className="btn btn-glow rounded-[12px] px-5 py-2.5 flex-shrink-0 text-[13px]">
             {isAnalyzing ? '...' : '→'}
           </button>
         </div>
@@ -405,8 +537,10 @@ export function AISearchBar() {
       <style>{`
         @keyframes aiSweep { 0% { transform: translateX(-100%); } 100% { transform: translateX(300%); } }
         @keyframes fadeSlideIn { 0% { opacity: 0; transform: translateY(8px); } 100% { opacity: 1; transform: translateY(0); } }
-        @keyframes borderPulse { 0%,100% { border-color: rgba(255,92,40,0.2); } 50% { border-color: rgba(255,92,40,0.45); } }
+        @keyframes borderPulse { 0%,100% { border-color: var(--chat-user-border); } 50% { border-color: var(--accent2); } }
         @keyframes thinkingText { 0% { opacity: 0; transform: translateY(4px); } 15% { opacity: 1; transform: translateY(0); } 85% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(-4px); } }
+        @keyframes voiceSweep { 0% { transform: translateX(-10%); } 100% { transform: translateX(160%); } }
+        @keyframes voiceRing { 0% { transform: scale(1); opacity: 1; } 100% { transform: scale(1.6); opacity: 0; } }
       `}</style>
     </div>
   );

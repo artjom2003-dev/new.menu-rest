@@ -180,6 +180,17 @@ export class UserController {
     return this.service.deleteMyDish(req.user.id, id);
   }
 
+  @Post('restaurant/menu/dishes/:id/photo')
+  @ApiOperation({ summary: 'Загрузить фото блюда' })
+  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 5 * 1024 * 1024 } }))
+  uploadDishPhoto(
+    @Request() req: { user: { id: number } },
+    @Param('id', ParseIntPipe) id: number,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    return this.service.uploadDishPhoto(req.user.id, id, file);
+  }
+
   @Post('restaurant/menu/upload-pdf')
   @ApiOperation({ summary: 'Загрузить PDF-меню' })
   @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 20 * 1024 * 1024 } }))
