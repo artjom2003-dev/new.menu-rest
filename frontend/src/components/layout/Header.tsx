@@ -318,17 +318,31 @@ export function Header() {
           boxShadow: scrolled ? '0 4px 24px rgba(0,0,0,0.12)' : 'none',
         }}>
         <div className="w-full flex items-center justify-between">
-          {/* Left: Language + City + Logo */}
-          <div className="flex items-center gap-3 max-sm:gap-2 min-w-0">
-            <span className="max-sm:hidden"><LanguageSwitcher /></span>
-            <HeaderCityPicker />
+          {/* Left: Burger (mobile) + Language + City + Logo */}
+          <div className="flex items-center gap-3 max-sm:gap-1.5 min-w-0">
+            {/* Mobile burger — left side */}
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="hidden max-lg:flex items-center justify-center w-9 h-9 rounded-lg border cursor-pointer transition-all flex-shrink-0"
+              style={{ background: 'var(--glass)', borderColor: 'var(--glass-border)' }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--text2)" strokeWidth="2" strokeLinecap="round">
+                {mobileMenuOpen ? (
+                  <><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></>
+                ) : (
+                  <><line x1="3" y1="7" x2="21" y2="7" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="17" x2="21" y2="17" /></>
+                )}
+              </svg>
+            </button>
 
-            <Link href="/" className="font-serif text-[26px] max-sm:text-[20px] font-bold text-[var(--text)] no-underline tracking-[-0.03em] flex items-center gap-2.5 max-sm:gap-1.5 group flex-shrink-0">
-              <span className="w-9 h-9 max-sm:w-8 max-sm:h-8 rounded-[10px] flex items-center justify-center text-[12px] max-sm:text-[10px] font-black tracking-tight transition-transform duration-300 group-hover:scale-110"
+            <LanguageSwitcher />
+            <span className="max-sm:hidden"><HeaderCityPicker /></span>
+
+            <Link href="/" className="font-serif text-[26px] max-sm:text-[18px] font-bold text-[var(--text)] no-underline tracking-[-0.03em] flex items-center gap-2 max-sm:gap-1 group flex-shrink-0">
+              <span className="w-9 h-9 max-sm:w-7 max-sm:h-7 rounded-[10px] max-sm:rounded-[7px] flex items-center justify-center text-[12px] max-sm:text-[9px] font-black tracking-tight transition-transform duration-300 group-hover:scale-110"
                 style={{ background: 'linear-gradient(135deg, var(--accent), #D44A20)', color: 'white', boxShadow: '0 2px 8px var(--accent-glow)' }}>
                 MR
               </span>
-              <span className="max-sm:hidden">Menu-<b style={{ color: 'var(--accent)', fontWeight: 900 }}>Rest</b></span>
+              <span className="max-sm:text-[16px]">Menu-<b style={{ color: 'var(--accent)', fontWeight: 900 }}>Rest</b></span>
             </Link>
           </div>
 
@@ -419,19 +433,7 @@ export function Header() {
 
           </nav>
 
-          {/* Mobile burger button */}
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="hidden max-lg:flex items-center justify-center w-10 h-10 rounded-xl border cursor-pointer transition-all"
-            style={{ background: 'var(--glass)', borderColor: 'var(--glass-border)' }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text2)" strokeWidth="2" strokeLinecap="round">
-              {mobileMenuOpen ? (
-                <><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></>
-              ) : (
-                <><line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" /></>
-              )}
-            </svg>
-          </button>
+
 
           {/* Right */}
           <div className="flex gap-2.5 max-lg:hidden items-center">
@@ -591,15 +593,19 @@ export function Header() {
         <div className="fixed inset-0 z-[999] hidden max-lg:block" onClick={() => setMobileMenuOpen(false)}>
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
           <div
-            className="absolute top-[64px] left-0 right-0 p-4 flex flex-col gap-2 max-h-[calc(100vh-64px)] overflow-y-auto"
+            className="absolute top-[64px] left-0 right-0 p-4 max-sm:p-3 flex flex-col gap-1.5 max-h-[calc(100vh-64px)] overflow-y-auto"
             style={{ background: 'var(--header-bg-scroll)', backdropFilter: 'blur(40px) saturate(1.4)', borderBottom: '1px solid var(--header-border)' }}
             onClick={(e) => e.stopPropagation()}>
+            {/* City picker in mobile menu */}
+            <div className="hidden max-sm:block px-2 pb-2">
+              <HeaderCityPicker />
+            </div>
             {NAV_ITEMS.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
                 onClick={() => setMobileMenuOpen(false)}
-                className="px-4 py-3 rounded-xl text-[15px] font-semibold no-underline transition-all"
+                className="px-4 py-2.5 rounded-xl text-[14px] font-semibold no-underline transition-all"
                 style={{
                   color: pathname === item.href ? 'white' : 'var(--text2)',
                   background: pathname === item.href ? 'var(--accent)' : 'transparent',

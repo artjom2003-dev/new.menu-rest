@@ -111,11 +111,11 @@ export function FeaturesSection() {
   return (
     <section className="max-w-[1400px] mx-auto px-10 max-md:px-4 max-sm:px-3 pb-20">
       {/* Header */}
-      <div className="text-center mb-12">
-        <h2 className="font-serif text-[36px] font-bold text-[var(--text)] mb-3">
+      <div className="text-center mb-12 max-sm:mb-6">
+        <h2 className="font-serif text-[36px] max-sm:text-[24px] font-bold text-[var(--text)] mb-3">
           Всё для идеального выбора
         </h2>
-        <p className="text-[15px] text-[var(--text3)] max-w-[520px] mx-auto leading-relaxed">
+        <p className="text-[15px] max-sm:text-[13px] text-[var(--text3)] max-w-[520px] mx-auto leading-relaxed">
           Не просто каталог ресторанов — умные инструменты, которые помогут найти, выбрать и забронировать
         </p>
       </div>

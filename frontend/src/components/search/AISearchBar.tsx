@@ -394,7 +394,7 @@ export function AISearchBar() {
           <input ref={inputRef} value={query} onChange={e => setQuery(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && handleSearch()}
             placeholder={isListening ? 'Говорите...' : t('placeholder')}
-            className="flex-1 bg-transparent border-none outline-none px-5 py-4 text-[15px] text-[var(--text)] placeholder-[var(--text3)] font-sans"
+            className="flex-1 bg-transparent border-none outline-none px-5 max-sm:px-3 py-4 max-sm:py-3 text-[15px] max-sm:text-[13px] text-[var(--text)] placeholder-[var(--text3)] font-sans min-w-0"
             style={isListening && !query ? { caretColor: 'transparent' } : {}} />
           {hasSpeech && (
             <button onClick={toggleVoice} type="button"
@@ -416,7 +416,7 @@ export function AISearchBar() {
             </button>
           )}
           <button onClick={() => handleSearch()} disabled={isAnalyzing}
-            className="btn btn-glow rounded-[16px] px-7 py-3.5 flex-shrink-0">
+            className="btn btn-glow rounded-[16px] px-7 max-sm:px-4 py-3.5 max-sm:py-2.5 max-sm:text-[12px] flex-shrink-0"
             {t('find')}
           </button>
         </div>

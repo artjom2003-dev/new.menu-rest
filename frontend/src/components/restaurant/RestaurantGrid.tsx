@@ -96,8 +96,8 @@ export function RestaurantGrid() {
 
   return (
     <>
-      <div className="max-w-[1400px] mx-auto px-10 max-md:px-4 max-sm:px-3 pt-6 pb-5 flex justify-between items-baseline">
-        <h2 className="font-serif text-[36px] font-bold text-[var(--text)]">{t('recommend')}</h2>
+      <div className="max-w-[1400px] mx-auto px-10 max-md:px-4 max-sm:px-3 pt-4 max-sm:pt-2 pb-4 flex justify-between items-baseline">
+        <h2 className="font-serif text-[36px] max-sm:text-[22px] font-bold text-[var(--text)]">{t('recommend')}</h2>
         <a href="/restaurants" className="text-[13px] text-[var(--accent)] font-medium no-underline">
           {t('all')}
         </a>

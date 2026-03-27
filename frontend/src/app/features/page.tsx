@@ -708,7 +708,7 @@ export default function FeaturesPage() {
       </section>
 
       {/* ── Animated showcase ── */}
-      <section className="max-w-[1100px] mx-auto px-10 max-md:px-4 max-sm:px-3 py-10 relative max-sm:hidden" style={{ minHeight: 560 }}>
+      <section className="max-w-[1100px] mx-auto px-10 max-md:px-4 max-sm:px-3 py-10 max-sm:py-6 relative" style={{ minHeight: 'min(560px, 70vh)' }}>
 
         {/* Scene decorations — restaurants, clouds, sun */}
         <SceneDecorations personX={personX} />

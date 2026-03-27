@@ -7,7 +7,7 @@ export function CtaBanner() {
 
   return (
     <div className="max-w-[1400px] mx-auto px-10 max-md:px-4 max-sm:px-3 mb-14">
-      <div className="rounded-[24px] px-12 py-14 flex items-center justify-between gap-9 relative overflow-hidden"
+      <div className="rounded-[24px] px-12 max-sm:px-5 py-14 max-sm:py-8 flex items-center justify-between gap-9 max-sm:flex-col max-sm:text-center relative overflow-hidden"
         style={{
           background: 'linear-gradient(135deg, var(--accent), #D44A20)',
           boxShadow: '0 24px 80px var(--accent-glow)',
@@ -17,7 +17,7 @@ export function CtaBanner() {
           style={{ top: -80, right: -80, width: 360, height: 360,
             background: 'rgba(255,255,255,0.06)' }} />
         <div className="relative z-10">
-          <h2 className="font-serif text-[36px] font-black text-white leading-[1.1]"
+          <h2 className="font-serif text-[36px] max-sm:text-[24px] font-black text-white leading-[1.1]"
             dangerouslySetInnerHTML={{ __html: t('title').replace('\n', '<br/>') }} />
           <p className="text-[15px] text-white/75 mt-3 leading-relaxed"
             dangerouslySetInnerHTML={{ __html: t('desc').replace('\n', '<br/>') }} />
