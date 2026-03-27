@@ -416,7 +416,7 @@ export function AISearchBar() {
             </button>
           )}
           <button onClick={() => handleSearch()} disabled={isAnalyzing}
-            className="btn btn-glow rounded-[16px] px-7 max-sm:px-4 py-3.5 max-sm:py-2.5 max-sm:text-[12px] flex-shrink-0"
+            className="btn btn-glow rounded-[16px] px-7 max-sm:px-4 py-3.5 max-sm:py-2.5 max-sm:text-[12px] flex-shrink-0">
             {t('find')}
           </button>
         </div>
