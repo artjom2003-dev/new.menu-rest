@@ -326,7 +326,7 @@ export function AISearchBar() {
     setStreamText('');
     setStreamRestaurants([]);
     const context = chatHistory.map(m => ({ role: m.role, text: m.text }));
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || '/api';
     try {
       const response = await fetch(`${apiUrl}/search/ai-stream`, {
         method: 'POST',
