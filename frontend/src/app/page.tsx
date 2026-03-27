@@ -11,12 +11,10 @@ export default function HomePage() {
   return (
     <>
       <HeroSection />
-      {!hasAiResults && (
-        <>
-          <RestaurantGrid />
-          <CtaBanner />
-        </>
-      )}
+      <div className={hasAiResults ? 'hidden' : ''}>
+        <RestaurantGrid />
+        <CtaBanner />
+      </div>
     </>
   );
 }

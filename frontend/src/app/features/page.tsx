@@ -688,7 +688,7 @@ export default function FeaturesPage() {
   const cardOnLeft = personX > 50;
 
   return (
-    <>
+    <div className="overflow-x-hidden">
       {/* Hero */}
       <section className="max-w-[1400px] mx-auto px-10 max-md:px-4 max-sm:px-3 pt-12 pb-6 relative">
         <div className="absolute rounded-full pointer-events-none"
@@ -805,7 +805,7 @@ export default function FeaturesPage() {
       </section>
 
       {/* ── Navigation dots ── */}
-      <div className="flex justify-center gap-2 pb-12">
+      <div className="flex justify-center gap-2 pb-12 max-sm:hidden">
         {features.map((f, i) => (
           <button key={i}
             onClick={() => { setTransitioning(true); setTimeout(() => { setActive(i); setTransitioning(false); }, 300); }}
@@ -822,14 +822,16 @@ export default function FeaturesPage() {
 
       {/* ── Mobile feature cards (replacing animation) ── */}
       <section className="hidden max-sm:block max-w-[1400px] mx-auto px-3 pb-6">
-        <div className="grid grid-cols-2 gap-2">
+        <div className="flex flex-col gap-2">
           {features.map((f, i) => {
             const S = shapeComponents[i];
             return (
-              <div key={f.title} className="rounded-[14px] p-3 border" style={{ background: 'var(--card)', borderColor: 'var(--card-border)' }}>
-                <div className="w-7 h-7 mb-2 opacity-70"><S color={f.color} /></div>
-                <h3 className="text-[13px] font-bold text-[var(--text)] mb-0.5">{f.title}</h3>
-                <p className="text-[10px] text-[var(--text3)] leading-snug">{f.subtitle}</p>
+              <div key={f.title} className="rounded-[14px] p-3 border flex items-center gap-3" style={{ background: 'var(--card)', borderColor: 'var(--card-border)' }}>
+                <div className="w-8 h-8 flex-shrink-0 opacity-70"><S color={f.color} /></div>
+                <div className="min-w-0">
+                  <h3 className="text-[13px] font-bold mb-0.5" style={{ color: f.color }}>{f.title}</h3>
+                  <p className="text-[11px] text-[var(--text3)] leading-snug">{f.subtitle}</p>
+                </div>
               </div>
             );
           })}
@@ -960,6 +962,6 @@ export default function FeaturesPage() {
           animation: float-particle 4s ease-in-out infinite;
         }
       `}} />
-    </>
+    </div>
   );
 }
