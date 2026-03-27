@@ -435,9 +435,8 @@ export function Header() {
 
 
 
-          {/* Mobile right: language + auth */}
+          {/* Mobile right: auth */}
           <div className="hidden max-lg:flex items-center gap-1.5">
-            <LanguageSwitcher />
             {mounted && isLoggedIn ? (
               <Link href="/profile"
                 className="flex items-center gap-1 px-3 py-1.5 rounded-full text-[12px] font-semibold border transition-all no-underline"
@@ -614,6 +613,9 @@ export function Header() {
             className="absolute top-[64px] left-3 w-[240px] max-sm:w-[220px] p-3 flex flex-col gap-1 rounded-2xl border"
             style={{ background: 'var(--dropdown-bg)', borderColor: 'var(--dropdown-border)', boxShadow: 'var(--dropdown-shadow)', backdropFilter: 'blur(24px)' }}
             onClick={(e) => e.stopPropagation()}>
+            <div className="px-2 pb-1.5 mb-1 border-b" style={{ borderColor: 'var(--card-border)' }}>
+              <LanguageSwitcher />
+            </div>
             {NAV_ITEMS.map((item) => (
               <Link
                 key={item.href}
