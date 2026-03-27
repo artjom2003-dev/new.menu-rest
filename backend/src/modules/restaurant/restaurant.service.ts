@@ -148,9 +148,18 @@ export class RestaurantService implements OnModuleInit {
     }
 
     // When hasMenu filter is active, show restaurants with photos first
+    // Pin "Хинкали и хачапури" first when city=Moscow + hasMenu
     if (hasMenu === 'true') {
+      if (city === 'moskva' || city === 'moscow') {
+        qb.addSelect(`(CASE WHEN r.slug = 'khinkali-i-khachapuri' THEN 1 ELSE 0 END)`, 'is_pinned');
+        qb.orderBy('is_pinned', 'DESC');
+      }
       qb.addSelect(`(EXISTS (SELECT 1 FROM photos p WHERE p.restaurant_id = r.id AND p.is_cover = true))`, 'has_photo');
-      qb.orderBy('has_photo', 'DESC');
+      if (city === 'moskva' || city === 'moscow') {
+        qb.addOrderBy('has_photo', 'DESC');
+      } else {
+        qb.orderBy('has_photo', 'DESC');
+      }
       if (sortBy === 'rating') {
         qb.addOrderBy('r.rating', 'DESC');
       } else if (sortBy === 'created_at') {

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { useAuthStore } from '@/stores/auth.store';
 import { useFavoritesStore } from '@/stores/favorites.store';
 import { useWishlistStore } from '@/stores/wishlist.store';
@@ -24,9 +24,10 @@ interface Restaurant {
   address?: string;
   distanceKm?: number;
   branchCount?: number;
+  translations?: { name?: Record<string, string>; description?: Record<string, string> } | null;
 }
 
-const PRICE_SYMBOLS = ['', '₽', '₽₽', '₽₽₽', '₽₽₽₽'];
+const PRICE_LABELS = ['', '~500 ₽', '~1 000 ₽', '~2 500 ₽', '~5 000 ₽'];
 
 // Национальные кухни — показываем только их в превью
 const NATIONAL_CUISINES = new Set([
@@ -156,6 +157,10 @@ function WishlistButton({ restaurantId }: { restaurantId?: number }) {
 
 export function RestaurantCard({ restaurant }: { restaurant: Restaurant }) {
   const t = useTranslations('card');
+  const locale = useLocale();
+  const tr = restaurant.translations;
+  const displayName = (locale !== 'ru' && tr?.name?.[locale]) || restaurant.name;
+  const displayDesc = (locale !== 'ru' && tr?.description?.[locale]) || restaurant.description;
   const cover = (restaurant.photos?.find((p) => p.isCover) || restaurant.photos?.[0])?.url;
   const [imgError, setImgError] = useState(false);
   const location = restaurant.locations?.[0];
@@ -195,7 +200,7 @@ export function RestaurantCard({ restaurant }: { restaurant: Restaurant }) {
         {/* Image */}
         <div className="h-[160px] relative bg-[var(--bg3)] flex-shrink-0">
           {showImage ? (
-            <Image src={cover} alt={restaurant.name} fill sizes="(max-width: 768px) 100vw, 400px" className="object-cover" onError={() => setImgError(true)} />
+            <Image src={cover} alt={displayName} fill sizes="(max-width: 768px) 50vw, 400px" unoptimized className="object-cover" onError={() => setImgError(true)} />
           ) : (
             <GeneratedCover name={restaurant.name} cuisines={restaurant.cuisines} />
           )}
@@ -239,13 +244,13 @@ export function RestaurantCard({ restaurant }: { restaurant: Restaurant }) {
 
         {/* Body */}
         <div className="px-3.5 pt-2.5 pb-3 relative z-[2] flex-1 flex flex-col">
-          <h3 className="text-[14px] font-semibold text-[var(--text)] leading-tight truncate">{restaurant.name}</h3>
+          <h3 className="text-[14px] font-semibold text-[var(--text)] leading-tight truncate">{displayName}</h3>
           {locationLine && (
             <p className="text-[12px] text-[var(--text3)] mt-1 truncate">{locationLine}</p>
           )}
-          {restaurant.description && (
+          {displayDesc && (
             <p className="text-[11px] text-[var(--text3)] mt-1.5 leading-[1.5] line-clamp-2 opacity-70">
-              {restaurant.description}
+              {displayDesc}
             </p>
           )}
           {/* Feature tags — minimal icons */}
@@ -268,7 +273,7 @@ export function RestaurantCard({ restaurant }: { restaurant: Restaurant }) {
             <span className="text-[11px] text-[var(--text3)] flex-shrink-0 ml-2">
               {restaurant.averageBill
                 ? `~${restaurant.averageBill.toLocaleString('ru-RU')} ₽`
-                : PRICE_SYMBOLS[restaurant.priceLevel || 2]}
+                : PRICE_LABELS[restaurant.priceLevel || 2]}
             </span>
           </div>
         </div>

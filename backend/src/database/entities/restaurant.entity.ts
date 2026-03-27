@@ -160,4 +160,7 @@ export class Restaurant {
 
   @OneToMany(() => RestaurantLocation, (loc) => loc.restaurant)
   locations: RestaurantLocation[];
+
+  @Column({ type: 'jsonb', nullable: true })
+  translations: Record<string, any> | null;
 }

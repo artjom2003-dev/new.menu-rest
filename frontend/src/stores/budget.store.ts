@@ -77,7 +77,7 @@ export const useBudgetStore = create<BudgetState>((set, get) => ({
 
   totalPrice: () => {
     const { items } = get();
-    return Math.round(items.reduce((sum, i) => sum + i.price, 0) / 100);
+    return items.reduce((sum, i) => sum + i.price, 0);
   },
   totalWithTips: () => {
     const total = get().totalPrice();

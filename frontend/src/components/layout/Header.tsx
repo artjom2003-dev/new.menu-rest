@@ -292,6 +292,7 @@ export function Header() {
     { href: '/restaurants', label: t('restaurants') },
     { href: '/features', label: t('forGuests') },
     { href: '/loyalty', label: t('loyalty') },
+    { href: '/quiz', label: 'Гастропрофиль' },
   ];
 
   const NAV_ITEMS = isOwner
@@ -419,28 +420,6 @@ export function Header() {
 
           {/* Right */}
           <div className="flex gap-2.5 items-center">
-            {/* For business — guests only */}
-            {!isOwner && <Link
-              href="/for-business"
-              className="px-4 py-1.5 rounded-full text-[13px] font-semibold no-underline transition-all duration-300"
-              style={{
-                color: 'var(--teal)',
-                background: 'var(--teal-glow)',
-                border: '1px solid var(--teal-glow)',
-              }}
-                onMouseEnter={(e) => {
-                  const el = e.currentTarget as HTMLElement;
-                  el.style.borderColor = 'var(--teal)';
-                  el.style.transform = 'translateY(-1px)';
-                }}
-                onMouseLeave={(e) => {
-                  const el = e.currentTarget as HTMLElement;
-                  el.style.borderColor = 'var(--teal-glow)';
-                  el.style.transform = 'none';
-                }}>
-                {t('forBusiness')}
-              </Link>}
-
             {/* Budget calc — guests only */}
             {!isOwner && (
               <button

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuthStore } from '@/stores/auth.store';
+import { useTranslations } from 'next-intl';
 
 interface Review {
   id: number;
@@ -20,14 +21,8 @@ interface ReviewSectionProps {
   restaurantId: number;
 }
 
-const RATING_LABELS = [
-  { key: 'ratingFood', label: 'Еда', icon: '🍽️' },
-  { key: 'ratingService', label: 'Сервис', icon: '👨‍🍳' },
-  { key: 'ratingAtmosphere', label: 'Атмосфера', icon: '🕯️' },
-  { key: 'ratingValue', label: 'Цена/Качество', icon: '💰' },
-];
-
 export function ReviewSection({ restaurantId }: ReviewSectionProps) {
+  const t = useTranslations('review');
   const { isLoggedIn } = useAuthStore();
   const [reviews, setReviews] = useState<Review[]>([]);
   const [showForm, setShowForm] = useState(false);
@@ -38,6 +33,13 @@ export function ReviewSection({ restaurantId }: ReviewSectionProps) {
   const [form, setForm] = useState({
     ratingFood: 5, ratingService: 5, ratingAtmosphere: 5, ratingValue: 5, text: '',
   });
+
+  const RATING_LABELS = [
+    { key: 'ratingFood', label: t('ratingFood'), icon: '🍽️' },
+    { key: 'ratingService', label: t('ratingService'), icon: '👨‍🍳' },
+    { key: 'ratingAtmosphere', label: t('ratingAtmosphere'), icon: '🕯️' },
+    { key: 'ratingValue', label: t('ratingValue'), icon: '💰' },
+  ];
 
   useEffect(() => {
     fetch(`${process.env.NEXT_PUBLIC_API_URL || '/api'}/reviews/restaurant/${restaurantId}`)
@@ -57,10 +59,10 @@ export function ReviewSection({ restaurantId }: ReviewSectionProps) {
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ restaurantId, ...form }),
       });
-      if (!res.ok) throw new Error('Ошибка отправки');
+      if (!res.ok) throw new Error('error');
       setSuccess(true);
       setShowForm(false);
-    } catch { setError('Не удалось отправить отзыв'); }
+    } catch { setError(t('submitError')); }
     setSubmitting(false);
   };
 
@@ -72,13 +74,13 @@ export function ReviewSection({ restaurantId }: ReviewSectionProps) {
     <div className="mt-12">
       <div className="flex items-center justify-between mb-6">
         <h2 className="font-serif text-[24px] font-bold text-[var(--text)]">
-          Отзывы {reviews.length > 0 && <span className="text-[var(--text3)] font-normal text-[16px]">({reviews.length})</span>}
+          {t('title')} {reviews.length > 0 && <span className="text-[var(--text3)] font-normal text-[16px]">({reviews.length})</span>}
         </h2>
         {isLoggedIn && !showForm && !success && (
           <button onClick={() => setShowForm(true)}
             className="px-5 py-2.5 rounded-full text-[12px] font-semibold text-white border-none cursor-pointer"
             style={{ background: 'var(--accent)' }}>
-            ✍️ Оставить отзыв
+            {t('leaveReview')}
           </button>
         )}
       </div>
@@ -86,7 +88,7 @@ export function ReviewSection({ restaurantId }: ReviewSectionProps) {
       {success && (
         <div className="rounded-[16px] border p-5 mb-6 text-center"
           style={{ background: 'rgba(16,185,129,0.1)', borderColor: 'rgba(16,185,129,0.3)' }}>
-          <p className="text-[14px] text-emerald-400 font-semibold">✅ Отзыв отправлен на модерацию</p>
+          <p className="text-[14px] text-emerald-400 font-semibold">{t('sentModeration')}</p>
         </div>
       )}
 
@@ -95,7 +97,7 @@ export function ReviewSection({ restaurantId }: ReviewSectionProps) {
         <form onSubmit={handleSubmit}
           className="rounded-[20px] border p-6 mb-8"
           style={{ background: 'var(--bg2)', borderColor: 'var(--card-border)' }}>
-          <h3 className="text-[16px] font-semibold text-[var(--text)] mb-4">Ваш отзыв</h3>
+          <h3 className="text-[16px] font-semibold text-[var(--text)] mb-4">{t('yourReview')}</h3>
 
           <div className="grid grid-cols-2 gap-4 mb-4 max-sm:grid-cols-1">
             {RATING_LABELS.map(({ key, label, icon }) => (
@@ -121,7 +123,7 @@ export function ReviewSection({ restaurantId }: ReviewSectionProps) {
 
           <textarea value={form.text}
             onChange={e => setForm({ ...form, text: e.target.value })}
-            rows={3} placeholder="Расскажите о впечатлениях..."
+            rows={3} placeholder={t('placeholderText')}
             className="w-full px-4 py-3 rounded-[10px] text-[14px] text-[var(--text)] outline-none border resize-none mb-4"
             style={{ background: 'var(--bg3)', borderColor: 'var(--card-border)' }} />
 
@@ -131,12 +133,12 @@ export function ReviewSection({ restaurantId }: ReviewSectionProps) {
             <button type="submit" disabled={submitting}
               className="px-6 py-3 rounded-full text-[13px] font-semibold text-white border-none cursor-pointer disabled:opacity-60"
               style={{ background: 'var(--accent)' }}>
-              {submitting ? 'Отправка...' : 'Отправить'}
+              {submitting ? t('submitting') : t('submit')}
             </button>
             <button type="button" onClick={() => setShowForm(false)}
               className="px-5 py-3 rounded-full text-[13px] text-[var(--text3)] cursor-pointer border"
               style={{ background: 'var(--glass)', borderColor: 'var(--glass-border)' }}>
-              Отмена
+              {t('cancel')}
             </button>
           </div>
         </form>
@@ -152,8 +154,8 @@ export function ReviewSection({ restaurantId }: ReviewSectionProps) {
       ) : reviews.length === 0 ? (
         <div className="text-center py-12 rounded-[20px] border" style={{ background: 'var(--bg2)', borderColor: 'var(--card-border)' }}>
           <div className="text-4xl mb-3">💬</div>
-          <p className="text-[15px] text-[var(--text2)]">Пока нет отзывов</p>
-          <p className="text-[13px] text-[var(--text3)]">Будьте первым!</p>
+          <p className="text-[15px] text-[var(--text2)]">{t('noReviews')}</p>
+          <p className="text-[13px] text-[var(--text3)]">{t('beFirst')}</p>
         </div>
       ) : (
         <div className="space-y-4">
@@ -170,7 +172,7 @@ export function ReviewSection({ restaurantId }: ReviewSectionProps) {
                   </div>
                   <div>
                     <div className="text-[14px] font-semibold text-[var(--text)]">
-                      {review.user?.name || review.authorName || 'Гость'}
+                      {review.user?.name || review.authorName || t('guest')}
                     </div>
                     <div className="text-[11px] text-[var(--text3)]">
                       {new Date(review.createdAt).toLocaleDateString('ru-RU')}

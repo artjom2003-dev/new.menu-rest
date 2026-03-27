@@ -78,7 +78,7 @@ export default function OwnerMenuPage() {
       if (form.description) data.description = form.description;
       if (form.composition) data.composition = form.composition;
       if (form.categoryName) data.categoryName = form.categoryName;
-      if (form.price) data.price = Math.round(Number(form.price) * 100); // рубли → копейки
+      if (form.price) data.price = Math.round(Number(form.price));
       if (form.weightGrams) data.weightGrams = Number(form.weightGrams);
       if (form.volumeMl) data.volumeMl = Number(form.volumeMl);
       if (form.calories) data.calories = Number(form.calories);
@@ -104,7 +104,7 @@ export default function OwnerMenuPage() {
       description: d.dish.description || '',
       composition: d.dish.composition || '',
       categoryName: d.categoryName || '',
-      price: d.price ? String(d.price / 100) : '',
+      price: d.price ? String(d.price) : '',
       weightGrams: d.dish.weightGrams ? String(d.dish.weightGrams) : '',
       volumeMl: d.dish.volumeMl ? String(d.dish.volumeMl) : '',
       calories: d.dish.calories ? String(d.dish.calories) : '',
@@ -125,7 +125,7 @@ export default function OwnerMenuPage() {
       data.description = editForm.description || null;
       data.composition = editForm.composition || null;
       data.categoryName = editForm.categoryName || 'Основное меню';
-      data.price = editForm.price ? Math.round(Number(editForm.price) * 100) : 0;
+      data.price = editForm.price ? Math.round(Number(editForm.price)) : 0;
       data.weightGrams = editForm.weightGrams ? Number(editForm.weightGrams) : null;
       data.volumeMl = editForm.volumeMl ? Number(editForm.volumeMl) : null;
       data.calories = editForm.calories ? Number(editForm.calories) : null;
@@ -378,7 +378,7 @@ export default function OwnerMenuPage() {
                         </div>
 
                         <div className="flex items-center gap-3">
-                          {d.price > 0 && <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--accent)', whiteSpace: 'nowrap' }}>{(d.price / 100).toLocaleString('ru')} ₽</span>}
+                          {d.price > 0 && <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--accent)', whiteSpace: 'nowrap' }}>{d.price.toLocaleString('ru')} ₽</span>}
 
                           <button onClick={() => startEdit(d)} className="border-0 cursor-pointer"
                             style={{ padding: '5px 10px', borderRadius: 6, fontSize: 11, fontWeight: 600, background: 'var(--bg3)', color: 'var(--text2)' }}>

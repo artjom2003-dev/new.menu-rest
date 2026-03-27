@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import Image from 'next/image';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { useAuthStore } from '@/stores/auth.store';
 import { useBudgetStore } from '@/stores/budget.store';
 import { AddRestaurantModal } from './AddRestaurantModal';
@@ -47,6 +47,7 @@ interface Restaurant {
     isClosed: boolean;
   }>;
   photos?: Array<{ url: string; isCover: boolean }>;
+  translations?: { name?: Record<string, string>; description?: Record<string, string> } | null;
 }
 
 const CUISINE_EMOJI: Record<string, string> = {
@@ -116,7 +117,8 @@ function PhotoSlider({ photos, name, cuisines }: {
         src={sorted[realIndex].url}
         alt={`${name} — фото ${displayIndex + 1}`}
         fill
-        sizes="(max-width: 768px) 100vw, 600px"
+        sizes="(max-width: 768px) 100vw, 700px"
+        unoptimized
         className="object-cover"
         priority={displayIndex === 0}
         onError={() => setErrors(prev => new Set(prev).add(realIndex))}
@@ -246,6 +248,10 @@ export function RestaurantInfoCard({ restaurant }: { restaurant: Restaurant }) {
   const { user } = useAuthStore();
   const [claimOpen, setClaimOpen] = useState(false);
   const t = useTranslations('restaurant');
+  const locale = useLocale();
+  const tr = restaurant.translations;
+  const displayName = (locale !== 'ru' && tr?.name?.[locale]) || restaurant.name;
+  const displayDesc = (locale !== 'ru' && tr?.description?.[locale]) || restaurant.description || restaurant.longDescription || restaurant.shortDescription;
   const isOwnerAccount = user?.role === 'owner' || user?.role === 'admin';
   const isMyRestaurant = isOwnerAccount && restaurant.ownerId && user.id === restaurant.ownerId;
 
@@ -275,14 +281,14 @@ export function RestaurantInfoCard({ restaurant }: { restaurant: Restaurant }) {
 
       {/* Left — Photo slider */}
       <div className="w-[45%] max-lg:w-full flex-shrink-0 min-h-[380px] max-lg:min-h-[280px]">
-        <PhotoSlider photos={restaurant.photos || []} name={restaurant.name} cuisines={restaurant.cuisines} />
+        <PhotoSlider photos={restaurant.photos || []} name={displayName} cuisines={restaurant.cuisines} />
       </div>
 
       {/* Right — Info */}
       <div className="flex-1 flex flex-col justify-between min-w-0">
         <div>
           <h1 className="font-serif text-[38px] font-black text-[var(--text)] tracking-[-0.03em] mb-2 leading-[1.1]">
-            {restaurant.name}
+            {displayName}
           </h1>
 
           {restaurant.cuisines?.length ? (
@@ -292,9 +298,9 @@ export function RestaurantInfoCard({ restaurant }: { restaurant: Restaurant }) {
             </span>
           ) : null}
 
-          {(restaurant.description || restaurant.longDescription || restaurant.shortDescription) && (
+          {displayDesc && (
             <p className="text-[14px] text-[var(--text2)] leading-[1.7] mb-4">
-              {restaurant.description || restaurant.longDescription || restaurant.shortDescription}
+              {displayDesc}
             </p>
           )}
 

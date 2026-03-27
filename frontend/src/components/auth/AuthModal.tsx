@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAuthStore } from '@/stores/auth.store';
 import { authApi } from '@/lib/api';
+import { useTranslations } from 'next-intl';
 
 interface AuthModalProps {
   open: boolean;
@@ -12,6 +13,7 @@ interface AuthModalProps {
 type Mode = 'login' | 'register' | 'forgot' | 'reset';
 
 export function AuthModal({ open, onClose }: AuthModalProps) {
+  const t = useTranslations('auth');
   const [mode, setMode] = useState<Mode>('login');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -49,7 +51,7 @@ export function AuthModal({ open, onClose }: AuthModalProps) {
         onClose();
       } else if (mode === 'forgot') {
         await authApi.forgotPassword(form.email);
-        setSuccess('Код отправлен на почту');
+        setSuccess(t('codeSent'));
         setMode('reset');
       } else if (mode === 'reset') {
         const res = await authApi.resetPassword({ email: form.email, code: form.code, newPassword: form.newPassword });
@@ -58,7 +60,7 @@ export function AuthModal({ open, onClose }: AuthModalProps) {
       }
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      setError(Array.isArray(msg) ? msg[0] : msg || 'Произошла ошибка');
+      setError(Array.isArray(msg) ? msg[0] : msg || t('genericError'));
     } finally {
       setLoading(false);
     }
@@ -102,7 +104,7 @@ export function AuthModal({ open, onClose }: AuthModalProps) {
               className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-full border-0 cursor-pointer transition-colors"
               style={{ background: 'transparent', color: 'var(--text3)' }}
               tabIndex={-1}
-              title={visible ? 'Скрыть пароль' : 'Показать пароль'}>
+              title={visible ? t('hidePassword') : t('showPassword')}>
               {visible ? (
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
@@ -124,24 +126,24 @@ export function AuthModal({ open, onClose }: AuthModalProps) {
   };
 
   const titles: Record<Mode, string> = {
-    login: 'Вход',
-    register: 'Регистрация',
-    forgot: 'Восстановление пароля',
-    reset: 'Новый пароль',
+    login: t('titleLogin'),
+    register: t('titleRegister'),
+    forgot: t('titleForgot'),
+    reset: t('titleReset'),
   };
 
   const subtitles: Record<Mode, string> = {
-    login: 'Войдите, чтобы копить бонусы и сохранять избранное',
-    register: 'Создайте аккаунт для бонусов и рекомендаций',
-    forgot: 'Введите email, и мы отправим код для сброса пароля',
-    reset: 'Введите код из письма и придумайте новый пароль',
+    login: t('subtitleLogin'),
+    register: t('subtitleRegister'),
+    forgot: t('subtitleForgot'),
+    reset: t('subtitleReset'),
   };
 
   const buttonLabels: Record<Mode, string> = {
-    login: 'Войти',
-    register: 'Создать аккаунт',
-    forgot: 'Отправить код',
-    reset: 'Сменить пароль',
+    login: t('buttonLogin'),
+    register: t('buttonRegister'),
+    forgot: t('buttonForgot'),
+    reset: t('buttonReset'),
   };
 
   return (
@@ -170,39 +172,39 @@ export function AuthModal({ open, onClose }: AuthModalProps) {
         <form onSubmit={handleSubmit}>
           {/* Имя — только регистрация */}
           {mode === 'register' && renderInput(
-            'Имя', 'text', form.name,
+            t('labelName'), 'text', form.name,
             (v) => setForm({ ...form, name: v }),
-            'Александр',
+            t('placeholderName'),
           )}
 
           {/* Email — логин, регистрация, forgot */}
           {(mode === 'login' || mode === 'register' || mode === 'forgot') && renderInput(
-            'Email', 'email', form.email,
+            t('labelEmail'), 'email', form.email,
             (v) => setForm({ ...form, email: v }),
-            'your@email.com',
+            t('placeholderEmail'),
           )}
 
           {/* Пароль — логин, регистрация */}
           {(mode === 'login' || mode === 'register') && renderInput(
-            'Пароль', 'password', form.password,
+            t('labelPassword'), 'password', form.password,
             (v) => setForm({ ...form, password: v }),
-            'Минимум 8 символов',
+            t('placeholderPassword'),
             { minLength: 8, passwordToggle: [showPassword, setShowPassword] },
           )}
 
           {/* Код из письма — reset */}
           {mode === 'reset' && renderInput(
-            'Код из письма', 'text', form.code,
+            t('labelCode'), 'text', form.code,
             (v) => setForm({ ...form, code: v.replace(/\D/g, '').slice(0, 6) }),
-            '000000',
+            t('placeholderCode'),
             { maxLength: 6, minLength: 6, inputMode: 'numeric' },
           )}
 
           {/* Новый пароль — reset */}
           {mode === 'reset' && renderInput(
-            'Новый пароль', 'password', form.newPassword,
+            t('labelNewPassword'), 'password', form.newPassword,
             (v) => setForm({ ...form, newPassword: v }),
-            'Минимум 8 символов',
+            t('placeholderPassword'),
             { minLength: 8, passwordToggle: [showNewPassword, setShowNewPassword] },
           )}
 
@@ -224,7 +226,7 @@ export function AuthModal({ open, onClose }: AuthModalProps) {
             <button
               onClick={() => { setMode('forgot'); setError(''); setSuccess(''); }}
               className="text-[var(--accent)] font-semibold cursor-pointer bg-none border-none">
-              Забыли пароль?
+              {t('forgotPassword')}
             </button>
           </p>
         )}
@@ -235,7 +237,7 @@ export function AuthModal({ open, onClose }: AuthModalProps) {
             <button
               onClick={() => { setMode('forgot'); setError(''); setSuccess(''); }}
               className="text-[var(--accent)] font-semibold cursor-pointer bg-none border-none">
-              Отправить код повторно
+              {t('resendCode')}
             </button>
           </p>
         )}
@@ -244,7 +246,7 @@ export function AuthModal({ open, onClose }: AuthModalProps) {
         {(mode === 'login' || mode === 'register') && (
           <>
             <div className="relative text-center text-[11px] text-[var(--text3)] my-3.5">
-              <span className="relative z-10 px-2" style={{ background: 'var(--bg2)' }}>или</span>
+              <span className="relative z-10 px-2" style={{ background: 'var(--bg2)' }}>{t('or')}</span>
               <div className="absolute inset-y-1/2 left-0 right-0 h-px" style={{ background: 'var(--card-border)' }} />
             </div>
 
@@ -253,7 +255,7 @@ export function AuthModal({ open, onClose }: AuthModalProps) {
                 onClick={() => { window.location.href = `${process.env.NEXT_PUBLIC_API_URL || '/api'}/auth/vk`; }}
                 className="w-full flex items-center justify-center gap-2 py-3 rounded-full text-[13px] font-semibold border cursor-pointer transition-all"
                 style={{ background: 'var(--glass)', color: 'var(--text2)', borderColor: 'var(--glass-border)' }}>
-                Войти через VK
+                {t('loginVk')}
               </button>
               <button
                 onClick={() => {
@@ -263,7 +265,7 @@ export function AuthModal({ open, onClose }: AuthModalProps) {
                 }}
                 className="w-full flex items-center justify-center gap-2 py-3 rounded-full text-[13px] font-semibold border cursor-pointer transition-all"
                 style={{ background: 'var(--glass)', color: 'var(--text2)', borderColor: 'var(--glass-border)' }}>
-                Войти через Telegram
+                {t('loginTelegram')}
               </button>
             </div>
           </>
@@ -273,9 +275,9 @@ export function AuthModal({ open, onClose }: AuthModalProps) {
         {(mode === 'login' || mode === 'register') && (
           <p className="text-center text-[12px] text-[var(--text3)] mt-4">
             {mode === 'login' ? (
-              <>Нет аккаунта? <button onClick={() => { setMode('register'); setError(''); }} className="text-[var(--accent)] font-semibold cursor-pointer bg-none border-none">Регистрация</button></>
+              <>{t('noAccount')} <button onClick={() => { setMode('register'); setError(''); }} className="text-[var(--accent)] font-semibold cursor-pointer bg-none border-none">{t('register')}</button></>
             ) : (
-              <>Уже есть аккаунт? <button onClick={() => { setMode('login'); setError(''); }} className="text-[var(--accent)] font-semibold cursor-pointer bg-none border-none">Войти</button></>
+              <>{t('hasAccount')} <button onClick={() => { setMode('login'); setError(''); }} className="text-[var(--accent)] font-semibold cursor-pointer bg-none border-none">{t('login')}</button></>
             )}
           </p>
         )}
@@ -286,7 +288,7 @@ export function AuthModal({ open, onClose }: AuthModalProps) {
             <button
               onClick={() => { setMode('login'); setError(''); setSuccess(''); }}
               className="text-[var(--accent)] font-semibold cursor-pointer bg-none border-none">
-              Назад к входу
+              {t('backToLogin')}
             </button>
           </p>
         )}

@@ -218,4 +218,13 @@ export const referenceApi = {
   getVenueTypes: () => api.get('/venue-types'),
 };
 
+// ─── Gastro Profile ──────────────────────────────────────
+export const gastroApi = {
+  getQuestions: () => api.get('/gastro/quiz/questions'),
+  submitQuiz: (answers: Record<number, number[]>) => api.post('/gastro/quiz/submit', { answers }),
+  getProfile: () => api.get('/gastro/quiz/profile'),
+  getRecoRestaurants: (city?: string, limit?: number) =>
+    api.get('/gastro/reco/restaurants', { params: { city, limit } }),
+};
+
 export default api;

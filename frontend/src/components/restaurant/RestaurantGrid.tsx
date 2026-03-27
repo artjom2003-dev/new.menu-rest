@@ -19,6 +19,7 @@ interface RestaurantItem {
   averageBill?: number;
   photos?: Array<{ url: string; is_cover?: boolean; isCover?: boolean }>;
   features?: Array<{ slug: string; name: string }>;
+  translations?: Record<string, any> | null;
 }
 
 function adaptApiItem(r: RestaurantItem) {
@@ -36,6 +37,7 @@ function adaptApiItem(r: RestaurantItem) {
     averageBill: r.averageBill,
     photos: r.photos?.map(p => ({ url: p.url, isCover: p.isCover ?? p.is_cover ?? false })) || [],
     features: r.features || [],
+    translations: r.translations || null,
   };
 }
 

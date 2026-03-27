@@ -6,6 +6,7 @@ import { useSearchStore } from '@/stores/search.store';
 import { useGeoStore } from '@/stores/geo.store';
 import { useCityStore } from '@/stores/city.store';
 import { referenceApi } from '@/lib/api';
+import { useTranslations } from 'next-intl';
 
 interface FilterOption {
   label: string;
@@ -14,10 +15,10 @@ interface FilterOption {
 }
 
 /* ─── Compact dropdown (with optional search) ─── */
-function MiniDropdown({ icon, label, options, value, onChange, searchable }: {
+function MiniDropdown({ icon, label, options, value, onChange, searchable, resetLabel, searchPlaceholder, nothingFoundLabel }: {
   icon: string; label: string; options: FilterOption[];
   value?: string; onChange: (v: string | undefined) => void;
-  searchable?: boolean;
+  searchable?: boolean; resetLabel?: string; searchPlaceholder?: string; nothingFoundLabel?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
@@ -62,7 +63,7 @@ function MiniDropdown({ icon, label, options, value, onChange, searchable }: {
                 type="text"
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                placeholder="Поиск..."
+                placeholder={searchPlaceholder || 'Search...'}
                 className="w-full px-3 py-2 rounded-xl text-[12px] text-[var(--text)] placeholder-[var(--text3)] outline-none border font-sans"
                 style={{ background: 'var(--bg3)', borderColor: 'var(--card-border)' }}
                 onFocus={e => (e.currentTarget.style.borderColor = 'var(--accent)')}
@@ -74,11 +75,11 @@ function MiniDropdown({ icon, label, options, value, onChange, searchable }: {
             {value && (
               <div onClick={() => { onChange(undefined); setOpen(false); setSearch(''); }}
                 className="px-3.5 py-2 rounded-xl text-[12px] cursor-pointer text-[var(--text3)] hover:text-red-400 mb-1">
-                ✕ Сбросить
+                ✕ {resetLabel || 'Reset'}
               </div>
             )}
             {filtered.length === 0 && (
-              <div className="px-3.5 py-3 text-[12px] text-[var(--text3)]">Ничего не найдено</div>
+              <div className="px-3.5 py-3 text-[12px] text-[var(--text3)]">{nothingFoundLabel || 'Nothing found'}</div>
             )}
             {filtered.map(o => (
               <div key={o.value}
@@ -99,8 +100,9 @@ function MiniDropdown({ icon, label, options, value, onChange, searchable }: {
 }
 
 /* ─── City search input with autocomplete ─── */
-function CitySearch({ options, value, onChange }: {
+function CitySearch({ options, value, onChange, placeholder: cityPlaceholder }: {
   options: FilterOption[]; value?: string; onChange: (v: string | undefined) => void;
+  placeholder?: string;
 }) {
   const [input, setInput] = useState('');
   const [focused, setFocused] = useState(false);
@@ -138,7 +140,7 @@ function CitySearch({ options, value, onChange }: {
             value={input}
             onChange={e => { setInput(e.target.value); setFocused(true); }}
             onFocus={() => setFocused(true)}
-            placeholder="Город..."
+            placeholder={cityPlaceholder || 'City...'}
             className="bg-transparent outline-none text-[13px] font-medium text-[var(--text2)] placeholder-[var(--text3)] w-[100px] font-sans"
           />
         )}
@@ -162,9 +164,10 @@ function CitySearch({ options, value, onChange }: {
 /* ─── Cuisine selector: top picks + expandable grid ─── */
 const VISIBLE_COUNT = 8;
 
-function CuisineSelector({ cuisines, selected, onToggle }: {
+function CuisineSelector({ cuisines, selected, onToggle, cuisineLabel, collapseLabel, moreLabel }: {
   cuisines: FilterOption[]; selected: string[];
   onToggle: (slug: string) => void;
+  cuisineLabel?: string; collapseLabel?: string; moreLabel?: (count: number) => string;
 }) {
   const [expanded, setExpanded] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -206,7 +209,7 @@ function CuisineSelector({ cuisines, selected, onToggle }: {
   return (
     <div className="relative" ref={panelRef}>
       <div className="flex items-center gap-2 flex-wrap">
-        <span className="text-[12px] font-semibold text-[var(--text3)] mr-1">Кухня</span>
+        <span className="text-[12px] font-semibold text-[var(--text3)] mr-1">{cuisineLabel || 'Cuisine'}</span>
         {visible.map(c => <Chip key={c.value} c={c} />)}
         {hiddenCount > 0 && (
           <button
@@ -217,7 +220,7 @@ function CuisineSelector({ cuisines, selected, onToggle }: {
               color: activeHiddenCount > 0 ? 'var(--accent)' : 'var(--text3)',
               borderColor: activeHiddenCount > 0 ? 'var(--chat-user-border)' : 'var(--glass-border)',
             }}>
-            {expanded ? 'Свернуть' : `Ещё +${hiddenCount}`}
+            {expanded ? (collapseLabel || 'Collapse') : (moreLabel ? moreLabel(hiddenCount) : `+${hiddenCount} more`)}
             {activeHiddenCount > 0 && !expanded && (
               <span className="ml-1.5 inline-flex items-center justify-center w-[18px] h-[18px] rounded-full text-[10px] font-bold text-white"
                 style={{ background: 'var(--accent)' }}>
@@ -246,17 +249,18 @@ function CuisineSelector({ cuisines, selected, onToggle }: {
 }
 
 /* ─── Price range selector ─── */
-const PRICE_RANGES = [
-  { min: 1, max: 1, label: 'до 700 ₽' },
-  { min: 2, max: 2, label: '700 – 1 500 ₽' },
-  { min: 3, max: 3, label: '1 500 – 3 000 ₽' },
-  { min: 4, max: 4, label: '3 000+ ₽' },
-];
 
-function PriceRangeSelector({ minVal, maxVal, onChange }: {
+function PriceRangeSelector({ minVal, maxVal, onChange, priceLabels, avgBillLabel, resetLabel }: {
   minVal?: number; maxVal?: number;
   onChange: (min: number | undefined, max: number | undefined) => void;
+  priceLabels?: string[]; avgBillLabel?: string; resetLabel?: string;
 }) {
+  const PRICE_RANGES = [
+    { min: 1, max: 1, label: priceLabels?.[0] || 'up to 700 ₽' },
+    { min: 2, max: 2, label: priceLabels?.[1] || '700 – 1,500 ₽' },
+    { min: 3, max: 3, label: priceLabels?.[2] || '1,500 – 3,000 ₽' },
+    { min: 4, max: 4, label: priceLabels?.[3] || '3,000+ ₽' },
+  ];
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -269,7 +273,7 @@ function PriceRangeSelector({ minVal, maxVal, onChange }: {
   const hasValue = minVal !== undefined || maxVal !== undefined;
   const displayLabel = hasValue
     ? PRICE_RANGES.find(r => r.min === minVal && r.max === maxVal)?.label || `${minVal || '?'}–${maxVal || '?'}`
-    : 'Средний чек';
+    : (avgBillLabel || 'Average bill');
 
   return (
     <div className="relative" ref={ref}>
@@ -290,7 +294,7 @@ function PriceRangeSelector({ minVal, maxVal, onChange }: {
           {hasValue && (
             <div onClick={() => { onChange(undefined, undefined); setOpen(false); }}
               className="px-3.5 py-2 rounded-xl text-[12px] cursor-pointer text-[var(--text3)] hover:text-red-400 mb-1">
-              ✕ Сбросить
+              ✕ {resetLabel || 'Reset'}
             </div>
           )}
           {PRICE_RANGES.map((r, i) => {
@@ -314,8 +318,9 @@ function PriceRangeSelector({ minVal, maxVal, onChange }: {
 }
 
 /* ─── Active filter tags ─── */
-function ActiveTags({ tags, onRemove, onClear }: {
+function ActiveTags({ tags, onRemove, onClear, resetAllLabel }: {
   tags: Array<{ key: string; label: string }>; onRemove: (key: string) => void; onClear: () => void;
+  resetAllLabel?: string;
 }) {
   if (tags.length === 0) return null;
   return (
@@ -330,14 +335,14 @@ function ActiveTags({ tags, onRemove, onClear }: {
       ))}
       <button onClick={onClear}
         className="text-[11px] text-[var(--text3)] cursor-pointer hover:text-red-400 transition-colors font-sans border-none bg-transparent px-1">
-        Сбросить все
+        {resetAllLabel || 'Reset all'}
       </button>
     </div>
   );
 }
 
 /* ─── Nearby button ─── */
-function NearbyButton({ active, onToggle }: { active: boolean; onToggle: () => void }) {
+function NearbyButton({ active, onToggle, detectingLabel, activeLabel, nearbyLabel }: { active: boolean; onToggle: () => void; detectingLabel?: string; activeLabel?: string; nearbyLabel?: string }) {
   const isRequesting = useGeoStore(s => s.status) === 'requesting';
 
   return (
@@ -351,13 +356,14 @@ function NearbyButton({ active, onToggle }: { active: boolean; onToggle: () => v
         color: active ? 'var(--accent)' : 'var(--text2)',
         opacity: isRequesting ? 0.6 : 1,
       }}>
-      {isRequesting ? '📡' : '📍'} {isRequesting ? 'Определяем...' : active ? 'Рядом ✓' : 'Рядом со мной'}
+      {isRequesting ? '📡' : '📍'} {isRequesting ? (detectingLabel || 'Detecting...') : active ? (activeLabel || 'Nearby ✓') : (nearbyLabel || 'Near me')}
     </button>
   );
 }
 
 /* ─── Main FiltersBar ─── */
 function FiltersBarInner() {
+  const t = useTranslations('filters');
   const router = useRouter();
   const searchParams = useSearchParams();
   const { setFilter, filters } = useSearchStore();
@@ -603,8 +609,14 @@ function FiltersBarInner() {
     if (c) activeTags.push({ key: `cuisine:${slug}`, label: c.label });
   });
   if (priceMin || priceMax) {
-    const range = PRICE_RANGES.find(r => r.min === priceMin && r.max === priceMax);
-    activeTags.push({ key: 'price', label: `💰 ${range?.label || 'Чек'}` });
+    const priceRangesLocal = [
+      { min: 1, max: 1, label: t('priceTo700') },
+      { min: 2, max: 2, label: t('price700to1500') },
+      { min: 3, max: 3, label: t('price1500to3000') },
+      { min: 4, max: 4, label: t('priceOver3000') },
+    ];
+    const range = priceRangesLocal.find(r => r.min === priceMin && r.max === priceMax);
+    activeTags.push({ key: 'price', label: `💰 ${range?.label || t('bill')}` });
   }
   if (selectedOccasion) {
     const o = occasions.find(o => o.value === selectedOccasion);
@@ -630,7 +642,7 @@ function FiltersBarInner() {
     if (v) activeTags.push({ key: `venue:${v.value}`, label: v.label });
   }
   if (nearbyActive) {
-    activeTags.push({ key: 'nearby', label: '📍 Рядом со мной' });
+    activeTags.push({ key: 'nearby', label: `📍 ${t('nearbyTag')}` });
   }
 
   const handleRemoveTag = (key: string) => {
@@ -666,34 +678,36 @@ function FiltersBarInner() {
   };
 
   return (
-    <div className="max-w-[1400px] mx-auto px-10 space-y-4 pb-4">
+    <div className="filters-strip">
+    <div className="max-w-[1400px] mx-auto px-10 space-y-4">
       {/* Row 1: Dropdowns + Price + active tags */}
       <div className="flex items-center gap-3 flex-wrap">
-        <CitySearch options={cities} value={filters.city} onChange={handleCityChange} />
+        <CitySearch options={cities} value={filters.city} onChange={handleCityChange} placeholder={t('cityPlaceholder')} />
         {metroStations.length > 0 && (
-          <MiniDropdown icon="🚇" label="Метро" options={metroStations} value={selectedMetro} onChange={handleMetroChange} searchable />
+          <MiniDropdown icon="🚇" label={t('metro')} options={metroStations} value={selectedMetro} onChange={handleMetroChange} searchable resetLabel={t('reset')} searchPlaceholder={t('searchPlaceholder')} nothingFoundLabel={t('nothingFound')} />
         )}
         {districts.length > 0 && (
-          <MiniDropdown icon="🏘" label="Район" options={districts} value={selectedDistrict} onChange={handleDistrictChange} searchable />
+          <MiniDropdown icon="🏘" label={t('district')} options={districts} value={selectedDistrict} onChange={handleDistrictChange} searchable resetLabel={t('reset')} searchPlaceholder={t('searchPlaceholder')} nothingFoundLabel={t('nothingFound')} />
         )}
-        <MiniDropdown icon="🏠" label="Тип заведения" options={venueTypes} value={selectedVenue} onChange={handleVenueChange} searchable />
-        <MiniDropdown icon="🎉" label="Повод" options={occasions} value={selectedOccasion} onChange={handleOccasionChange} />
-        <MiniDropdown icon="✨" label="Атмосфера" options={atmospheres} value={selectedAtmosphere} onChange={handleAtmosphereChange} />
-        <MiniDropdown icon="🎭" label="Развлечения" options={entertainments} value={selectedEntertainment} onChange={handleEntertainmentChange} />
-        <PriceRangeSelector minVal={priceMin} maxVal={priceMax} onChange={handlePriceRangeChange} />
-        <NearbyButton active={nearbyActive} onToggle={handleNearbyToggle} />
+        <MiniDropdown icon="🏠" label={t('venueType')} options={venueTypes} value={selectedVenue} onChange={handleVenueChange} searchable resetLabel={t('reset')} searchPlaceholder={t('searchPlaceholder')} nothingFoundLabel={t('nothingFound')} />
+        <MiniDropdown icon="🎉" label={t('occasion')} options={occasions} value={selectedOccasion} onChange={handleOccasionChange} resetLabel={t('reset')} nothingFoundLabel={t('nothingFound')} />
+        <MiniDropdown icon="✨" label={t('atmosphere')} options={atmospheres} value={selectedAtmosphere} onChange={handleAtmosphereChange} resetLabel={t('reset')} nothingFoundLabel={t('nothingFound')} />
+        <MiniDropdown icon="🎭" label={t('entertainment')} options={entertainments} value={selectedEntertainment} onChange={handleEntertainmentChange} resetLabel={t('reset')} nothingFoundLabel={t('nothingFound')} />
+        <PriceRangeSelector minVal={priceMin} maxVal={priceMax} onChange={handlePriceRangeChange} priceLabels={[t('priceTo700'), t('price700to1500'), t('price1500to3000'), t('priceOver3000')]} avgBillLabel={t('avgBill')} resetLabel={t('reset')} />
+        <NearbyButton active={nearbyActive} onToggle={handleNearbyToggle} detectingLabel={t('nearbyDetecting')} activeLabel={t('nearbyActive')} nearbyLabel={t('nearby')} />
         {activeTags.length > 0 && (
           <>
             <div className="w-px h-7" style={{ background: 'var(--card-border)' }} />
-            <ActiveTags tags={activeTags} onRemove={handleRemoveTag} onClear={handleClearAll} />
+            <ActiveTags tags={activeTags} onRemove={handleRemoveTag} onClear={handleClearAll} resetAllLabel={t('resetAll')} />
           </>
         )}
       </div>
 
       {/* Row 2: Cuisines */}
       {cuisines.length > 0 && (
-        <CuisineSelector cuisines={cuisines} selected={filters.cuisine || []} onToggle={handleCuisineToggle} />
+        <CuisineSelector cuisines={cuisines} selected={filters.cuisine || []} onToggle={handleCuisineToggle} cuisineLabel={t('cuisine')} collapseLabel={t('collapse')} moreLabel={(count) => t('moreCount', { count })} />
       )}
+    </div>
     </div>
   );
 }

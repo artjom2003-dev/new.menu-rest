@@ -8,6 +8,10 @@ import { useWishlistStore } from '@/stores/wishlist.store';
 import { userApi, referenceApi, bookingApi, ownerApi, photoApi } from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
 import { ReferralModal } from '@/components/ui/ReferralModal';
+import { useGastroStore } from '@/stores/gastro.store';
+import ProfileCard from '@/components/gastro/ProfileCard';
+import { useTranslations } from 'next-intl';
+import Link from 'next/link';
 
 interface Booking {
   id: number;
@@ -90,29 +94,74 @@ function CollapsibleSection({ icon, gradient, title, subtitle, badge, badgeColor
   );
 }
 
-const STATUS_LABELS: Record<string, string> = {
-  pending: '⏳ Ожидает',
-  confirmed: '✅ Подтверждена',
-  completed: '🎉 Завершена',
-  cancelled: '❌ Отменена',
-  no_show: '🚫 Не пришёл',
+/* ─── Gastro Profile Section ─── */
+function GastroProfileSection() {
+  const t = useTranslations('profile');
+  const { profile } = useGastroStore();
+
+  return (
+    <CollapsibleSection
+      icon="🍽️"
+      gradient="linear-gradient(135deg, #f59e0b, #ef4444)"
+      title={t('gastroTitle')}
+      subtitle={t('gastroSubtitle')}
+      badge={profile ? profile.archetype : undefined}
+      badgeColor="#f59e0b"
+      borderColor="rgba(245,158,11,0.12)"
+      bgGradient="linear-gradient(135deg, rgba(245,158,11,0.05), rgba(239,68,68,0.03))"
+    >
+      {profile ? (
+        <ProfileCard profile={profile} compact />
+      ) : (
+        <div className="flex flex-col items-center gap-4 py-4">
+          <span style={{ fontSize: 48 }}>🍽️</span>
+          <p style={{ fontSize: 14, color: 'var(--text2)', textAlign: 'center', lineHeight: 1.5 }}>
+            {t('gastroQuizPrompt')}
+          </p>
+          <Link
+            href="/quiz"
+            style={{
+              padding: '12px 28px',
+              borderRadius: 14,
+              fontSize: 14,
+              fontWeight: 600,
+              color: '#fff',
+              background: 'var(--accent)',
+              textDecoration: 'none',
+              boxShadow: '0 4px 16px rgba(255,92,40,0.25)',
+              transition: 'all 0.2s',
+            }}
+          >
+            {t('gastroQuizButton')} ✨
+          </Link>
+        </div>
+      )}
+    </CollapsibleSection>
+  );
+}
+
+const STATUS_ICONS: Record<string, string> = {
+  pending: '⏳', confirmed: '✅', completed: '🎉', cancelled: '❌', no_show: '🚫',
+};
+const STATUS_KEYS: Record<string, string> = {
+  pending: 'statusPending', confirmed: 'statusConfirmed', completed: 'statusCompleted', cancelled: 'statusCancelled', no_show: 'statusNoShow',
 };
 
-const LEVEL_INFO: Record<string, { label: string; color: string; icon: string }> = {
-  bronze: { label: 'Бронза', color: '#cd7f32', icon: '🥉' },
-  silver: { label: 'Серебро', color: '#c0c0c0', icon: '🥈' },
-  gold: { label: 'Золото', color: '#ffd700', icon: '🥇' },
+const LEVEL_INFO: Record<string, { labelKey: string; color: string; icon: string }> = {
+  bronze: { labelKey: 'levelBronze', color: '#cd7f32', icon: '🥉' },
+  silver: { labelKey: 'levelSilver', color: '#c0c0c0', icon: '🥈' },
+  gold: { labelKey: 'levelGold', color: '#ffd700', icon: '🥇' },
 };
 
 type GuestTab = 'info' | 'bookings' | 'history' | 'favorites' | 'wishlist' | 'settings';
 type OwnerTab = 'dashboard' | 'edit' | 'photos' | 'posts' | 'analytics' | 'bookings' | 'reviews';
 
 const NUTRITION_GOALS = [
-  { value: 'lose_weight', label: 'Похудеть', icon: '🔥', color: '#ef4444', desc: 'Низкокалорийные блюда, салаты, рыба' },
-  { value: 'gain_muscle', label: 'Набрать массу', icon: '💪', color: '#3b82f6', desc: 'Высокобелковые блюда, мясо, гарниры' },
-  { value: 'maintain', label: 'Поддерживать форму', icon: '⚖️', color: '#34d399', desc: 'Сбалансированное питание, умеренные порции' },
-  { value: 'healthy', label: 'Правильное питание', icon: '🥦', color: '#22c55e', desc: 'Без сахара и фастфуда, натуральное' },
-  { value: 'no_limit', label: 'Без ограничений', icon: '🍕', color: 'var(--text3)', desc: 'Ем что хочу, рекомендации не нужны' },
+  { value: 'lose_weight', labelKey: 'goalLoseWeight', icon: '🔥', color: '#ef4444', descKey: 'goalLoseWeightDesc' },
+  { value: 'gain_muscle', labelKey: 'goalGainMuscle', icon: '💪', color: '#3b82f6', descKey: 'goalGainMuscleDesc' },
+  { value: 'maintain', labelKey: 'goalMaintain', icon: '⚖️', color: '#34d399', descKey: 'goalMaintainDesc' },
+  { value: 'healthy', labelKey: 'goalHealthy', icon: '🥦', color: '#22c55e', descKey: 'goalHealthyDesc' },
+  { value: 'no_limit', labelKey: 'goalNoLimit', icon: '🍕', color: 'var(--text3)', descKey: 'goalNoLimitDesc' },
 ] as const;
 
 export default function ProfilePage() {
@@ -124,6 +173,7 @@ export default function ProfilePage() {
 }
 
 function ProfileContent() {
+  const t = useTranslations('profile');
   const { user, isLoggedIn, logout, updateUser, _hydrated } = useAuthStore();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -209,13 +259,23 @@ function ProfileContent() {
     });
   }, [isLoggedIn, _hydrated, router]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Load allergens & nutrition goal on mount (for prominent sections)
+  // Load allergens & refresh user profile on mount
   useEffect(() => {
     if (!isLoggedIn || isOwner) return;
     referenceApi.getAllergens().then(r => setAllergens(r.data || [])).catch(() => {});
-    const ids = user?.allergenProfile?.map(a => a.id) || [];
-    setUserAllergenIds(new Set(ids));
-  }, [isLoggedIn, isOwner, user?.allergenProfile]);
+    // Fetch fresh user data from server (includes allergenProfile)
+    userApi.getMe().then(r => {
+      if (r.data) {
+        updateUser(r.data);
+        const ids = r.data.allergenProfile?.map((a: { id: number }) => a.id) || [];
+        setUserAllergenIds(new Set(ids));
+      }
+    }).catch(() => {
+      // Fallback to store
+      const ids = user?.allergenProfile?.map(a => a.id) || [];
+      setUserAllergenIds(new Set(ids));
+    });
+  }, [isLoggedIn, isOwner]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Guest tab data loading
   useEffect(() => {
@@ -235,8 +295,8 @@ function ProfileContent() {
       await userApi.updateMe({ name: nameInput });
       updateUser({ name: nameInput });
       setEditMode(false);
-      toast('Имя обновлено', 'success');
-    } catch { toast('Не удалось сохранить имя', 'error'); }
+      toast(t('nameUpdated'), 'success');
+    } catch { toast(t('nameUpdateError'), 'error'); }
     setLoading(false);
   };
 
@@ -245,8 +305,11 @@ function ProfileContent() {
     if (next.has(id)) next.delete(id); else next.add(id);
     setUserAllergenIds(next);
     try {
-      await userApi.updateAllergens(Array.from(next));
-    } catch { toast('Не удалось обновить аллергены', 'error'); }
+      const res = await userApi.updateAllergens(Array.from(next));
+      if (res.data?.allergenProfile) {
+        updateUser({ allergenProfile: res.data.allergenProfile });
+      }
+    } catch { toast(t('allergensUpdateError'), 'error'); }
   };
 
   const handleNutritionGoal = async (goal: string) => {
@@ -285,8 +348,8 @@ function ProfileContent() {
         favoriteCuisines: data.favoriteCuisines as string,
         favoriteDishes: data.favoriteDishes as string,
       });
-      toast('Профиль обновлён', 'success');
-    } catch { toast('Не удалось сохранить', 'error'); }
+      toast(t('profileUpdated'), 'success');
+    } catch { toast(t('profileUpdateError'), 'error'); }
     setProfileSaving(false);
   };
 
@@ -318,13 +381,11 @@ function ProfileContent() {
         ) : !myRestaurant ? (
           <div className="text-center py-20">
             <div className="text-6xl mb-4">🍽️</div>
-            <h1 className="font-serif text-[28px] font-bold text-[var(--text)] mb-2">Ресторан не привязан</h1>
-            <p className="text-[14px] text-[var(--text3)]">Свяжитесь с поддержкой для привязки вашего ресторана</p>
+            <h1 className="font-serif text-[28px] font-bold text-[var(--text)] mb-2">{t("ownerNoRestaurant")}</h1>
+            <p className="text-[14px] text-[var(--text3)]">{t("ownerNoRestaurantDesc")}</p>
             <button onClick={handleLogout}
               className="mt-6 px-5 py-2.5 rounded-full text-[12px] font-semibold text-red-400 border cursor-pointer"
-              style={{ background: 'var(--glass)', borderColor: 'rgba(239,68,68,0.3)' }}>
-              Выйти
-            </button>
+              style={{ background: 'var(--glass)', borderColor: 'rgba(239,68,68,0.3)' }}>{t("logout")}</button>
           </div>
         ) : (
           <>
@@ -349,30 +410,26 @@ function ProfileContent() {
                   <span className="text-[13px] font-semibold" style={{ color: 'var(--gold)' }}>
                     ⭐ {Number(myRestaurant.rating || 0).toFixed(1)}
                   </span>
-                  <span className="text-[12px] text-[var(--text3)]">{myRestaurant.reviewCount || 0} отзывов</span>
+                  <span className="text-[12px] text-[var(--text3)]">{myRestaurant.reviewCount || 0} {t('statReviews')}</span>
                 </div>
               </div>
               <div className="flex flex-col gap-2 items-end flex-shrink-0">
                 <a href={`/restaurants/${myRestaurant.slug}`}
                   className="px-4 py-2 rounded-full text-[12px] font-semibold no-underline transition-all"
-                  style={{ color: 'var(--accent)', background: 'rgba(255,92,40,0.08)', border: '1px solid rgba(255,92,40,0.2)' }}>
-                  Открыть карточку →
-                </a>
+                  style={{ color: 'var(--accent)', background: 'rgba(255,92,40,0.08)', border: '1px solid rgba(255,92,40,0.2)' }}>{t("openCard")}</a>
                 <button onClick={handleLogout}
                   className="px-4 py-2 rounded-full text-[11px] font-semibold text-red-400 border cursor-pointer"
-                  style={{ background: 'transparent', borderColor: 'rgba(239,68,68,0.2)' }}>
-                  Выйти
-                </button>
+                  style={{ background: 'transparent', borderColor: 'rgba(239,68,68,0.2)' }}>{t("logout")}</button>
               </div>
             </div>
 
             {/* Stats row */}
             <div className="grid grid-cols-4 gap-4 mb-8">
               {[
-                { label: 'Рейтинг', value: Number(myRestaurant.rating || 0).toFixed(1), icon: '⭐' },
-                { label: 'Отзывы', value: String(myRestaurant.reviewCount || 0), icon: '💬' },
-                { label: 'Фото', value: String(myRestaurant.photos?.length || 0), icon: '📸' },
-                { label: 'Средний чек', value: myRestaurant.averageBill ? `${myRestaurant.averageBill} ₽` : '—', icon: '💰' },
+                { label: t('statRating'), value: Number(myRestaurant.rating || 0).toFixed(1), icon: '⭐' },
+                { label: t('statReviews'), value: String(myRestaurant.reviewCount || 0), icon: '💬' },
+                { label: t('statPhotos'), value: String(myRestaurant.photos?.length || 0), icon: '📸' },
+                { label: t('statAvgBill'), value: myRestaurant.averageBill ? `${myRestaurant.averageBill} ₽` : '—', icon: '💰' },
               ].map(s => (
                 <div key={s.label} className="rounded-[16px] border p-4 text-center"
                   style={{ background: 'var(--bg2)', borderColor: 'var(--card-border)' }}>
@@ -386,11 +443,11 @@ function ProfileContent() {
             {/* Owner tabs */}
             <div className="flex gap-1 mb-8 p-1 rounded-[14px] overflow-x-auto" style={{ background: 'var(--bg3)' }}>
               {([
-                ['dashboard', '📊 Обзор'],
-                ['edit', '✏️ Карточка'],
-                ['photos', '📸 Фото'],
-                ['posts', '📝 Публикации'],
-                ['analytics', '📈 Аналитика'],
+                ['dashboard', '📊 ' + t('ownerTabDashboard')],
+                ['edit', '✏️ ' + t('ownerTabEdit')],
+                ['photos', '📸 ' + t('ownerTabPhotos')],
+                ['posts', '📝 ' + t('ownerTabPosts')],
+                ['analytics', '📈 ' + t('ownerTabAnalytics')],
               ] as const).map(([key, label]) => (
                 <button key={key} onClick={() => setOwnerTab(key)}
                   className="flex-1 py-2.5 rounded-[10px] text-[13px] font-semibold transition-all cursor-pointer border-none whitespace-nowrap"
@@ -407,25 +464,25 @@ function ProfileContent() {
             {ownerTab === 'dashboard' && (
               <div className="space-y-5">
                 <div className="rounded-[20px] border p-6" style={{ background: 'var(--bg2)', borderColor: 'var(--card-border)' }}>
-                  <h3 className="text-[16px] font-semibold text-[var(--text)] mb-4">Информация о ресторане</h3>
+                  <h3 className="text-[16px] font-semibold text-[var(--text)] mb-4">{t("restaurantInfo")}</h3>
                   <div className="space-y-3">
                     <div className="p-4 rounded-[12px]" style={{ background: 'var(--bg3)' }}>
-                      <div className="text-[11px] text-[var(--text3)] font-semibold mb-1">Описание</div>
+                      <div className="text-[11px] text-[var(--text3)] font-semibold mb-1">{t("description")}</div>
                       <p className="text-[13px] text-[var(--text2)] leading-relaxed">{myRestaurant.description || '—'}</p>
                     </div>
                     <div className="grid grid-cols-3 gap-3">
                       <div className="p-4 rounded-[12px]" style={{ background: 'var(--bg3)' }}>
-                        <div className="text-[11px] text-[var(--text3)] font-semibold mb-1">Телефон</div>
+                        <div className="text-[11px] text-[var(--text3)] font-semibold mb-1">{t("phone")}</div>
                         <div className="text-[13px] text-[var(--text)]">{myRestaurant.phone || '—'}</div>
                       </div>
                       <div className="p-4 rounded-[12px]" style={{ background: 'var(--bg3)' }}>
-                        <div className="text-[11px] text-[var(--text3)] font-semibold mb-1">Сайт</div>
+                        <div className="text-[11px] text-[var(--text3)] font-semibold mb-1">{t("website")}</div>
                         <div className="text-[13px] text-[var(--text)] truncate">{myRestaurant.website || '—'}</div>
                       </div>
                       <div className="p-4 rounded-[12px]" style={{ background: 'var(--bg3)' }}>
-                        <div className="text-[11px] text-[var(--text3)] font-semibold mb-1">Wi-Fi / Доставка</div>
+                        <div className="text-[11px] text-[var(--text3)] font-semibold mb-1">{t("wifiDelivery")}</div>
                         <div className="text-[13px] text-[var(--text)]">
-                          {myRestaurant.hasWifi ? '✅ Wi-Fi' : '—'}{myRestaurant.hasDelivery ? ' · 🚚 Доставка' : ''}
+                          {myRestaurant.hasWifi ? '✅ Wi-Fi' : '—'}{myRestaurant.hasDelivery ? ' · 🚚 ' + t('deliveryYes') : ''}
                         </div>
                       </div>
                     </div>
@@ -435,14 +492,12 @@ function ProfileContent() {
                 {/* Recent posts preview */}
                 <div className="rounded-[20px] border p-6" style={{ background: 'var(--bg2)', borderColor: 'var(--card-border)' }}>
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-[16px] font-semibold text-[var(--text)]">Последние публикации</h3>
+                    <h3 className="text-[16px] font-semibold text-[var(--text)]">{t("recentPosts")}</h3>
                     <button onClick={() => setOwnerTab('posts')}
-                      className="text-[12px] text-[var(--accent)] cursor-pointer bg-transparent border-none">
-                      Все публикации →
-                    </button>
+                      className="text-[12px] text-[var(--accent)] cursor-pointer bg-transparent border-none">{t("allPosts")}</button>
                   </div>
                   {posts.length === 0 ? (
-                    <p className="text-[13px] text-[var(--text3)] py-4">Нет публикаций. Создайте первую акцию или новость!</p>
+                    <p className="text-[13px] text-[var(--text3)] py-4">{t('noPosts')}</p>
                   ) : (
                     <div className="space-y-2">
                       {posts.slice(0, 3).map(p => {
@@ -474,13 +529,11 @@ function ProfileContent() {
             {ownerTab === 'edit' && (
               <div className="rounded-[20px] border p-6" style={{ background: 'var(--bg2)', borderColor: 'var(--card-border)' }}>
                 <div className="flex items-center justify-between mb-5">
-                  <h3 className="text-[16px] font-semibold text-[var(--text)]">Редактирование карточки</h3>
+                  <h3 className="text-[16px] font-semibold text-[var(--text)]">{t("editCard")}</h3>
                   {!restEditMode ? (
                     <button onClick={() => setRestEditMode(true)}
                       className="px-4 py-2 rounded-full text-[12px] font-semibold border cursor-pointer transition-all"
-                      style={{ color: 'var(--accent)', borderColor: 'rgba(255,92,40,0.25)', background: 'rgba(255,92,40,0.06)' }}>
-                      ✏️ Редактировать
-                    </button>
+                      style={{ color: 'var(--accent)', borderColor: 'rgba(255,92,40,0.25)', background: 'rgba(255,92,40,0.06)' }}>{"✏️ " + t("editButton")}</button>
                   ) : (
                     <div className="flex gap-2">
                       <button
@@ -490,20 +543,18 @@ function ProfileContent() {
                             await ownerApi.updateMyRestaurant(restForm);
                             setMyRestaurant(prev => prev ? { ...prev, ...restForm } : prev);
                             setRestEditMode(false);
-                            toast('Карточка обновлена', 'success');
-                          } catch { toast('Ошибка сохранения', 'error'); }
+                            toast(t('cardUpdated'), 'success');
+                          } catch { toast(t('cardUpdateError'), 'error'); }
                           setLoading(false);
                         }}
                         disabled={loading}
                         className="px-4 py-2 rounded-full text-[12px] font-semibold text-white border-none cursor-pointer"
                         style={{ background: 'var(--accent)' }}>
-                        {loading ? '...' : 'Сохранить'}
+                        {loading ? '...' : t('save')}
                       </button>
                       <button onClick={() => { setRestEditMode(false); setRestForm({ description: myRestaurant.description || '', phone: myRestaurant.phone || '', website: myRestaurant.website || '' }); }}
                         className="px-3 py-2 rounded-full text-[12px] text-[var(--text3)] cursor-pointer border"
-                        style={{ background: 'var(--glass)', borderColor: 'var(--glass-border)' }}>
-                        Отмена
-                      </button>
+                        style={{ background: 'var(--glass)', borderColor: 'var(--glass-border)' }}>{t("cancel")}</button>
                     </div>
                   )}
                 </div>
@@ -511,7 +562,7 @@ function ProfileContent() {
                 {restEditMode ? (
                   <div className="space-y-4">
                     <div>
-                      <label className="text-[11px] font-semibold text-[var(--text3)] block mb-1.5">Описание</label>
+                      <label className="text-[11px] font-semibold text-[var(--text3)] block mb-1.5">{t("description")}</label>
                       <textarea
                         value={restForm.description}
                         onChange={e => setRestForm({ ...restForm, description: e.target.value })}
@@ -524,7 +575,7 @@ function ProfileContent() {
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="text-[11px] font-semibold text-[var(--text3)] block mb-1.5">Телефон</label>
+                        <label className="text-[11px] font-semibold text-[var(--text3)] block mb-1.5">{t("phone")}</label>
                         <input
                           value={restForm.phone}
                           onChange={e => setRestForm({ ...restForm, phone: e.target.value })}
@@ -533,7 +584,7 @@ function ProfileContent() {
                         />
                       </div>
                       <div>
-                        <label className="text-[11px] font-semibold text-[var(--text3)] block mb-1.5">Сайт</label>
+                        <label className="text-[11px] font-semibold text-[var(--text3)] block mb-1.5">{t("website")}</label>
                         <input
                           value={restForm.website}
                           onChange={e => setRestForm({ ...restForm, website: e.target.value })}
@@ -546,31 +597,31 @@ function ProfileContent() {
                 ) : (
                   <div className="space-y-3">
                     <div className="p-4 rounded-[12px]" style={{ background: 'var(--bg3)' }}>
-                      <div className="text-[11px] text-[var(--text3)] font-semibold mb-1">Описание</div>
+                      <div className="text-[11px] text-[var(--text3)] font-semibold mb-1">{t("description")}</div>
                       <p className="text-[13px] text-[var(--text2)] leading-relaxed">{myRestaurant.description || '—'}</p>
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                       <div className="p-4 rounded-[12px]" style={{ background: 'var(--bg3)' }}>
-                        <div className="text-[11px] text-[var(--text3)] font-semibold mb-1">Телефон</div>
+                        <div className="text-[11px] text-[var(--text3)] font-semibold mb-1">{t("phone")}</div>
                         <div className="text-[13px] text-[var(--text)]">{myRestaurant.phone || '—'}</div>
                       </div>
                       <div className="p-4 rounded-[12px]" style={{ background: 'var(--bg3)' }}>
-                        <div className="text-[11px] text-[var(--text3)] font-semibold mb-1">Сайт</div>
+                        <div className="text-[11px] text-[var(--text3)] font-semibold mb-1">{t("website")}</div>
                         <div className="text-[13px] text-[var(--text)]">{myRestaurant.website || '—'}</div>
                       </div>
                     </div>
                     <div className="grid grid-cols-3 gap-3">
                       <div className="p-4 rounded-[12px]" style={{ background: 'var(--bg3)' }}>
-                        <div className="text-[11px] text-[var(--text3)] font-semibold mb-1">Средний чек</div>
+                        <div className="text-[11px] text-[var(--text3)] font-semibold mb-1">{t("avgBill")}</div>
                         <div className="text-[13px] text-[var(--text)]">{myRestaurant.averageBill ? `${myRestaurant.averageBill} ₽` : '—'}</div>
                       </div>
                       <div className="p-4 rounded-[12px]" style={{ background: 'var(--bg3)' }}>
-                        <div className="text-[11px] text-[var(--text3)] font-semibold mb-1">Адрес</div>
+                        <div className="text-[11px] text-[var(--text3)] font-semibold mb-1">{t("address")}</div>
                         <div className="text-[13px] text-[var(--text)] truncate">{myRestaurant.address || '—'}</div>
                       </div>
                       <div className="p-4 rounded-[12px]" style={{ background: 'var(--bg3)' }}>
-                        <div className="text-[11px] text-[var(--text3)] font-semibold mb-1">Фото</div>
-                        <div className="text-[13px] text-[var(--text)]">{myRestaurant.photos?.length || 0} шт.</div>
+                        <div className="text-[11px] text-[var(--text3)] font-semibold mb-1">{t("statPhotos")}</div>
+                        <div className="text-[13px] text-[var(--text)]">{myRestaurant.photos?.length || 0} {t("photoCount", { count: myRestaurant.photos?.length || 0 })}</div>
                       </div>
                     </div>
                   </div>
@@ -582,10 +633,10 @@ function ProfileContent() {
             {ownerTab === 'photos' && (
               <div className="rounded-[20px] border p-6" style={{ background: 'var(--bg2)', borderColor: 'var(--card-border)' }}>
                 <div className="flex items-center justify-between mb-5">
-                  <h3 className="text-[16px] font-semibold text-[var(--text)]">Фотографии ресторана</h3>
+                  <h3 className="text-[16px] font-semibold text-[var(--text)]">{t("restaurantPhotos")}</h3>
                   <label className="px-4 py-2 rounded-full text-[12px] font-semibold text-white border-none cursor-pointer"
                     style={{ background: 'var(--accent)' }}>
-                    {uploadingPhoto ? 'Загрузка...' : '+ Загрузить фото'}
+                    {uploadingPhoto ? t('uploading') : '+ ' + t('uploadPhoto')}
                     <input type="file" accept="image/*" className="hidden" disabled={uploadingPhoto}
                       onChange={async (e) => {
                         const file = e.target.files?.[0];
@@ -597,8 +648,8 @@ function ProfileContent() {
                             ...prev,
                             photos: [...(prev.photos || []), res.data],
                           } : prev);
-                          toast('Фото загружено', 'success');
-                        } catch { toast('Ошибка загрузки', 'error'); }
+                          toast(t('photoUploaded'), 'success');
+                        } catch { toast(t('photoUploadError'), 'error'); }
                         setUploadingPhoto(false);
                         e.target.value = '';
                       }}
@@ -609,8 +660,8 @@ function ProfileContent() {
                 {!myRestaurant?.photos?.length ? (
                   <div className="text-center py-10">
                     <div className="text-4xl mb-3">📸</div>
-                    <p className="text-[14px] text-[var(--text3)]">Нет фотографий</p>
-                    <p className="text-[12px] text-[var(--text4)] mt-1">Загрузите фото вашего ресторана</p>
+                    <p className="text-[14px] text-[var(--text3)]">{t("noPhotos")}</p>
+                    <p className="text-[12px] text-[var(--text4)] mt-1">{t("noPhotosHint")}</p>
                   </div>
                 ) : (
                   <div className="grid grid-cols-3 gap-3 max-sm:grid-cols-2">
@@ -620,9 +671,7 @@ function ProfileContent() {
                         <img src={photo.url} alt="" className="w-full h-full object-cover" />
                         {photo.isCover && (
                           <span className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-[10px] font-semibold text-white"
-                            style={{ background: 'var(--accent)' }}>
-                            Обложка
-                          </span>
+                            style={{ background: 'var(--accent)' }}>{t("cover")}</span>
                         )}
                         <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                           {!photo.isCover && (
@@ -634,20 +683,16 @@ function ProfileContent() {
                                     ...prev,
                                     photos: prev.photos?.map(p => ({ ...p, isCover: p.id === photo.id })),
                                   } : prev);
-                                  toast('Обложка обновлена', 'success');
-                                } catch { toast('Ошибка', 'error'); }
+                                  toast(t('coverUpdated'), 'success');
+                                } catch { toast(t('coverError'), 'error'); }
                               }}
                               className="px-3 py-1.5 rounded-full text-[11px] font-semibold text-white border border-white/30 cursor-pointer"
-                              style={{ background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(4px)' }}>
-                              Сделать обложкой
-                            </button>
+                              style={{ background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(4px)' }}>{t("makeCover")}</button>
                           )}
                           <button
                             onClick={() => setDeletePhotoId(photo.id)}
                             className="px-3 py-1.5 rounded-full text-[11px] font-semibold text-red-300 border border-red-400/30 cursor-pointer"
-                            style={{ background: 'rgba(239,68,68,0.2)', backdropFilter: 'blur(4px)' }}>
-                            Удалить
-                          </button>
+                            style={{ background: 'rgba(239,68,68,0.2)', backdropFilter: 'blur(4px)' }}>{t("delete")}</button>
                         </div>
                       </div>
                     ))}
@@ -665,16 +710,14 @@ function ProfileContent() {
                   style={{ background: 'var(--bg2)', borderColor: 'var(--card-border)', boxShadow: '0 20px 60px rgba(0,0,0,0.5)' }}
                   onClick={e => e.stopPropagation()}>
                   <div className="text-[40px] mb-3">🗑️</div>
-                  <h3 className="text-[16px] font-semibold text-[var(--text)] mb-2">Удалить фотографию?</h3>
-                  <p className="text-[13px] text-[var(--text3)] mb-6">Это действие нельзя отменить. Фото будет удалено навсегда.</p>
+                  <h3 className="text-[16px] font-semibold text-[var(--text)] mb-2">{t("deletePhotoTitle")}</h3>
+                  <p className="text-[13px] text-[var(--text3)] mb-6">{t("deletePhotoDesc")}</p>
                   <div className="flex gap-3 justify-center">
                     <button
                       onClick={() => setDeletePhotoId(null)}
                       disabled={deleting}
                       className="px-5 py-2.5 rounded-full text-[13px] font-semibold border cursor-pointer transition-all"
-                      style={{ color: 'var(--text2)', borderColor: 'var(--card-border)', background: 'var(--bg3)' }}>
-                      Отмена
-                    </button>
+                      style={{ color: 'var(--text2)', borderColor: 'var(--card-border)', background: 'var(--bg3)' }}>{t("cancel")}</button>
                     <button
                       onClick={async () => {
                         if (!myRestaurant) return;
@@ -685,15 +728,15 @@ function ProfileContent() {
                             ...prev,
                             photos: prev.photos?.filter(p => p.id !== deletePhotoId),
                           } : prev);
-                          toast('Фото удалено', 'success');
-                        } catch { toast('Ошибка удаления', 'error'); }
+                          toast(t('photoDeleted'), 'success');
+                        } catch { toast(t('photoDeleteError'), 'error'); }
                         setDeleting(false);
                         setDeletePhotoId(null);
                       }}
                       disabled={deleting}
                       className="px-5 py-2.5 rounded-full text-[13px] font-semibold text-white border-none cursor-pointer transition-all disabled:opacity-50"
                       style={{ background: '#ef4444', boxShadow: '0 0 20px rgba(239,68,68,0.3)' }}>
-                      {deleting ? 'Удаление...' : 'Да, удалить'}
+                      {deleting ? t('deleting') : t('confirmDelete')}
                     </button>
                   </div>
                 </div>
@@ -704,11 +747,11 @@ function ProfileContent() {
             {ownerTab === 'posts' && (
               <div className="rounded-[20px] border p-6" style={{ background: 'var(--bg2)', borderColor: 'var(--card-border)' }}>
                 <div className="flex items-center justify-between mb-5">
-                  <h3 className="text-[16px] font-semibold text-[var(--text)]">Акции, афиши и новости</h3>
+                  <h3 className="text-[16px] font-semibold text-[var(--text)]">{t("postsTitle")}</h3>
                   <button onClick={() => setShowPostForm(!showPostForm)}
                     className="px-4 py-2 rounded-full text-[12px] font-semibold text-white border-none cursor-pointer"
                     style={{ background: 'var(--accent)' }}>
-                    {showPostForm ? 'Отмена' : '+ Новая публикация'}
+                    {showPostForm ? t('cancel') : '+ ' + t('newPost')}
                   </button>
                 </div>
 
@@ -716,9 +759,9 @@ function ProfileContent() {
                   <div className="rounded-[16px] border p-5 mb-5" style={{ background: 'var(--bg3)', borderColor: 'var(--card-border)' }}>
                     <div className="flex gap-2 mb-4">
                       {[
-                        { value: 'promos', label: '🏷️ Акция', color: 'var(--accent)' },
-                        { value: 'events', label: '🎭 Афиша', color: 'var(--teal)' },
-                        { value: 'news', label: '📰 Новость', color: '#a78bfa' },
+                        { value: 'promos', label: '🏷️ ' + t('postPromo'), color: 'var(--accent)' },
+                        { value: 'events', label: '🎭 ' + t('postEvent'), color: 'var(--teal)' },
+                        { value: 'news', label: '📰 ' + t('postNews'), color: '#a78bfa' },
                       ].map(c => (
                         <button key={c.value}
                           onClick={() => setPostForm({ ...postForm, category: c.value })}
@@ -735,7 +778,7 @@ function ProfileContent() {
                     <input
                       value={postForm.title}
                       onChange={e => setPostForm({ ...postForm, title: e.target.value })}
-                      placeholder="Заголовок"
+                      placeholder={t("postTitlePlaceholder")}
                       className="w-full px-4 py-3 rounded-[12px] text-[14px] text-[var(--text)] border outline-none mb-3 font-sans"
                       style={{ background: 'var(--bg2)', borderColor: 'var(--card-border)' }}
                       onFocus={e => (e.currentTarget.style.borderColor = 'var(--accent)')}
@@ -744,7 +787,7 @@ function ProfileContent() {
                     <textarea
                       value={postForm.body}
                       onChange={e => setPostForm({ ...postForm, body: e.target.value })}
-                      placeholder="Текст публикации..."
+                      placeholder={t("postBodyPlaceholder")}
                       rows={4}
                       className="w-full px-4 py-3 rounded-[12px] text-[14px] text-[var(--text)] border outline-none resize-none mb-3 font-sans"
                       style={{ background: 'var(--bg2)', borderColor: 'var(--card-border)' }}
@@ -755,7 +798,7 @@ function ProfileContent() {
                     <div className="flex items-center gap-3 mb-3">
                       <label className="px-3.5 py-2 rounded-full text-[12px] font-semibold border cursor-pointer transition-all flex items-center gap-1.5"
                         style={{ color: 'var(--text3)', borderColor: 'var(--card-border)', background: 'var(--bg2)' }}>
-                        📷 Добавить фото
+                        {"📷 " + t("addPhoto")}
                         <input type="file" accept="image/*" className="hidden"
                           onChange={(e) => {
                             const file = e.target.files?.[0];
@@ -797,14 +840,14 @@ function ProfileContent() {
                           setPostImage(null);
                           setPostImagePreview(null);
                           setShowPostForm(false);
-                          toast('Публикация создана', 'success');
-                        } catch { toast('Ошибка создания', 'error'); }
+                          toast(t('postCreated'), 'success');
+                        } catch { toast(t('postCreateError'), 'error'); }
                         setLoading(false);
                       }}
                       disabled={loading || !postForm.title.trim()}
                       className="px-5 py-2.5 rounded-full text-[13px] font-semibold text-white border-none cursor-pointer disabled:opacity-50"
                       style={{ background: 'var(--accent)' }}>
-                      {loading ? 'Публикуем...' : 'Опубликовать'}
+                      {loading ? t('publishing') : t('publish')}
                     </button>
                   </div>
                 )}
@@ -812,18 +855,18 @@ function ProfileContent() {
                 {posts.length === 0 && !showPostForm ? (
                   <div className="text-center py-10">
                     <div className="text-4xl mb-3">📝</div>
-                    <p className="text-[14px] text-[var(--text3)]">Нет публикаций</p>
+                    <p className="text-[14px] text-[var(--text3)]">{t("noPostsEmpty")}</p>
                     <p className="text-[12px] text-[var(--text4)] mt-1">
-                      Создайте первую акцию, афишу или новость для привлечения гостей
+                      {t('noPostsHint')}
                     </p>
                   </div>
                 ) : (
                   <div className="space-y-3">
                     {posts.map(p => {
                       const catInfo: Record<string, { icon: string; label: string; color: string }> = {
-                        promos: { icon: '🏷️', label: 'Акция', color: 'var(--accent)' },
-                        events: { icon: '🎭', label: 'Афиша', color: 'var(--teal)' },
-                        news: { icon: '📰', label: 'Новость', color: '#a78bfa' },
+                        promos: { icon: '🏷️', label: t('postPromo'), color: 'var(--accent)' },
+                        events: { icon: '🎭', label: t('postEvent'), color: 'var(--teal)' },
+                        news: { icon: '📰', label: t('postNews'), color: '#a78bfa' },
                       };
                       const cat = catInfo[p.category] || catInfo.news;
                       return (
@@ -859,14 +902,12 @@ function ProfileContent() {
                       👑
                     </span>
                     <div>
-                      <div className="text-[14px] font-semibold text-[var(--text)]">Аналитика и отчёты</div>
-                      <div className="text-[12px] text-[var(--text3)]">Подробная статистика вашего ресторана</div>
+                      <div className="text-[14px] font-semibold text-[var(--text)]">{t("analyticsTitle")}</div>
+                      <div className="text-[12px] text-[var(--text3)]">{t("analyticsSub")}</div>
                     </div>
                   </div>
                   <span className="px-3 py-1 rounded-full text-[11px] font-bold"
-                    style={{ background: 'rgba(139,92,246,0.15)', color: '#a78bfa', border: '1px solid rgba(139,92,246,0.3)' }}>
-                    Демо-режим
-                  </span>
+                    style={{ background: 'rgba(139,92,246,0.15)', color: '#a78bfa', border: '1px solid rgba(139,92,246,0.3)' }}>{t("demoMode")}</span>
                 </div>
 
                 {/* Demo data notice */}
@@ -874,7 +915,7 @@ function ProfileContent() {
                   style={{ background: 'rgba(245,158,11,0.06)', borderColor: 'rgba(245,158,11,0.2)' }}>
                   <span className="text-[18px]">⚠️</span>
                   <p className="text-[13px] text-[var(--text2)] flex-1">
-                    <span className="font-semibold">Демо-режим.</span> Цифры ниже показаны для примера. Реальная аналитика подключается автоматически по мере накопления данных.
+                    {t("demoNotice")}
                   </p>
                 </div>
 
@@ -882,10 +923,10 @@ function ProfileContent() {
                 {/* Row 1: Key metrics */}
                 <div className="grid grid-cols-4 gap-4 max-sm:grid-cols-2">
                   {[
-                    { label: 'Просмотры карточки', value: '2,847', change: '+12.3%', up: true, icon: '👁️' },
-                    { label: 'CTR карточки', value: '4.2%', change: '+0.8%', up: true, icon: '🖱️' },
-                    { label: 'Конверсия в бронь', value: '1.8%', change: '-0.2%', up: false, icon: '📅' },
-                    { label: 'Средняя оценка', value: Number(myRestaurant?.rating || 4.6).toFixed(1), change: '+0.1', up: true, icon: '⭐' },
+                    { label: t('metricViews'), value: '2,847', change: '+12.3%', up: true, icon: '👁️' },
+                    { label: t('metricCTR'), value: '4.2%', change: '+0.8%', up: true, icon: '🖱️' },
+                    { label: t('metricConversion'), value: '1.8%', change: '-0.2%', up: false, icon: '📅' },
+                    { label: t('metricRating'), value: Number(myRestaurant?.rating || 4.6).toFixed(1), change: '+0.1', up: true, icon: '⭐' },
                   ].map(m => (
                     <div key={m.label} className="rounded-[16px] border p-4" style={{ background: 'var(--bg2)', borderColor: 'var(--card-border)' }}>
                       <div className="flex items-center justify-between mb-2">
@@ -905,7 +946,7 @@ function ProfileContent() {
                   {/* Traffic chart — 3 cols */}
                   <div className="col-span-3 rounded-[20px] border p-5" style={{ background: 'var(--bg2)', borderColor: 'var(--card-border)' }}>
                     <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-[15px] font-semibold text-[var(--text)]">Просмотры за 30 дней</h3>
+                      <h3 className="text-[15px] font-semibold text-[var(--text)]">{t("views30d")}</h3>
                       <div className="flex gap-1">
                         {['7д', '30д', '90д'].map(p => (
                           <button key={p} className="px-2.5 py-1 rounded-full text-[10px] font-semibold border-none cursor-pointer"
@@ -937,14 +978,14 @@ function ProfileContent() {
 
                   {/* Sources — 2 cols */}
                   <div className="col-span-2 rounded-[20px] border p-5" style={{ background: 'var(--bg2)', borderColor: 'var(--card-border)' }}>
-                    <h3 className="text-[15px] font-semibold text-[var(--text)] mb-4">Источники трафика</h3>
+                    <h3 className="text-[15px] font-semibold text-[var(--text)] mb-4">{t("trafficSources")}</h3>
                     <div className="space-y-3">
                       {[
-                        { source: 'Поиск на сайте', pct: 42, color: '#8b5cf6' },
-                        { source: 'Прямые переходы', pct: 28, color: 'var(--accent)' },
-                        { source: 'Яндекс / Google', pct: 18, color: '#3b82f6' },
-                        { source: 'Соцсети', pct: 8, color: '#34d399' },
-                        { source: 'Другое', pct: 4, color: '#6b7280' },
+                        { source: t('trafficSearch'), pct: 42, color: '#8b5cf6' },
+                        { source: t('trafficDirect'), pct: 28, color: 'var(--accent)' },
+                        { source: t('trafficSearchEngines'), pct: 18, color: '#3b82f6' },
+                        { source: t('trafficSocial'), pct: 8, color: '#34d399' },
+                        { source: t('trafficOther'), pct: 4, color: '#6b7280' },
                       ].map(s => (
                         <div key={s.source}>
                           <div className="flex items-center justify-between mb-1">
@@ -964,10 +1005,10 @@ function ProfileContent() {
                 <div className="grid grid-cols-2 gap-4">
                   {/* Heatmap */}
                   <div className="rounded-[20px] border p-5" style={{ background: 'var(--bg2)', borderColor: 'var(--card-border)' }}>
-                    <h3 className="text-[15px] font-semibold text-[var(--text)] mb-3">Тепловая карта просмотров</h3>
-                    <p className="text-[11px] text-[var(--text3)] mb-3">Активность по дням и часам</p>
+                    <h3 className="text-[15px] font-semibold text-[var(--text)] mb-3">{t("heatmapTitle")}</h3>
+                    <p className="text-[11px] text-[var(--text3)] mb-3">{t("heatmapSub")}</p>
                     <div className="space-y-[3px]">
-                      {['Пн','Вт','Ср','Чт','Пт','Сб','Вс'].map((day, di) => (
+                      {[t('dayMon'),t('dayTue'),t('dayWed'),t('dayThu'),t('dayFri'),t('daySat'),t('daySun')].map((day, di) => (
                         <div key={day} className="flex items-center gap-[3px]">
                           <span className="text-[10px] text-[var(--text4)] w-5">{day}</span>
                           {Array.from({ length: 12 }).map((_, hi) => {
@@ -1003,14 +1044,14 @@ function ProfileContent() {
 
                   {/* Conversion funnel */}
                   <div className="rounded-[20px] border p-5" style={{ background: 'var(--bg2)', borderColor: 'var(--card-border)' }}>
-                    <h3 className="text-[15px] font-semibold text-[var(--text)] mb-4">Воронка конверсии</h3>
+                    <h3 className="text-[15px] font-semibold text-[var(--text)] mb-4">{t("funnelTitle")}</h3>
                     <div className="space-y-3">
                       {[
-                        { step: 'Увидели в каталоге', value: 12420, pct: 100, color: '#8b5cf6' },
-                        { step: 'Открыли карточку', value: 2847, pct: 23, color: '#6366f1' },
-                        { step: 'Смотрели меню', value: 1284, pct: 10, color: '#3b82f6' },
-                        { step: 'Нажали «Забронировать»', value: 342, pct: 2.8, color: 'var(--accent)' },
-                        { step: 'Завершили бронь', value: 156, pct: 1.3, color: '#34d399' },
+                        { step: t('funnelCatalog'), value: 12420, pct: 100, color: '#8b5cf6' },
+                        { step: t('funnelCard'), value: 2847, pct: 23, color: '#6366f1' },
+                        { step: t('funnelMenu'), value: 1284, pct: 10, color: '#3b82f6' },
+                        { step: t('funnelBookClick'), value: 342, pct: 2.8, color: 'var(--accent)' },
+                        { step: t('funnelBookComplete'), value: 156, pct: 1.3, color: '#34d399' },
                       ].map((f, i) => (
                         <div key={f.step}>
                           <div className="flex items-center justify-between mb-1">
@@ -1049,8 +1090,8 @@ function ProfileContent() {
                       💡
                     </span>
                     <div>
-                      <h3 className="text-[15px] font-semibold text-[var(--text)]">Рекомендации для роста</h3>
-                      <p className="text-[11px] text-[var(--text3)]">На основе аналитики вашего ресторана</p>
+                      <h3 className="text-[15px] font-semibold text-[var(--text)]">{t("recsTitle")}</h3>
+                      <p className="text-[11px] text-[var(--text3)]">{t("recsSub")}</p>
                     </div>
                   </div>
                   <div className="space-y-3">
@@ -1058,41 +1099,41 @@ function ProfileContent() {
                       {
                         priority: 'high',
                         icon: '📸',
-                        title: 'Добавьте больше фото',
-                        desc: 'Рестораны с 5+ фотографиями получают на 40% больше просмотров. У вас пока мало фото — загрузите снимки интерьера, блюд и атмосферы.',
-                        action: 'Загрузить фото',
+                        title: t('recPhotosTitle'),
+                        desc: t('recPhotosDesc'),
+                        action: t('recPhotosAction'),
                         tab: 'photos',
                       },
                       {
                         priority: 'high',
                         icon: '🍽️',
-                        title: 'Обновите меню',
-                        desc: 'Карточка с актуальным меню конвертирует в 2.5 раза лучше. Добавьте цены и описания блюд, чтобы гости могли принять решение прямо на сайте.',
-                        action: 'Редактировать',
+                        title: t('recMenuTitle'),
+                        desc: t('recMenuDesc'),
+                        action: t('recMenuAction'),
                         tab: 'edit',
                       },
                       {
                         priority: 'medium',
                         icon: '📝',
-                        title: 'Публикуйте новости и акции',
-                        desc: 'Рестораны с активными публикациями привлекают на 25% больше бронирований. Расскажите о сезонном меню, скидках или мероприятиях.',
-                        action: 'Создать пост',
+                        title: t('recPostsTitle'),
+                        desc: t('recPostsDesc'),
+                        action: t('recPostsAction'),
                         tab: 'posts',
                       },
                       {
                         priority: 'medium',
                         icon: '⭐',
-                        title: 'Работайте с отзывами',
-                        desc: 'Ответы на отзывы повышают лояльность на 30%. Благодарите за позитив и решайте проблемы из негативных — это видят все посетители.',
-                        action: 'Отзывы',
+                        title: t('recReviewsTitle'),
+                        desc: t('recReviewsDesc'),
+                        action: t('recReviewsAction'),
                         tab: 'reviews',
                       },
                       {
                         priority: 'low',
                         icon: '📍',
-                        title: 'Проверьте контактную информацию',
-                        desc: 'Убедитесь, что телефон, адрес и часы работы актуальны. 15% клиентов уходят, если не могут быстро найти контакты.',
-                        action: 'Проверить',
+                        title: t('recContactsTitle'),
+                        desc: t('recContactsDesc'),
+                        action: t('recContactsAction'),
                         tab: 'edit',
                       },
                     ].map((rec, i) => (
@@ -1110,7 +1151,7 @@ function ProfileContent() {
                                 color: rec.priority === 'high' ? '#f87171' : rec.priority === 'medium' ? '#fbbf24' : '#9ca3af',
                                 border: `1px solid ${rec.priority === 'high' ? 'rgba(239,68,68,0.2)' : rec.priority === 'medium' ? 'rgba(245,158,11,0.2)' : 'rgba(107,114,128,0.15)'}`,
                               }}>
-                              {rec.priority === 'high' ? 'Важно' : rec.priority === 'medium' ? 'Средне' : 'Совет'}
+                              {rec.priority === 'high' ? t('priorityHigh') : rec.priority === 'medium' ? t('priorityMedium') : t('priorityLow')}
                             </span>
                           </div>
                           <p className="text-[12px] text-[var(--text3)] leading-relaxed mb-2">{rec.desc}</p>
@@ -1132,15 +1173,15 @@ function ProfileContent() {
                   style={{ background: 'var(--bg2)', borderColor: 'var(--card-border)' }}>
                   <div className="flex items-center justify-center gap-3 mb-3">
                     <span className="text-[28px]">📄</span>
-                    <h3 className="text-[16px] font-semibold text-[var(--text)]">Экспорт отчёта в PDF</h3>
+                    <h3 className="text-[16px] font-semibold text-[var(--text)]">{t("exportTitle")}</h3>
                   </div>
                   <p className="text-[13px] text-[var(--text3)] mb-5 max-w-[500px] mx-auto">
-                    Скачайте полный отчёт с графиками, статистикой и рекомендациями по улучшению видимости вашего ресторана
+                    {t("exportDesc")}
                   </p>
                   <button disabled
                     className="px-6 py-3 rounded-full text-[13px] font-semibold text-white/50 border-none cursor-not-allowed"
                     style={{ background: 'rgba(139,92,246,0.2)' }}>
-                    🔒 Скачать PDF-отчёт
+                    {"🔒 " + t("exportButton")}
                   </button>
                 </div>
 
@@ -1155,15 +1196,14 @@ function ProfileContent() {
                     style={{ background: 'linear-gradient(90deg, #8b5cf6, #3b82f6, #14b8a6, #8b5cf6)', backgroundSize: '200% 100%', animation: 'shimmer 3s linear infinite' }} />
                   <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[11px] font-bold mb-4"
                     style={{ background: 'linear-gradient(135deg, rgba(139,92,246,0.15), rgba(59,130,246,0.1))', color: '#a78bfa', border: '1px solid rgba(139,92,246,0.3)' }}>
-                    👑 Подписка «Партнёр»
+                    {"👑 " + t("partnerBadge")}
                   </span>
-                  <h3 className="text-[20px] font-bold text-[var(--text)] mb-2">Разблокируйте полную аналитику</h3>
+                  <h3 className="text-[20px] font-bold text-[var(--text)] mb-2">{t("partnerTitle")}</h3>
                   <p className="text-[13px] text-[var(--text3)] mb-5 max-w-[480px] mx-auto leading-relaxed">
-                    Данные выше — демонстрационные. С подпиской «Партнёр» вы получите реальную статистику,
-                    расширенные отчёты, экспорт в PDF и персональные рекомендации по росту.
+                    {t("partnerDesc")}
                   </p>
                   <div className="flex flex-wrap justify-center gap-3 mb-6 text-[12px] text-[var(--text2)]">
-                    {['Реальные данные', 'Экспорт в PDF', 'AI-рекомендации', 'Еженедельные отчёты'].map(f => (
+                    {[t('partnerFeatureReal'), t('partnerFeaturePDF'), t('partnerFeatureAI'), t('partnerFeatureReports')].map(f => (
                       <span key={f} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full"
                         style={{ background: 'var(--bg3)', border: '1px solid var(--card-border)' }}>
                         ✓ {f}
@@ -1184,9 +1224,9 @@ function ProfileContent() {
                       e.currentTarget.style.transform = 'none';
                       e.currentTarget.style.boxShadow = '0 4px 24px rgba(139,92,246,0.4), 0 0 0 1px rgba(139,92,246,0.2)';
                     }}>
-                    Подключить «Партнёр» — <s className="opacity-50">6 900 ₽</s> 3 450 ₽/мес
+                    {t("partnerButton")} — <s className="opacity-50">{t("partnerOldPrice")}</s> {t("partnerPrice")}
                   </button>
-                  <p className="text-[11px] text-[var(--text4)] mt-3">Первый месяц — 3 450 ₽ (скидка 50%). Далее 6 900 ₽/мес. Отмена в любой момент.</p>
+                  <p className="text-[11px] text-[var(--text4)] mt-3">{t("partnerNote")}</p>
                 </div>
 
                 <style jsx>{`
@@ -1227,9 +1267,9 @@ function ProfileContent() {
                 const res = await userApi.uploadAvatar(file);
                 const url = res.data?.avatarUrl || res.data?.avatar_url;
                 if (url) updateUser({ avatarUrl: url });
-                toast('Фото обновлено', 'success');
+                toast(t('photoUpdated'), 'success');
               } catch {
-                toast('Не удалось загрузить фото', 'error');
+                toast(t('photoUpdateError'), 'error');
               }
               e.target.value = '';
             }}
@@ -1244,17 +1284,15 @@ function ProfileContent() {
               <button onClick={handleSaveName} disabled={loading}
                 className="px-4 py-2 rounded-full text-[12px] font-semibold text-white border-none cursor-pointer"
                 style={{ background: 'var(--accent)' }}>
-                {loading ? '...' : 'Сохранить'}
+                {loading ? '...' : t('save')}
               </button>
               <button onClick={() => { setEditMode(false); setNameInput(user.name || ''); }}
                 className="px-3 py-2 rounded-full text-[12px] text-[var(--text3)] cursor-pointer border"
-                style={{ background: 'var(--glass)', borderColor: 'var(--glass-border)' }}>
-                Отмена
-              </button>
+                style={{ background: 'var(--glass)', borderColor: 'var(--glass-border)' }}>{t("cancel")}</button>
             </div>
           ) : (
             <div className="flex items-center gap-3">
-              <h1 className="font-serif text-[28px] font-bold text-[var(--text)]">{user.name || 'Пользователь'}</h1>
+              <h1 className="font-serif text-[28px] font-bold text-[var(--text)]">{user.name || t('defaultName')}</h1>
               <button onClick={() => setEditMode(true)} className="text-[12px] text-[var(--accent)] cursor-pointer bg-transparent border-none">
                 ✏️
               </button>
@@ -1264,27 +1302,25 @@ function ProfileContent() {
           <div className="flex items-center gap-3 mt-2">
             <span className="px-3 py-1 rounded-full text-[11px] font-semibold"
               style={{ background: `${level.color}22`, color: level.color, border: `1px solid ${level.color}44` }}>
-              {level.icon} {level.label}
+              {level.icon} {t(level.labelKey)}
             </span>
-            <span className="text-[13px] text-[var(--text2)]">{user.loyaltyPoints} баллов</span>
+            <span className="text-[13px] text-[var(--text2)]">{user.loyaltyPoints} {t('statsPoints')}</span>
           </div>
         </div>
         <button onClick={handleLogout}
           className="px-5 py-2.5 rounded-full text-[12px] font-semibold text-red-400 border cursor-pointer"
-          style={{ background: 'var(--glass)', borderColor: 'rgba(239,68,68,0.3)' }}>
-          Выйти
-        </button>
+          style={{ background: 'var(--glass)', borderColor: 'rgba(239,68,68,0.3)' }}>{t("logout")}</button>
       </div>
 
       {/* Tabs — 5 items */}
       <div className="flex gap-1 mb-8 p-1 rounded-[14px] overflow-x-auto" style={{ background: 'var(--bg3)' }}>
         {([
-          ['info', '👤 Профиль'],
-          ['bookings', '📅 Брони'],
-          ['history', '🕐 История'],
-          ['favorites', '❤️ Избранное'],
-          ['wishlist', '📌 Хочу сходить'],
-          ['settings', '⚙️ Настройки'],
+          ['info', '👤 ' + t('tabProfile')],
+          ['bookings', '📅 ' + t('tabBookings')],
+          ['history', '🕐 ' + t('tabHistory')],
+          ['favorites', '❤️ ' + t('tabFavorites')],
+          ['wishlist', '📌 ' + t('tabWishlist')],
+          ['settings', '⚙️ ' + t('tabSettings')],
         ] as const).map(([key, label]) => (
           <button key={key} onClick={() => setGuestTab(key)}
             className="flex-1 py-2.5 rounded-[10px] text-[13px] font-semibold transition-all cursor-pointer border-none whitespace-nowrap"
@@ -1311,9 +1347,7 @@ function ProfileContent() {
                 className="absolute top-4 right-4 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-semibold cursor-pointer transition-all"
                 style={{ background: 'rgba(0,0,0,0.35)', backdropFilter: 'blur(8px)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)' }}
                 onMouseEnter={e => (e.currentTarget.style.background = 'rgba(0,0,0,0.55)')}
-                onMouseLeave={e => (e.currentTarget.style.background = 'rgba(0,0,0,0.35)')}>
-                ✏️ Редактировать
-              </button>
+                onMouseLeave={e => (e.currentTarget.style.background = 'rgba(0,0,0,0.35)')}>{"✏️ " + t("editButton")}</button>
             </div>
 
             {/* Avatar overlap */}
@@ -1330,10 +1364,10 @@ function ProfileContent() {
             <div className="px-7 pt-3 pb-6">
               {/* Name + level */}
               <div className="flex items-center gap-3 mb-1">
-                <h2 className="font-serif text-[22px] font-bold text-[var(--text)]">{user.name || 'Пользователь'}</h2>
+                <h2 className="font-serif text-[22px] font-bold text-[var(--text)]">{user.name || t('defaultName')}</h2>
                 <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold"
                   style={{ background: `${level.color}20`, color: level.color, border: `1px solid ${level.color}35` }}>
-                  {level.icon} {level.label}
+                  {level.icon} {t(level.labelKey)}
                 </span>
               </div>
 
@@ -1341,26 +1375,26 @@ function ProfileContent() {
               <div className="flex items-center gap-4 text-[12px] text-[var(--text3)] mb-4">
                 <span>{user.email}</span>
                 {user.cityName && <><span style={{ opacity: 0.3 }}>·</span><span>📍 {user.cityName}</span></>}
-                {user.age && <><span style={{ opacity: 0.3 }}>·</span><span>{user.age} лет</span></>}
+                {user.age && <><span style={{ opacity: 0.3 }}>·</span><span>{t('yearsOld', { age: user.age })}</span></>}
               </div>
 
               {/* Stats row */}
               <div className="flex gap-3 mb-5">
                 <div className="flex-1 p-3 rounded-[12px] text-center" style={{ background: 'var(--bg3)' }}>
                   <div className="text-[18px] font-bold text-[var(--text)]">{user.loyaltyPoints}</div>
-                  <div className="text-[10px] text-[var(--text3)] font-semibold mt-0.5">Баллов</div>
+                  <div className="text-[10px] text-[var(--text3)] font-semibold mt-0.5">{t('statsPoints')}</div>
                 </div>
                 <div className="flex-1 p-3 rounded-[12px] text-center" style={{ background: 'var(--bg3)' }}>
                   <div className="text-[18px] font-bold text-[var(--text)]">{bookings.filter(b => b.status === 'completed').length}</div>
-                  <div className="text-[10px] text-[var(--text3)] font-semibold mt-0.5">Визитов</div>
+                  <div className="text-[10px] text-[var(--text3)] font-semibold mt-0.5">{t('statsVisits')}</div>
                 </div>
                 <div className="flex-1 p-3 rounded-[12px] text-center" style={{ background: 'var(--bg3)' }}>
                   <div className="text-[18px] font-bold text-[var(--text)]">{favorites.length}</div>
-                  <div className="text-[10px] text-[var(--text3)] font-semibold mt-0.5">Избранное</div>
+                  <div className="text-[10px] text-[var(--text3)] font-semibold mt-0.5">{t('statsFavorites')}</div>
                 </div>
                 <div className="flex-1 p-3 rounded-[12px] text-center" style={{ background: 'var(--bg3)' }}>
                   <div className="text-[18px] font-bold text-[var(--text)]">{wishlist.length}</div>
-                  <div className="text-[10px] text-[var(--text3)] font-semibold mt-0.5">Хочу сходить</div>
+                  <div className="text-[10px] text-[var(--text3)] font-semibold mt-0.5">{t('statsWishlist')}</div>
                 </div>
               </div>
 
@@ -1374,7 +1408,7 @@ function ProfileContent() {
                 <div className="flex gap-6 flex-wrap">
                   {user.favoriteCuisines && (
                     <div>
-                      <div className="text-[10px] text-[var(--text3)] font-semibold mb-1.5 uppercase tracking-wider">Любимые кухни</div>
+                      <div className="text-[10px] text-[var(--text3)] font-semibold mb-1.5 uppercase tracking-wider">{t('favCuisines')}</div>
                       <div className="flex gap-1.5 flex-wrap">
                         {user.favoriteCuisines.split(',').map(c => c.trim()).filter(Boolean).map(c => (
                           <span key={c} className="px-2.5 py-1 rounded-full text-[11px] font-semibold"
@@ -1387,7 +1421,7 @@ function ProfileContent() {
                   )}
                   {user.favoriteDishes && (
                     <div>
-                      <div className="text-[10px] text-[var(--text3)] font-semibold mb-1.5 uppercase tracking-wider">Любимые блюда</div>
+                      <div className="text-[10px] text-[var(--text3)] font-semibold mb-1.5 uppercase tracking-wider">{t('favDishes')}</div>
                       <div className="flex gap-1.5 flex-wrap">
                         {user.favoriteDishes.split(',').map(d => d.trim()).filter(Boolean).map(d => (
                           <span key={d} className="px-2.5 py-1 rounded-full text-[11px] font-semibold"
@@ -1407,15 +1441,15 @@ function ProfileContent() {
                   style={{ background: 'linear-gradient(135deg, rgba(255,92,40,0.05), rgba(57,255,209,0.03))', border: '1px dashed rgba(255,92,40,0.2)' }}>
                   <span className="text-[24px]">🍽️</span>
                   <div className="flex-1">
-                    <p className="text-[13px] text-[var(--text)] font-semibold">Расскажите о своих вкусах</p>
-                    <p className="text-[11px] text-[var(--text3)] mt-0.5">Находите единомышленников и получайте персональные рекомендации</p>
+                    <p className="text-[13px] text-[var(--text)] font-semibold">{t('tastesPrompt')}</p>
+                    <p className="text-[11px] text-[var(--text3)] mt-0.5">{t('tastesPromptSub')}</p>
                   </div>
                   <button onClick={() => setShowProfileModal(true)}
                     className="px-4 py-2 rounded-full text-[12px] font-semibold border-none cursor-pointer text-white shrink-0 transition-all"
                     style={{ background: 'var(--accent)' }}
                     onMouseEnter={e => (e.currentTarget.style.boxShadow = '0 0 20px var(--accent-glow)')}
                     onMouseLeave={e => (e.currentTarget.style.boxShadow = 'none')}>
-                    Заполнить
+                    {t('fillIn')}
                   </button>
                 </div>
               )}
@@ -1433,14 +1467,14 @@ function ProfileContent() {
               🎁
             </span>
             <div className="flex-1 min-w-0">
-              <span className="text-[13px] font-semibold text-[var(--text)]">Пригласите друга</span>
-              <span className="text-[12px] text-[var(--text3)] ml-2">+50 баллов каждому</span>
+              <span className="text-[13px] font-semibold text-[var(--text)]">{t('inviteFriend')}</span>
+              <span className="text-[12px] text-[var(--text3)] ml-2">{t('inviteBonus')}</span>
             </div>
             <button
               onClick={() => setShowReferral(true)}
               className="px-4 py-2 rounded-full text-[12px] font-semibold text-white border-none cursor-pointer transition-all shrink-0"
               style={{ background: 'var(--accent)' }}>
-              Пригласить
+              {t('invite')}
             </button>
           </div>
 
@@ -1448,9 +1482,9 @@ function ProfileContent() {
           <CollapsibleSection
             icon="🎯"
             gradient="linear-gradient(135deg, #3b82f6, #06b6d4)"
-            title="Мой фокус"
-            subtitle="Подсветим подходящие блюда в меню"
-            badge={user?.nutritionGoal ? NUTRITION_GOALS.find(g => g.value === user.nutritionGoal)?.label : undefined}
+            title={t('focusTitle')}
+            subtitle={t('focusSub')}
+            badge={user?.nutritionGoal ? t(NUTRITION_GOALS.find(g => g.value === user.nutritionGoal)?.labelKey || 'goalNoLimit') : undefined}
             badgeColor="#3b82f6"
             borderColor="rgba(59,130,246,0.15)"
             bgGradient="linear-gradient(135deg, rgba(59,130,246,0.06), rgba(52,211,153,0.04))">
@@ -1472,10 +1506,10 @@ function ProfileContent() {
                     </span>
                     <span className="text-[12px] font-bold block mb-0.5"
                       style={{ color: active ? g.color : 'var(--text2)' }}>
-                      {g.label}
+                      {t(g.labelKey)}
                     </span>
                     <span className="text-[10px] leading-tight block" style={{ color: 'var(--text3)' }}>
-                      {g.desc}
+                      {t(g.descKey)}
                     </span>
                     {active && (
                       <div className="absolute top-2 right-2 w-5 h-5 rounded-full flex items-center justify-center text-[10px] text-white"
@@ -1491,9 +1525,9 @@ function ProfileContent() {
           <CollapsibleSection
             icon="🛡️"
             gradient="linear-gradient(135deg, #ef4444, #f97316)"
-            title="Мои аллергены"
-            subtitle="Предупредим об опасных блюдах"
-            badge={userAllergenIds.size > 0 ? `${userAllergenIds.size} выбрано` : undefined}
+            title={t('allergensTitle')}
+            subtitle={t('allergensSub')}
+            badge={userAllergenIds.size > 0 ? t('allergensSelected', { count: userAllergenIds.size }) : undefined}
             badgeColor="#ef4444"
             borderColor="rgba(239,68,68,0.12)"
             bgGradient="linear-gradient(135deg, rgba(239,68,68,0.05), rgba(249,115,22,0.03))">
@@ -1519,6 +1553,9 @@ function ProfileContent() {
               })}
             </div>
           </CollapsibleSection>
+
+          {/* Gastro Profile */}
+          <GastroProfileSection />
         </div>
       )}
 
@@ -1533,7 +1570,7 @@ function ProfileContent() {
             style={{ background: 'var(--bg2)', borderColor: 'var(--card-border)' }}>
             {/* Header */}
             <div className="flex items-center justify-between p-5 pb-3">
-              <h2 className="text-[17px] font-semibold text-[var(--text)]">Редактировать профиль</h2>
+              <h2 className="text-[17px] font-semibold text-[var(--text)]">{t("editProfile")}</h2>
               <button onClick={() => setShowProfileModal(false)}
                 className="w-8 h-8 rounded-full flex items-center justify-center text-[var(--text3)] cursor-pointer border-none transition-all"
                 style={{ background: 'var(--bg3)' }}
@@ -1554,7 +1591,7 @@ function ProfileContent() {
                 </div>
                 <label className="flex items-center gap-2 px-4 py-2 rounded-full text-[12px] font-semibold cursor-pointer border transition-all"
                   style={{ color: 'var(--accent)', borderColor: 'rgba(255,92,40,0.25)', background: 'rgba(255,92,40,0.06)' }}>
-                  📷 Изменить фото
+                  {"📷 " + t('changePhoto')}
                   <input type="file" accept="image/*" className="hidden"
                     onChange={async (e) => {
                       const file = e.target.files?.[0];
@@ -1563,8 +1600,8 @@ function ProfileContent() {
                         const res = await userApi.uploadAvatar(file);
                         const url = res.data?.avatarUrl || res.data?.avatar_url;
                         if (url) updateUser({ avatarUrl: url });
-                        toast('Фото обновлено', 'success');
-                      } catch { toast('Не удалось загрузить фото', 'error'); }
+                        toast(t('photoUpdated'), 'success');
+                      } catch { toast(t('photoUpdateError'), 'error'); }
                       e.target.value = '';
                     }}
                   />
@@ -1572,11 +1609,11 @@ function ProfileContent() {
               </div>
               {/* Name */}
               <div>
-                <label className="text-[11px] font-semibold text-[var(--text3)] block mb-1.5">Имя</label>
+                <label className="text-[11px] font-semibold text-[var(--text3)] block mb-1.5">{t("nameLabel")}</label>
                 <input
                   value={nameInput}
                   onChange={e => setNameInput(e.target.value)}
-                  placeholder="Ваше имя"
+                  placeholder={t("namePlaceholder")}
                   className="w-full px-4 py-3 rounded-[12px] text-[14px] text-[var(--text)] border outline-none font-sans"
                   style={{ background: 'var(--bg3)', borderColor: 'var(--card-border)' }}
                   onFocus={e => (e.currentTarget.style.borderColor = 'var(--accent)')}
@@ -1590,13 +1627,11 @@ function ProfileContent() {
                   disabled={loading || nameInput === user.name}
                   className="flex-1 py-3 rounded-[12px] text-[13px] font-semibold text-white border-none cursor-pointer disabled:opacity-40 transition-all"
                   style={{ background: 'var(--accent)' }}>
-                  {loading ? '...' : 'Сохранить'}
+                  {loading ? '...' : t('save')}
                 </button>
                 <button onClick={() => { setShowProfileModal(false); setNameInput(user.name || ''); }}
                   className="px-5 py-3 rounded-[12px] text-[13px] font-semibold border cursor-pointer transition-all"
-                  style={{ background: 'var(--glass)', borderColor: 'var(--glass-border)', color: 'var(--text2)' }}>
-                  Отмена
-                </button>
+                  style={{ background: 'var(--glass)', borderColor: 'var(--glass-border)', color: 'var(--text2)' }}>{t("cancel")}</button>
               </div>
             </div>
           </div>
@@ -1608,8 +1643,8 @@ function ProfileContent() {
           {bookings.length === 0 ? (
             <div className="text-center py-16">
               <div className="text-5xl mb-3">📅</div>
-              <p className="text-[15px] text-[var(--text2)]">Пока нет бронирований</p>
-              <a href="/restaurants" className="text-[13px] text-[var(--accent)] mt-2 inline-block">Найти ресторан →</a>
+              <p className="text-[15px] text-[var(--text2)]">{t("noBookings")}</p>
+              <a href="/restaurants" className="text-[13px] text-[var(--accent)] mt-2 inline-block">{t("findRestaurant")}</a>
             </div>
           ) : bookings.map(b => (
             <div key={b.id} className="rounded-[16px] border p-5 flex items-center justify-between"
@@ -1622,7 +1657,7 @@ function ProfileContent() {
                   {b.bookingDate} в {b.bookingTime} · {b.guestsCount} гостей
                 </p>
               </div>
-              <span className="text-[12px]">{STATUS_LABELS[b.status] || b.status}</span>
+              <span className="text-[12px]">{(STATUS_ICONS[b.status] || "") + " " + t(STATUS_KEYS[b.status] || "statusPending") || b.status}</span>
             </div>
           ))}
         </div>
@@ -1633,9 +1668,9 @@ function ProfileContent() {
           {bookings.filter(b => b.status === 'completed').length === 0 ? (
             <div className="text-center py-16">
               <div className="text-5xl mb-3">🕐</div>
-              <p className="text-[15px] text-[var(--text2)]">Нет завершённых посещений</p>
-              <p className="text-[13px] text-[var(--text3)] mt-1">Здесь появятся рестораны, которые вы посетили</p>
-              <a href="/restaurants" className="text-[13px] text-[var(--accent)] mt-3 inline-block">Забронировать столик →</a>
+              <p className="text-[15px] text-[var(--text2)]">{t("noHistory")}</p>
+              <p className="text-[13px] text-[var(--text3)] mt-1">{t("noHistorySub")}</p>
+              <a href="/restaurants" className="text-[13px] text-[var(--accent)] mt-3 inline-block">{t("bookTable")}</a>
             </div>
           ) : (
             <div className="space-y-3">
@@ -1652,7 +1687,7 @@ function ProfileContent() {
                       {new Date(b.bookingDate).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })} · {b.guestsCount} гостей
                     </p>
                   </div>
-                  <span className="text-[12px] text-[var(--teal)]">🎉 Завершено</span>
+                  <span className="text-[12px] text-[var(--teal)]">{t('visitCompleted')}</span>
                 </a>
               ))}
             </div>
@@ -1665,8 +1700,8 @@ function ProfileContent() {
           {favorites.length === 0 ? (
             <div className="text-center py-16">
               <div className="text-5xl mb-3">❤️</div>
-              <p className="text-[15px] text-[var(--text2)]">Избранное пусто</p>
-              <a href="/restaurants" className="text-[13px] text-[var(--accent)] mt-2 inline-block">Найти ресторан →</a>
+              <p className="text-[15px] text-[var(--text2)]">{t("favoritesEmpty")}</p>
+              <a href="/restaurants" className="text-[13px] text-[var(--accent)] mt-2 inline-block">{t('findRestaurant')}</a>
             </div>
           ) : favorites.map(r => (
             <div key={r.id}
@@ -1685,7 +1720,7 @@ function ProfileContent() {
                   }}
                   className="w-8 h-8 rounded-full flex items-center justify-center text-[14px] cursor-pointer transition-all border-none"
                   style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}
-                  title="Убрать из избранного">
+                  title={t("removeFromFavorites")}>
                   ✕
                 </button>
               </div>
@@ -1699,8 +1734,8 @@ function ProfileContent() {
           {wishlist.length === 0 ? (
             <div className="text-center py-16">
               <div className="text-5xl mb-3">📌</div>
-              <p className="text-[15px] text-[var(--text2)]">Список «Хочу сходить» пуст</p>
-              <a href="/restaurants" className="text-[13px] text-[var(--accent)] mt-2 inline-block">Найти ресторан →</a>
+              <p className="text-[15px] text-[var(--text2)]">{t("wishlistEmpty")}</p>
+              <a href="/restaurants" className="text-[13px] text-[var(--accent)] mt-2 inline-block">{t('findRestaurant')}</a>
             </div>
           ) : wishlist.map(r => (
             <div key={r.id}
@@ -1719,7 +1754,7 @@ function ProfileContent() {
                   }}
                   className="w-8 h-8 rounded-full flex items-center justify-center text-[14px] cursor-pointer transition-all border-none"
                   style={{ background: 'rgba(20,184,166,0.1)', color: '#14b8a6' }}
-                  title="Убрать из списка">
+                  title={t("removeFromWishlist")}>
                   ✕
                 </button>
               </div>
@@ -1737,14 +1772,14 @@ function ProfileContent() {
                 style={{ background: 'linear-gradient(135deg, #8b5cf6, #6366f1)', boxShadow: '0 4px 12px rgba(139,92,246,0.3)' }}>
                 🔒
               </span>
-              <h2 className="text-[17px] font-semibold text-[var(--text)]">Приватность</h2>
+              <h2 className="text-[17px] font-semibold text-[var(--text)]">{t("privacyTitle")}</h2>
             </div>
             <div className="space-y-4">
               <label className="flex items-center justify-between p-4 rounded-[14px] cursor-pointer transition-all"
                 style={{ background: 'var(--bg3)' }}>
                 <div>
-                  <div className="text-[14px] font-semibold text-[var(--text)]">Скрыть из списков «Хочу сходить»</div>
-                  <div className="text-[12px] text-[var(--text3)] mt-0.5">Другие не увидят вас среди желающих посетить ресторан</div>
+                  <div className="text-[14px] font-semibold text-[var(--text)]">{t("privacyHideWishlist")}</div>
+                  <div className="text-[12px] text-[var(--text3)] mt-0.5">{t("privacyHideWishlistDesc")}</div>
                 </div>
                 <input
                   type="checkbox"
@@ -1761,8 +1796,8 @@ function ProfileContent() {
               <label className="flex items-center justify-between p-4 rounded-[14px] cursor-pointer transition-all"
                 style={{ background: 'var(--bg3)' }}>
                 <div>
-                  <div className="text-[14px] font-semibold text-[var(--text)]">Запретить входящие сообщения</div>
-                  <div className="text-[12px] text-[var(--text3)] mt-0.5">Никто не сможет начать с вами диалог</div>
+                  <div className="text-[14px] font-semibold text-[var(--text)]">{t("privacyBlockMessages")}</div>
+                  <div className="text-[12px] text-[var(--text3)] mt-0.5">{t("privacyBlockMessagesDesc")}</div>
                 </div>
                 <input
                   type="checkbox"
@@ -1786,30 +1821,30 @@ function ProfileContent() {
                 style={{ background: 'linear-gradient(135deg, #f59e0b, #f97316)', boxShadow: '0 4px 12px rgba(245,158,11,0.3)' }}>
                 🔔
               </span>
-              <h2 className="text-[17px] font-semibold text-[var(--text)]">Уведомления</h2>
+              <h2 className="text-[17px] font-semibold text-[var(--text)]">{t("notificationsTitle")}</h2>
             </div>
             <div className="space-y-4">
               <label className="flex items-center justify-between p-4 rounded-[14px] cursor-pointer transition-all"
                 style={{ background: 'var(--bg3)' }}>
                 <div>
-                  <div className="text-[14px] font-semibold text-[var(--text)]">Напоминания о бронированиях</div>
-                  <div className="text-[12px] text-[var(--text3)] mt-0.5">За 2 часа до визита</div>
+                  <div className="text-[14px] font-semibold text-[var(--text)]">{t("notifBooking")}</div>
+                  <div className="text-[12px] text-[var(--text3)] mt-0.5">{t("notifBookingDesc")}</div>
                 </div>
                 <input type="checkbox" defaultChecked className="w-5 h-5 accent-[#f59e0b] cursor-pointer" />
               </label>
               <label className="flex items-center justify-between p-4 rounded-[14px] cursor-pointer transition-all"
                 style={{ background: 'var(--bg3)' }}>
                 <div>
-                  <div className="text-[14px] font-semibold text-[var(--text)]">Акции и спецпредложения</div>
-                  <div className="text-[12px] text-[var(--text3)] mt-0.5">Скидки и события от ресторанов из избранного</div>
+                  <div className="text-[14px] font-semibold text-[var(--text)]">{t("notifPromos")}</div>
+                  <div className="text-[12px] text-[var(--text3)] mt-0.5">{t("notifPromosDesc")}</div>
                 </div>
                 <input type="checkbox" defaultChecked className="w-5 h-5 accent-[#f59e0b] cursor-pointer" />
               </label>
               <label className="flex items-center justify-between p-4 rounded-[14px] cursor-pointer transition-all"
                 style={{ background: 'var(--bg3)' }}>
                 <div>
-                  <div className="text-[14px] font-semibold text-[var(--text)]">Достижения программы лояльности</div>
-                  <div className="text-[12px] text-[var(--text3)] mt-0.5">Новый уровень, начисление баллов</div>
+                  <div className="text-[14px] font-semibold text-[var(--text)]">{t("notifLoyalty")}</div>
+                  <div className="text-[12px] text-[var(--text3)] mt-0.5">{t("notifLoyaltyDesc")}</div>
                 </div>
                 <input type="checkbox" defaultChecked className="w-5 h-5 accent-[#f59e0b] cursor-pointer" />
               </label>
@@ -1823,45 +1858,45 @@ function ProfileContent() {
                 style={{ background: 'linear-gradient(135deg, #06b6d4, #0ea5e9)', boxShadow: '0 4px 12px rgba(6,182,212,0.3)' }}>
                 🌐
               </span>
-              <h2 className="text-[17px] font-semibold text-[var(--text)]">Предпочтения</h2>
+              <h2 className="text-[17px] font-semibold text-[var(--text)]">{t("preferencesTitle")}</h2>
             </div>
             <div className="space-y-4">
               <div className="flex items-center justify-between p-4 rounded-[14px]" style={{ background: 'var(--bg3)' }}>
                 <div>
-                  <div className="text-[14px] font-semibold text-[var(--text)]">Город по умолчанию</div>
-                  <div className="text-[12px] text-[var(--text3)] mt-0.5">Для фильтрации ресторанов при входе</div>
+                  <div className="text-[14px] font-semibold text-[var(--text)]">{t("prefCity")}</div>
+                  <div className="text-[12px] text-[var(--text3)] mt-0.5">{t("prefCityDesc")}</div>
                 </div>
                 <select
                   className="px-3 py-2 rounded-[10px] text-[13px] text-[var(--text)] border outline-none cursor-pointer font-sans"
                   style={{ background: 'var(--bg2)', borderColor: 'var(--card-border)' }}
                   defaultValue="">
-                  <option value="">Все города</option>
-                  <option value="msk">Москва</option>
-                  <option value="spb">Санкт-Петербург</option>
-                  <option value="ekb">Екатеринбург</option>
-                  <option value="kzn">Казань</option>
-                  <option value="nsk">Новосибирск</option>
+                  <option value="">{t("cityAll")}</option>
+                  <option value="msk">{t("cityMoscow")}</option>
+                  <option value="spb">{t("citySPB")}</option>
+                  <option value="ekb">{t("cityEkb")}</option>
+                  <option value="kzn">{t("cityKzn")}</option>
+                  <option value="nsk">{t("cityNsk")}</option>
                 </select>
               </div>
               <div className="flex items-center justify-between p-4 rounded-[14px]" style={{ background: 'var(--bg3)' }}>
                 <div>
-                  <div className="text-[14px] font-semibold text-[var(--text)]">Валюта</div>
-                  <div className="text-[12px] text-[var(--text3)] mt-0.5">Для отображения цен в меню и калькуляторе</div>
+                  <div className="text-[14px] font-semibold text-[var(--text)]">{t("prefCurrency")}</div>
+                  <div className="text-[12px] text-[var(--text3)] mt-0.5">{t("prefCurrencyDesc")}</div>
                 </div>
                 <select
                   className="px-3 py-2 rounded-[10px] text-[13px] text-[var(--text)] border outline-none cursor-pointer font-sans"
                   style={{ background: 'var(--bg2)', borderColor: 'var(--card-border)' }}
                   defaultValue="rub">
-                  <option value="rub">₽ Рубли</option>
-                  <option value="usd">$ Доллары</option>
-                  <option value="eur">€ Евро</option>
+                  <option value="rub">{t("currencyRUB")}</option>
+                  <option value="usd">{t("currencyUSD")}</option>
+                  <option value="eur">{t("currencyEUR")}</option>
                 </select>
               </div>
               <label className="flex items-center justify-between p-4 rounded-[14px] cursor-pointer transition-all"
                 style={{ background: 'var(--bg3)' }}>
                 <div>
-                  <div className="text-[14px] font-semibold text-[var(--text)]">Показывать КБЖУ в меню</div>
-                  <div className="text-[12px] text-[var(--text3)] mt-0.5">Калории, белки, жиры и углеводы блюд</div>
+                  <div className="text-[14px] font-semibold text-[var(--text)]">{t("prefNutrition")}</div>
+                  <div className="text-[12px] text-[var(--text3)] mt-0.5">{t("prefNutritionDesc")}</div>
                 </div>
                 <input type="checkbox" defaultChecked className="w-5 h-5 accent-[#06b6d4] cursor-pointer" />
               </label>
@@ -1870,11 +1905,11 @@ function ProfileContent() {
 
           {/* Danger zone */}
           <div className="rounded-[20px] border p-6" style={{ background: 'var(--bg2)', borderColor: 'rgba(239,68,68,0.15)' }}>
-            <h2 className="text-[15px] font-semibold text-red-400 mb-4">Опасная зона</h2>
+            <h2 className="text-[15px] font-semibold text-red-400 mb-4">{t("dangerZone")}</h2>
             <button onClick={handleLogout}
               className="px-5 py-2.5 rounded-full text-[13px] font-semibold text-red-400 border cursor-pointer transition-all"
               style={{ background: 'rgba(239,68,68,0.06)', borderColor: 'rgba(239,68,68,0.25)' }}>
-              Выйти из аккаунта
+              {t("logoutAccount")}
             </button>
           </div>
         </div>

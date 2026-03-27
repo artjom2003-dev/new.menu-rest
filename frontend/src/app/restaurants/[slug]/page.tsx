@@ -14,7 +14,7 @@ async function getRestaurant(slug: string) {
   try {
     const res = await fetch(
       `${API_BASE}/api/restaurants/${slug}`,
-      { next: { revalidate: 300 } }
+      { cache: 'no-store' }
     );
     if (!res.ok) return null;
     return res.json();
@@ -25,7 +25,7 @@ async function getMenu(restaurantId: number) {
   try {
     const res = await fetch(
       `${API_BASE}/api/restaurants/${restaurantId}/menu`,
-      { next: { revalidate: 300 } }
+      { cache: 'no-store' }
     );
     if (!res.ok) return [];
     return res.json();

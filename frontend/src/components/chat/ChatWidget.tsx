@@ -5,6 +5,7 @@ import { io, Socket } from 'socket.io-client';
 import { useAuthStore } from '@/stores/auth.store';
 import { useChatStore } from '@/stores/chat.store';
 import { chatApi } from '@/lib/api';
+import { useTranslations } from 'next-intl';
 
 interface Conversation {
   id: number;
@@ -17,23 +18,11 @@ interface Message {
 }
 
 function fmtTime(d: string) { return new Date(d).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }); }
-function fmtDate(d: string) {
-  const dt = new Date(d), t = new Date(), y = new Date(t);
-  y.setDate(y.getDate() - 1);
-  if (dt.toDateString() === t.toDateString()) return 'Сегодня';
-  if (dt.toDateString() === y.toDateString()) return 'Вчера';
-  return dt.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
-}
+
 function trunc(s: string, n: number) { return s.length > n ? s.slice(0, n) + '...' : s; }
 
-const QUICK = [
-  { emoji: '🍽️', label: 'Пойдём вместе?' },
-  { emoji: '👋', label: 'Привет!' },
-  { emoji: '📍', label: 'Знаешь хорошие места?' },
-  { emoji: '⭐', label: 'Что порекомендуешь?' },
-];
-
 export function ChatWidget() {
+  const t = useTranslations('chat');
   const { isOpen, conversationId: initConvId, targetUserId, close } = useChatStore();
   const { user, isLoggedIn, accessToken } = useAuthStore();
 
@@ -53,6 +42,21 @@ export function ChatWidget() {
   const activeConv = convs.find(c => c.id === activeId);
 
   const scrollBottom = () => { const c = containerRef.current; if (c) c.scrollTop = c.scrollHeight; };
+
+  function fmtDate(d: string) {
+    const dt = new Date(d), now = new Date(), y = new Date(now);
+    y.setDate(y.getDate() - 1);
+    if (dt.toDateString() === now.toDateString()) return t('today');
+    if (dt.toDateString() === y.toDateString()) return t('yesterday');
+    return dt.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
+  }
+
+  const QUICK = [
+    { emoji: '🍽️', label: t('quickLetsGo') },
+    { emoji: '👋', label: t('quickHello') },
+    { emoji: '📍', label: t('quickKnowPlaces') },
+    { emoji: '⭐', label: t('quickRecommend') },
+  ];
 
   // Load conversations when opened
   useEffect(() => {
@@ -147,14 +151,14 @@ export function ChatWidget() {
 
   const send = useCallback((text: string) => {
     if (!text.trim() || !activeId || !user) return;
-    const t = text.trim();
+    const txt = text.trim();
     setInput('');
-    const m: Message = { id: Date.now(), text: t, senderId: user.id, conversationId: activeId, createdAt: new Date().toISOString(), read: false };
+    const m: Message = { id: Date.now(), text: txt, senderId: user.id, conversationId: activeId, createdAt: new Date().toISOString(), read: false };
     setMsgs(p => [...p, m]);
     setTimeout(scrollBottom, 50);
-    if (socketRef.current?.connected) socketRef.current.emit('sendMessage', { conversationId: activeId, text: t });
-    chatApi.sendMessage(activeId, t).catch(() => {});
-    setConvs(p => p.map(c => c.id === activeId ? { ...c, lastMessage: { text: t, createdAt: m.createdAt, senderId: user.id } } : c));
+    if (socketRef.current?.connected) socketRef.current.emit('sendMessage', { conversationId: activeId, text: txt });
+    chatApi.sendMessage(activeId, txt).catch(() => {});
+    setConvs(p => p.map(c => c.id === activeId ? { ...c, lastMessage: { text: txt, createdAt: m.createdAt, senderId: user.id } } : c));
   }, [activeId, user]);
 
   const emitTyping = useCallback(() => { if (socketRef.current?.connected && activeId) socketRef.current.emit('typing', { conversationId: activeId }); }, [activeId]);
@@ -189,7 +193,7 @@ export function ChatWidget() {
               <span style={{ width: 26, height: 26, borderRadius: 8, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,92,40,0.12)' }}>
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" /></svg>
               </span>
-              Диалоги
+              {t('dialogs')}
             </h2>
             <button onClick={close} style={{ width: 28, height: 28, borderRadius: 8, border: 'none', background: 'var(--bg3)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text3)', transition: 'all 0.15s', fontFamily: 'inherit' }}
               onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.15)'; e.currentTarget.style.color = '#ef4444'; }}
@@ -198,11 +202,11 @@ export function ChatWidget() {
             </button>
           </div>
           <div style={{ flex: 1, overflowY: 'auto', padding: 6 }}>
-            {loading ? <div style={{ padding: 30, textAlign: 'center', color: 'var(--text3)', fontSize: 12 }}>Загрузка...</div>
+            {loading ? <div style={{ padding: 30, textAlign: 'center', color: 'var(--text3)', fontSize: 12 }}>{t('loading')}</div>
             : convs.length === 0 ? (
               <div style={{ padding: '40px 16px', textAlign: 'center' }}>
                 <div style={{ fontSize: 28, marginBottom: 8 }}>💬</div>
-                <p style={{ color: 'var(--text3)', fontSize: 12, margin: 0 }}>Пока нет диалогов</p>
+                <p style={{ color: 'var(--text3)', fontSize: 12, margin: 0 }}>{t('noDialogs')}</p>
               </div>
             ) : convs.map(c => {
               const act = c.id === activeId, unr = c.unreadCount > 0;
@@ -218,8 +222,8 @@ export function ChatWidget() {
                     {unr && <span style={{ position: 'absolute', top: -1, right: -1, width: 9, height: 9, borderRadius: 5, background: 'var(--accent)', border: '2px solid var(--bg2)' }} />}
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <span style={{ fontSize: 13, fontWeight: unr ? 700 : 500, color: 'var(--text)', display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.otherUser.name || 'Пользователь'}</span>
-                    {c.lastMessage && <span style={{ fontSize: 11, color: unr ? 'var(--text2)' : 'var(--text3)', display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: 1 }}>{c.lastMessage.senderId === user?.id ? 'Вы: ' : ''}{trunc(c.lastMessage.text, 20)}</span>}
+                    <span style={{ fontSize: 13, fontWeight: unr ? 700 : 500, color: 'var(--text)', display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.otherUser.name || t('user')}</span>
+                    {c.lastMessage && <span style={{ fontSize: 11, color: unr ? 'var(--text2)' : 'var(--text3)', display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: 1 }}>{c.lastMessage.senderId === user?.id ? `${t('you')}: ` : ''}{trunc(c.lastMessage.text, 20)}</span>}
                   </div>
                 </button>
               );
@@ -232,8 +236,8 @@ export function ChatWidget() {
           {!activeId ? (
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, padding: 30 }}>
               <div style={{ width: 56, height: 56, borderRadius: 16, background: 'linear-gradient(135deg, rgba(255,92,40,0.1), rgba(57,255,209,0.06))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26 }}>💬</div>
-              <p style={{ color: 'var(--text)', fontSize: 14, fontWeight: 600, margin: 0 }}>Выберите диалог</p>
-              <p style={{ color: 'var(--text3)', fontSize: 12, margin: 0, opacity: 0.6, textAlign: 'center' }}>или начните общение<br />на странице ресторана</p>
+              <p style={{ color: 'var(--text)', fontSize: 14, fontWeight: 600, margin: 0 }}>{t('selectDialog')}</p>
+              <p style={{ color: 'var(--text3)', fontSize: 12, margin: 0, opacity: 0.6, textAlign: 'center', whiteSpace: 'pre-line' }}>{t('orStartChat')}</p>
             </div>
           ) : (
             <>
@@ -243,11 +247,11 @@ export function ChatWidget() {
                   {activeConv?.otherUser.avatarUrl ? <img src={activeConv.otherUser.avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <span style={{ fontSize: 14 }}>👤</span>}
                 </div>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{activeConv?.otherUser.name || 'Пользователь'}</div>
-                  {typing ? <div style={{ fontSize: 11, color: 'var(--accent)', fontWeight: 500 }}>печатает...</div> : <div style={{ fontSize: 11, color: 'var(--text3)' }}>гурман</div>}
+                  <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{activeConv?.otherUser.name || t('user')}</div>
+                  {typing ? <div style={{ fontSize: 11, color: 'var(--accent)', fontWeight: 500 }}>{t('typing')}</div> : <div style={{ fontSize: 11, color: 'var(--text3)' }}>{t('gourmet')}</div>}
                 </div>
-                {activeConv && <a href={`/profile/${activeConv.otherUser.id}`} onClick={close} style={{ padding: '4px 10px', borderRadius: 8, fontSize: 11, color: 'var(--teal)', textDecoration: 'none', fontWeight: 600, background: 'rgba(20,184,166,0.08)', border: '1px solid rgba(20,184,166,0.15)' }}>Профиль</a>}
-                <button onClick={close} title="Закрыть"
+                {activeConv && <a href={`/profile/${activeConv.otherUser.id}`} onClick={close} style={{ padding: '4px 10px', borderRadius: 8, fontSize: 11, color: 'var(--teal)', textDecoration: 'none', fontWeight: 600, background: 'rgba(20,184,166,0.08)', border: '1px solid rgba(20,184,166,0.15)' }}>{t('profile')}</a>}
+                <button onClick={close} title={t('close')}
                   style={{ width: 28, height: 28, borderRadius: 8, border: 'none', background: 'var(--bg3)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text3)', transition: 'all 0.15s', fontFamily: 'inherit', flexShrink: 0, fontSize: 13 }}
                   onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.15)'; e.currentTarget.style.color = '#ef4444'; }}
                   onMouseLeave={e => { e.currentTarget.style.background = 'var(--bg3)'; e.currentTarget.style.color = 'var(--text3)'; }}>
@@ -257,13 +261,13 @@ export function ChatWidget() {
 
               {/* Messages */}
               <div ref={containerRef} style={{ flex: 1, overflowY: 'auto', padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 2 }}>
-                {hasMore && <button onClick={loadMore} disabled={msgsLoading} style={{ alignSelf: 'center', padding: '5px 14px', borderRadius: 10, border: '1px solid var(--card-border)', background: 'var(--bg3)', color: 'var(--text3)', fontSize: 11, cursor: 'pointer', marginBottom: 8, opacity: msgsLoading ? 0.5 : 1, fontFamily: 'inherit' }}>{msgsLoading ? '...' : 'Загрузить ранее'}</button>}
-                {msgsLoading && msgs.length === 0 && <div style={{ textAlign: 'center', padding: 30, color: 'var(--text3)', fontSize: 12 }}>Загрузка...</div>}
+                {hasMore && <button onClick={loadMore} disabled={msgsLoading} style={{ alignSelf: 'center', padding: '5px 14px', borderRadius: 10, border: '1px solid var(--card-border)', background: 'var(--bg3)', color: 'var(--text3)', fontSize: 11, cursor: 'pointer', marginBottom: 8, opacity: msgsLoading ? 0.5 : 1, fontFamily: 'inherit' }}>{msgsLoading ? '...' : t('loadEarlier')}</button>}
+                {msgsLoading && msgs.length === 0 && <div style={{ textAlign: 'center', padding: 30, color: 'var(--text3)', fontSize: 12 }}>{t('loading')}</div>}
 
                 {!msgsLoading && msgs.length === 0 && (
                   <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, padding: '16px 10px' }}>
                     <div style={{ fontSize: 32 }}>🤝</div>
-                    <p style={{ color: 'var(--text2)', fontSize: 13, fontWeight: 500, margin: 0 }}>Начните разговор!</p>
+                    <p style={{ color: 'var(--text2)', fontSize: 13, fontWeight: 500, margin: 0 }}>{t('startConversation')}</p>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 5, width: '100%', maxWidth: 240 }}>
                       {QUICK.map(q => (
                         <button key={q.label} onClick={() => send(q.emoji + ' ' + q.label)}
@@ -306,7 +310,7 @@ export function ChatWidget() {
               {/* Input */}
               <div style={{ padding: '10px 14px', background: 'var(--bg2)', borderTop: '1px solid var(--card-border)', display: 'flex', alignItems: 'flex-end', gap: 8 }}>
                 <textarea value={input} onChange={e => { setInput(e.target.value); emitTyping(); }} onKeyDown={onKey}
-                  placeholder="Напишите сообщение..." rows={1}
+                  placeholder={t('placeholder')} rows={1}
                   style={{ flex: 1, padding: '9px 14px', borderRadius: 14, border: '1px solid var(--card-border)', background: 'var(--bg3)', color: 'var(--text)', fontSize: 13, fontFamily: 'inherit', resize: 'none', outline: 'none', minHeight: 38, maxHeight: 80, lineHeight: 1.4, transition: 'border-color 0.15s, box-shadow 0.15s' }}
                   onFocus={e => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(255,92,40,0.08)'; }}
                   onBlur={e => { e.currentTarget.style.borderColor = 'var(--card-border)'; e.currentTarget.style.boxShadow = 'none'; }} />

@@ -87,8 +87,35 @@ export class MenuService {
       order: { sortOrder: 'ASC' },
     });
 
-    // Filter out junk: dishes without a proper name
-    const valid = items.filter(i => i.dish?.name && i.dish.name.trim().length > 0);
+    // Junk patterns: non-food items that sneak into menus from scraping
+    const JUNK_PATTERNS = /^(наши\s+соцсет|абонемент|программа\s+лояльности|обновлённое\s+меню|обновленное\s+меню|возьмите\s+с\s+собой|скачай|кешбэк|кэшбэк|cashback|qr[\s-]?код|реферал|промокод|бонусн\w+\s+покупк|наши\s+акци|пароль\s+wi|без\s+приборов|приборы$|детские\s+палочки|^палочки$|салфетк\w*\s+влажн|контейнер\s+для|упаковк|^меню$|^меню\s*🧾|^главная$|^каталог$|^каталог\s+(продукции|товаров)|^ещё$|^другое$|^назад$|^далее$|^подробнее$|^перейти$|^показать$|ssl[\s‑-]?сертификат|vip[\s-]?тариф|упаковка\s+бренда|хостинг)/i;
+    const JUNK_CERT_PATTERN = /^(сертификат|подарочн\w+\s+(сертификат|набор|карт)|(карта|сертификат)\s+\d+\s*руб|влажн\w+\s+салфетк|салфетк\w+.*\d+\s*шт)/i;
+    // Standalone city names, delivery/logistics junk
+    const JUNK_CITY_DELIVERY = /^(москва|санкт-петербург|екатеринбург|краснодар|ростов-на-дону|тюмень|воронеж|волгоград|сочи|новосибирск|казань|самара|нижний новгород|красноярск|пермь|уфа|челябинск|омск)$/i;
+    const JUNK_DELIVERY = /^(доставка|самовывоз|дождитесь\s+курьер|курьер|оплат\w+\s+онлайн|способ\s+оплат)/i;
+
+    // Filter out junk: no name, non-food items, zero-price duplicates
+    const seen = new Map<string, boolean>(); // track name+price to remove dupes
+    const valid = items.filter(i => {
+      const name = i.dish?.name?.trim();
+      if (!name || name.length === 0) return false;
+      if (JUNK_PATTERNS.test(name)) return false;
+      if (JUNK_CERT_PATTERN.test(name)) return false;
+      if (JUNK_CITY_DELIVERY.test(name)) return false;
+      if (JUNK_DELIVERY.test(name)) return false;
+      // Filter URLs, domains, garbled text
+      if (/www\.|https?:|\.ru\s*$|\.com\s*$|@/.test(name)) return false;
+      if (/[<>{}\\|]/.test(name)) return false; // HTML/code garbage
+      // Deduplicate: keep first occurrence with price, skip zero-price dupes
+      const key = name.toLowerCase();
+      const price = i.price || 0;
+      if (seen.has(key)) {
+        if (price === 0) return false; // zero-price duplicate
+        return true; // different price variant is ok
+      }
+      seen.set(key, true);
+      return true;
+    });
 
     // If fewer than 5 valid dishes, don't show menu at all
     if (valid.length < 5) return [];

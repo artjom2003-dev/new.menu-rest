@@ -19,9 +19,9 @@ export function Footer() {
     {
       title: t('forRestaurants'),
       links: [
+        { href: '/for-business', label: 'Для бизнеса' },
         { href: '/for-business', label: t('addRestaurant') },
         { href: '/for-business#pricing', label: t('pricing') },
-        { href: '/for-business#analytics', label: t('analytics') },
         { href: '/listings', label: 'Вакансии и поставщики' },
       ],
     },

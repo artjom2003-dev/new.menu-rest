@@ -57,11 +57,11 @@
   /* Warm peach-orange gradient background */
   --bg: #F5D4BE;
   --bg2: #F7E6D5;
-  --bg3: #F5EDE6;
-  --card: rgba(255,255,255,0.7);
+  --bg3: #EDDCCC;
+  --card: rgba(247,230,213,0.85);
   --card-border: rgba(0,0,0,0.06);
-  --glass: rgba(255,255,255,0.85);
-  --glass-border: rgba(0,0,0,0.05);
+  --glass: rgba(237,220,204,0.8);
+  --glass-border: rgba(0,0,0,0.06);
   /* Dark text on warm bg */
   --text: #1A1A1A;
   --text2: #3D3D3D;
@@ -74,16 +74,16 @@
   /* Secondary accents */
   --lime: #3D8C40;
   --lime-glow: rgba(61,140,64,0.08);
-  --teal: #2D8E9E;
-  --teal-glow: rgba(45,142,158,0.07);
+  --teal: #C45A20;
+  --teal-glow: rgba(196,90,32,0.08);
   --gold: #C28B1A;
   /* Card image fade — white */
   --card-fade: rgba(247,230,213,0.45);
   /* Header / dropdown / nav — frosted white on warm bg */
   --header-bg: rgba(245,212,190,0.65);
-  --header-bg-scroll: rgba(255,255,255,0.92);
+  --header-bg-scroll: rgba(245,212,190,0.95);
   --header-border: rgba(0,0,0,0.05);
-  --dropdown-bg: rgba(255,255,255,0.97);
+  --dropdown-bg: rgba(247,230,213,0.97);
   --dropdown-border: rgba(0,0,0,0.07);
   --dropdown-shadow: 0 12px 40px rgba(0,0,0,0.10), 0 2px 8px rgba(0,0,0,0.04);
   --nav-bg: rgba(255,255,255,0.4);
@@ -153,6 +153,15 @@ body::after {
 /* Hero line3: gray in dark, accent in light */
 .hero-line3 { color: var(--text3); }
 .light .hero-line3 { color: var(--accent2); }
+
+/* Light theme: filter bar strip */
+.light .filters-strip {
+  background: rgba(0,0,0,0.03);
+  border-top: 1px solid rgba(0,0,0,0.04);
+  border-bottom: 1px solid rgba(0,0,0,0.04);
+  padding-top: 12px;
+  padding-bottom: 12px;
+}
 
 /* Light theme: softer headings, warm tints */
 .light h1, .light h2, .light h3 {

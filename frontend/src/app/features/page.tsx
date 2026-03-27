@@ -529,93 +529,117 @@ const shapeComponents = [
   ShapeBooking, ShapeReviews, ShapeFavorites, ShapeLoyalty,
 ];
 
-const features = [
+function useIsLight() {
+  const [light, setLight] = useState(false);
+  useEffect(() => {
+    const check = () => setLight(document.documentElement.classList.contains('light'));
+    check();
+    const obs = new MutationObserver(check);
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    return () => obs.disconnect();
+  }, []);
+  return light;
+}
+
+const featuresDark = [
+  { color: '#FF5C28', glow: 'rgba(255,92,40,0.3)' },
+  { color: '#39FFD1', glow: 'rgba(57,255,209,0.3)' },
+  { color: '#C4A1FF', glow: 'rgba(196,161,255,0.3)' },
+  { color: '#FF5C28', glow: 'rgba(255,92,40,0.3)' },
+  { color: '#BAFF39', glow: 'rgba(186,255,57,0.3)' },
+  { color: '#FF6B6B', glow: 'rgba(255,107,107,0.3)' },
+  { color: '#FFD700', glow: 'rgba(255,215,0,0.3)' },
+  { color: '#39FFD1', glow: 'rgba(57,255,209,0.3)' },
+  { color: '#FF5C28', glow: 'rgba(255,92,40,0.3)' },
+  { color: '#FF6B9D', glow: 'rgba(255,107,157,0.3)' },
+  { color: '#BAFF39', glow: 'rgba(186,255,57,0.3)' },
+];
+
+const featuresLight = [
+  { color: '#D94520', glow: 'rgba(217,69,32,0.25)' },
+  { color: '#0E8C7A', glow: 'rgba(14,140,122,0.2)' },
+  { color: '#7B4FCC', glow: 'rgba(123,79,204,0.2)' },
+  { color: '#D94520', glow: 'rgba(217,69,32,0.25)' },
+  { color: '#4A8C10', glow: 'rgba(74,140,16,0.2)' },
+  { color: '#CC3333', glow: 'rgba(204,51,51,0.2)' },
+  { color: '#B8920E', glow: 'rgba(184,146,14,0.25)' },
+  { color: '#0E8C7A', glow: 'rgba(14,140,122,0.2)' },
+  { color: '#D94520', glow: 'rgba(217,69,32,0.25)' },
+  { color: '#CC3366', glow: 'rgba(204,51,102,0.2)' },
+  { color: '#4A8C10', glow: 'rgba(74,140,16,0.2)' },
+];
+
+const featuresBase = [
   {
     title: '123 000 ресторанов',
     subtitle: 'Крупнейшая база заведений',
     detail: 'От уютных кафе до роскошных ресторанов — выбирайте из огромного каталога с подробными карточками, фото и меню',
-    color: '#FF5C28',
-    glow: 'rgba(255,92,40,0.3)',
   },
   {
     title: '221 город',
     subtitle: 'Вся Россия на одной карте',
     detail: 'Москва, Петербург, Казань, Сочи и ещё 217 городов. Находите лучшие рестораны в любом уголке страны',
-    color: '#39FFD1',
-    glow: 'rgba(57,255,209,0.3)',
   },
   {
     title: '8 языков',
     subtitle: 'Понятно каждому гостю',
     detail: 'Русский, английский, китайский, испанский, французский, немецкий, арабский и турецкий — для местных и туристов',
-    color: '#C4A1FF',
-    glow: 'rgba(196,161,255,0.3)',
   },
   {
     title: 'AI-поиск',
     subtitle: 'Ищите на естественном языке',
     detail: 'Опишите, что хотите — «уютное место с пастой на двоих до 3000₽» — и получите подборку за секунду',
-    color: '#FF5C28',
-    glow: 'rgba(255,92,40,0.3)',
   },
   {
     title: 'Меню с КБЖУ',
     subtitle: 'Считайте рацион при выборе',
     detail: 'Калории, белки, жиры и углеводы для каждого блюда. Следите за питанием, не отказываясь от ресторанов',
-    color: '#BAFF39',
-    glow: 'rgba(186,255,57,0.3)',
   },
   {
     title: 'Фильтр аллергенов',
     subtitle: 'Безопасный выбор блюд',
     detail: 'Укажите аллергены в профиле — мы пометим опасные блюда и подскажем безопасные альтернативы',
-    color: '#FF6B6B',
-    glow: 'rgba(255,107,107,0.3)',
   },
   {
     title: 'Калькулятор бюджета',
     subtitle: 'Знайте сумму заранее',
     detail: 'Соберите заказ на компанию, добавьте чаевые — узнайте точную сумму до похода в ресторан',
-    color: '#FFD700',
-    glow: 'rgba(255,215,0,0.3)',
   },
   {
     title: 'Онлайн-бронирование',
     subtitle: 'Столик без звонков',
     detail: 'Выберите дату, время и количество гостей — забронируйте столик в пару кликов',
-    color: '#39FFD1',
-    glow: 'rgba(57,255,209,0.3)',
   },
   {
     title: 'Честные отзывы',
     subtitle: 'Четыре оценки вместо одной',
     detail: 'Кухня, обслуживание, атмосфера, цена/качество — оцениваются отдельно',
-    color: '#FF5C28',
-    glow: 'rgba(255,92,40,0.3)',
   },
   {
     title: 'Избранное',
     subtitle: 'Ваша личная коллекция',
     detail: 'Сохраняйте понравившиеся рестораны одним кликом и возвращайтесь к ним в любой момент',
-    color: '#FF6B9D',
-    glow: 'rgba(255,107,157,0.3)',
   },
   {
     title: 'Программа лояльности',
     subtitle: 'Бонусы за активность',
     detail: 'Копите баллы за бронирования и отзывы — поднимайтесь в рейтинге и получайте привилегии',
-    color: '#BAFF39',
-    glow: 'rgba(186,255,57,0.3)',
   },
 ];
 
-const TOTAL = features.length;
+const TOTAL = featuresBase.length;
 // Duration of one full cycle: walk right through all features, then walk left back
 const STEP_DURATION = 3500; // ms per feature
 
 /* ─── Main page ───────────────────────────────────────────── */
 
 export default function FeaturesPage() {
+  const isLight = useIsLight();
+  const features = featuresBase.map((f, i) => ({
+    ...f,
+    ...(isLight ? featuresLight[i] : featuresDark[i]),
+  }));
+
   const [active, setActive] = useState(0);
   const [walkFrame, setWalkFrame] = useState(0);
   const [transitioning, setTransitioning] = useState(false);

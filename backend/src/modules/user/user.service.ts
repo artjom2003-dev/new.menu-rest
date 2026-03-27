@@ -44,7 +44,7 @@ export class UserService {
   async getMe(userId: number): Promise<User> {
     const user = await this.userRepo.findOne({
       where: { id: userId },
-      relations: ['city', 'favoriteRestaurants'],
+      relations: ['city', 'favoriteRestaurants', 'allergenProfile'],
     });
     if (!user) throw new NotFoundException('Пользователь не найден');
     return user;
@@ -52,6 +52,23 @@ export class UserService {
 
   async updateMe(userId: number, dto: Partial<User>): Promise<User> {
     await this.userRepo.update(userId, dto);
+    return this.getMe(userId);
+  }
+
+  async updateAllergens(userId: number, allergenIds: number[]) {
+    const user = await this.userRepo.findOne({ where: { id: userId }, relations: ['allergenProfile'] });
+    if (!user) throw new NotFoundException('Пользователь не найден');
+
+    // Clear and set
+    await this.userRepo.manager.query('DELETE FROM user_allergens WHERE user_id = $1', [userId]);
+    if (allergenIds.length > 0) {
+      const values = allergenIds.map((_, i) => `($1, $${i + 2})`).join(',');
+      await this.userRepo.manager.query(
+        `INSERT INTO user_allergens (user_id, allergen_id) VALUES ${values} ON CONFLICT DO NOTHING`,
+        [userId, ...allergenIds],
+      );
+    }
+
     return this.getMe(userId);
   }
 

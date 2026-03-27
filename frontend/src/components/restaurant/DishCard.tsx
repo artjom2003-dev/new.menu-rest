@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Image from 'next/image';
 import { useAuthStore } from '@/stores/auth.store';
 import { useBudgetStore } from '@/stores/budget.store';
+import { useTranslations } from 'next-intl';
 
 interface Dish {
   id: number;
@@ -39,13 +40,14 @@ function getDishEmoji(name: string): string {
 }
 
 export function DishCard({ dish }: { dish: Dish }) {
+  const t = useTranslations('dish');
   const { user } = useAuthStore();
   const { addItem, open } = useBudgetStore();
   const [imgError, setImgError] = useState(false);
   const [expanded, setExpanded] = useState(false);
 
   const userAllergenSlugs = user?.allergenProfile?.map((a) => a.slug) || [];
-  const priceRub = dish.price < 100 ? dish.price : Math.round(dish.price / 100);
+  const priceRub = dish.price;
   const hasImage = dish.imageUrl && /^https?:\/\//.test(dish.imageUrl) && !imgError;
   const hasKbzhu = dish.calories || dish.protein || dish.fat || dish.carbs;
   const hasDetails = dish.composition || (hasKbzhu && dish.composition);
@@ -87,7 +89,7 @@ export function DishCard({ dish }: { dish: Dish }) {
       <div className="w-[90px] h-[90px] rounded-[12px] flex-shrink-0 relative z-10 overflow-hidden"
         style={{ background: 'var(--bg3)' }}>
         {hasImage ? (
-          <Image src={dish.imageUrl!} alt={dish.name} fill sizes="90px" className="object-cover"
+          <Image src={dish.imageUrl!} alt={dish.name} fill sizes="90px" quality={85} className="object-cover"
             onError={() => setImgError(true)} />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-[36px]">
@@ -98,7 +100,7 @@ export function DishCard({ dish }: { dish: Dish }) {
         {dish.isHealthyChoice && (
           <div className="absolute top-1 left-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold"
             style={{ background: 'rgba(57,255,100,0.2)', color: '#4ade80', backdropFilter: 'blur(4px)' }}>
-            🌿 ЗОЖ
+            🌿 {t('healthy')}
           </div>
         )}
       </div>
@@ -109,7 +111,7 @@ export function DishCard({ dish }: { dish: Dish }) {
           <div className="text-[14px] font-semibold text-[var(--text)] mb-0.5">{dish.name}</div>
           {(dish.weightGrams || dish.volumeMl) && (
             <span className="text-[10px] text-[var(--text3)] flex-shrink-0 whitespace-nowrap mt-0.5">
-              {dish.weightGrams ? `${dish.weightGrams} г` : `${dish.volumeMl} мл`}
+              {dish.weightGrams ? `${dish.weightGrams} ${t('gram')}` : `${dish.volumeMl} ${t('ml')}`}
             </span>
           )}
         </div>
@@ -125,7 +127,7 @@ export function DishCard({ dish }: { dish: Dish }) {
         {expanded && dish.composition && (
           <div className="text-[11px] text-[var(--text3)] leading-[1.5] mb-2 px-2.5 py-2 rounded-lg border"
             style={{ background: 'var(--card)', borderColor: 'var(--card-border)' }}>
-            <span className="text-[10px] uppercase tracking-wider text-[var(--text3)] opacity-60">Состав: </span>
+            <span className="text-[10px] uppercase tracking-wider text-[var(--text3)] opacity-60">{t('composition')}: </span>
             {dish.composition}
           </div>
         )}
@@ -157,10 +159,10 @@ export function DishCard({ dish }: { dish: Dish }) {
           </div>
           {hasKbzhu && (
             <div className="flex gap-2 text-[9px] text-[var(--text3)] font-mono">
-              {dish.calories ? <span><em className="not-italic text-[11px] font-medium text-[var(--text2)]">{dish.calories}</em> ккал</span> : null}
-              {dish.protein ? <span><em className="not-italic text-[11px] font-medium text-[var(--text2)]">{Number(dish.protein).toFixed(0)}</em>Б</span> : null}
-              {dish.fat ? <span><em className="not-italic text-[11px] font-medium text-[var(--text2)]">{Number(dish.fat).toFixed(0)}</em>Ж</span> : null}
-              {dish.carbs ? <span><em className="not-italic text-[11px] font-medium text-[var(--text2)]">{Number(dish.carbs).toFixed(0)}</em>У</span> : null}
+              {dish.calories ? <span><em className="not-italic text-[11px] font-medium text-[var(--text2)]">{dish.calories}</em> {t('kcal')}</span> : null}
+              {dish.protein ? <span><em className="not-italic text-[11px] font-medium text-[var(--text2)]">{Number(dish.protein).toFixed(0)}</em>{t('protein')}</span> : null}
+              {dish.fat ? <span><em className="not-italic text-[11px] font-medium text-[var(--text2)]">{Number(dish.fat).toFixed(0)}</em>{t('fat')}</span> : null}
+              {dish.carbs ? <span><em className="not-italic text-[11px] font-medium text-[var(--text2)]">{Number(dish.carbs).toFixed(0)}</em>{t('carbs')}</span> : null}
             </div>
           )}
         </div>

@@ -64,6 +64,15 @@ export class UserController {
     return this.service.toggleWishlist(req.user.id, restaurantId);
   }
 
+  @Put('allergens')
+  @ApiOperation({ summary: 'Обновить аллергены пользователя' })
+  updateAllergens(
+    @Request() req: { user: { id: number } },
+    @Body() dto: { allergenIds: number[] },
+  ) {
+    return this.service.updateAllergens(req.user.id, dto.allergenIds);
+  }
+
   // ─── Owner: My Restaurant ───────────────────────────
   @Get('restaurant')
   @ApiOperation({ summary: 'Ресторан владельца' })

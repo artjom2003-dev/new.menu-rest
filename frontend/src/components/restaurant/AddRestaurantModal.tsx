@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 
 interface AddRestaurantModalProps {
   open: boolean;
@@ -8,6 +9,7 @@ interface AddRestaurantModalProps {
 }
 
 export function AddRestaurantModal({ open, onClose }: AddRestaurantModalProps) {
+  const t = useTranslations('addRestaurant');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
@@ -40,11 +42,11 @@ export function AddRestaurantModal({ open, onClose }: AddRestaurantModalProps) {
       );
       if (!res.ok) {
         const data = await res.json().catch(() => null);
-        throw new Error(data?.message || 'Ошибка отправки');
+        throw new Error(data?.message || t('submitError'));
       }
       setSuccess(true);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Ошибка отправки заявки');
+      setError(err instanceof Error ? err.message : t('submitError'));
     } finally {
       setLoading(false);
     }
@@ -80,30 +82,30 @@ export function AddRestaurantModal({ open, onClose }: AddRestaurantModalProps) {
           <div className="text-center py-8">
             <div className="text-5xl mb-4">🎉</div>
             <h2 className="font-serif text-[24px] font-bold text-[var(--text)] mb-2">
-              Заявка отправлена!
+              {t('successTitle')}
             </h2>
             <p className="text-[14px] text-[var(--text3)] mb-2 leading-relaxed">
-              Мы рассмотрим вашу заявку в течение 1-2 рабочих дней и свяжемся с вами для подтверждения.
+              {t('successText')}
             </p>
             <p className="text-[13px] text-[var(--text3)] mb-6">
-              После одобрения вы получите доступ к управлению карточкой ресторана.
+              {t('successNote')}
             </p>
             <button
               onClick={() => { setSuccess(false); setForm({ restaurantName: '', city: '', address: '', contactName: '', contactPhone: '', contactEmail: '', website: '', comment: '' }); onClose(); }}
               className="px-6 py-3 rounded-full text-[13px] font-semibold text-white border-none cursor-pointer"
               style={{ background: 'var(--accent)' }}
             >
-              Отлично
+              {t('successButton')}
             </button>
           </div>
         ) : (
           <>
             <div className="mb-6">
               <h2 className="font-serif text-[24px] font-bold text-[var(--text)] mb-1">
-                Добавить ресторан
+                {t('title')}
               </h2>
               <p className="text-[13px] text-[var(--text3)] leading-relaxed">
-                Оставьте заявку — мы создадим карточку вашего заведения и предоставим вам доступ к управлению
+                {t('subtitle')}
               </p>
             </div>
 
@@ -111,13 +113,13 @@ export function AddRestaurantModal({ open, onClose }: AddRestaurantModalProps) {
               {/* Restaurant info */}
               <div>
                 <label className="text-[11px] font-semibold text-[var(--text2)] block mb-1.5">
-                  Название ресторана *
+                  {t('labelRestaurantName')}
                 </label>
                 <input
                   required
                   value={form.restaurantName}
                   onChange={(e) => setForm({ ...form, restaurantName: e.target.value })}
-                  placeholder="Ресторан «У Патрика»"
+                  placeholder={t('placeholderName')}
                   className={inputClass}
                   style={{ background: 'var(--bg3)', borderColor: 'var(--card-border)' }}
                   onFocus={handleFocus}
@@ -128,13 +130,13 @@ export function AddRestaurantModal({ open, onClose }: AddRestaurantModalProps) {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-[11px] font-semibold text-[var(--text2)] block mb-1.5">
-                    Город *
+                    {t('labelCity')}
                   </label>
                   <input
                     required
                     value={form.city}
                     onChange={(e) => setForm({ ...form, city: e.target.value })}
-                    placeholder="Москва"
+                    placeholder={t('placeholderCity')}
                     className={inputClass}
                     style={{ background: 'var(--bg3)', borderColor: 'var(--card-border)' }}
                     onFocus={handleFocus}
@@ -143,13 +145,13 @@ export function AddRestaurantModal({ open, onClose }: AddRestaurantModalProps) {
                 </div>
                 <div>
                   <label className="text-[11px] font-semibold text-[var(--text2)] block mb-1.5">
-                    Адрес *
+                    {t('labelAddress')}
                   </label>
                   <input
                     required
                     value={form.address}
                     onChange={(e) => setForm({ ...form, address: e.target.value })}
-                    placeholder="ул. Примерная, 1"
+                    placeholder={t('placeholderAddress')}
                     className={inputClass}
                     style={{ background: 'var(--bg3)', borderColor: 'var(--card-border)' }}
                     onFocus={handleFocus}
@@ -161,7 +163,7 @@ export function AddRestaurantModal({ open, onClose }: AddRestaurantModalProps) {
               {/* Divider */}
               <div className="relative text-center text-[11px] text-[var(--text3)] my-1">
                 <span className="relative z-10 px-2" style={{ background: 'var(--bg2)' }}>
-                  контактные данные
+                  {t('contactDetails')}
                 </span>
                 <div
                   className="absolute inset-y-1/2 left-0 right-0 h-px"
@@ -171,13 +173,13 @@ export function AddRestaurantModal({ open, onClose }: AddRestaurantModalProps) {
 
               <div>
                 <label className="text-[11px] font-semibold text-[var(--text2)] block mb-1.5">
-                  Ваше имя *
+                  {t('labelContactName')}
                 </label>
                 <input
                   required
                   value={form.contactName}
                   onChange={(e) => setForm({ ...form, contactName: e.target.value })}
-                  placeholder="Иван Петров"
+                  placeholder={t('placeholderContactName')}
                   className={inputClass}
                   style={{ background: 'var(--bg3)', borderColor: 'var(--card-border)' }}
                   onFocus={handleFocus}
@@ -188,14 +190,14 @@ export function AddRestaurantModal({ open, onClose }: AddRestaurantModalProps) {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-[11px] font-semibold text-[var(--text2)] block mb-1.5">
-                    Телефон *
+                    {t('labelPhone')}
                   </label>
                   <input
                     type="tel"
                     required
                     value={form.contactPhone}
                     onChange={(e) => setForm({ ...form, contactPhone: e.target.value })}
-                    placeholder="+7 999 123-45-67"
+                    placeholder={t('placeholderPhone')}
                     className={inputClass}
                     style={{ background: 'var(--bg3)', borderColor: 'var(--card-border)' }}
                     onFocus={handleFocus}
@@ -204,14 +206,14 @@ export function AddRestaurantModal({ open, onClose }: AddRestaurantModalProps) {
                 </div>
                 <div>
                   <label className="text-[11px] font-semibold text-[var(--text2)] block mb-1.5">
-                    Email *
+                    {t('labelEmail')}
                   </label>
                   <input
                     type="email"
                     required
                     value={form.contactEmail}
                     onChange={(e) => setForm({ ...form, contactEmail: e.target.value })}
-                    placeholder="ivan@restaurant.ru"
+                    placeholder={t('placeholderEmail')}
                     className={inputClass}
                     style={{ background: 'var(--bg3)', borderColor: 'var(--card-border)' }}
                     onFocus={handleFocus}
@@ -222,12 +224,12 @@ export function AddRestaurantModal({ open, onClose }: AddRestaurantModalProps) {
 
               <div>
                 <label className="text-[11px] font-semibold text-[var(--text2)] block mb-1.5">
-                  Сайт или соцсети
+                  {t('labelWebsite')}
                 </label>
                 <input
                   value={form.website}
                   onChange={(e) => setForm({ ...form, website: e.target.value })}
-                  placeholder="https://myrestaurant.ru"
+                  placeholder={t('placeholderWebsite')}
                   className={inputClass}
                   style={{ background: 'var(--bg3)', borderColor: 'var(--card-border)' }}
                   onFocus={handleFocus}
@@ -237,13 +239,13 @@ export function AddRestaurantModal({ open, onClose }: AddRestaurantModalProps) {
 
               <div>
                 <label className="text-[11px] font-semibold text-[var(--text2)] block mb-1.5">
-                  Комментарий
+                  {t('labelComment')}
                 </label>
                 <textarea
                   value={form.comment}
                   onChange={(e) => setForm({ ...form, comment: e.target.value })}
                   rows={2}
-                  placeholder="Тип кухни, особенности заведения..."
+                  placeholder={t('placeholderComment')}
                   className="w-full px-4 py-3 rounded-[10px] text-[14px] font-sans text-[var(--text)] outline-none transition-all border resize-none"
                   style={{ background: 'var(--bg3)', borderColor: 'var(--card-border)' }}
                   onFocus={handleFocus}
@@ -259,11 +261,11 @@ export function AddRestaurantModal({ open, onClose }: AddRestaurantModalProps) {
                 className="w-full py-3.5 rounded-full text-[13px] font-semibold text-white border-none cursor-pointer transition-all disabled:opacity-60"
                 style={{ background: 'var(--accent)', boxShadow: '0 0 20px var(--accent-glow)' }}
               >
-                {loading ? 'Отправляем...' : 'Отправить заявку'}
+                {loading ? t('submitting') : t('submit')}
               </button>
 
               <p className="text-[11px] text-[var(--text4)] text-center">
-                Мы свяжемся с вами в течение 1-2 рабочих дней
+                {t('footnote')}
               </p>
             </form>
           </>

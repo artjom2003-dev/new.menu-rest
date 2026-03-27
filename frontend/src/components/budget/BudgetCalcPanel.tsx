@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useBudgetStore, BudgetItem, MenuCategory } from '@/stores/budget.store';
 import { ReferralModal } from '@/components/ui/ReferralModal';
 import { useAuthStore } from '@/stores/auth.store';
+import { useTranslations } from 'next-intl';
 
 /* ── Emoji helper (same as DishCard) ── */
 const DISH_EMOJIS: Record<string, string> = {
@@ -184,6 +185,7 @@ function toBudgetItem(d: { name: string; price: number; calories?: number; prote
 /* ── Component ── */
 
 export function BudgetCalcPanel() {
+  const t = useTranslations('budget');
   const router = useRouter();
   const {
     isOpen, close, budget, setBudget, guests, setGuests,
@@ -210,15 +212,15 @@ export function BudgetCalcPanel() {
   const { user } = useAuthStore();
 
   const shareDinnerText = (() => {
-    const header = restaurantName ? `🍽️ План ужина — ${restaurantName}` : '🍽️ План ужина';
-    return `${header} (${guests} чел.)\n\n${items.map((i) => `${i.icon} ${i.name} — ${Math.round(i.price / 100).toLocaleString()} ₽`).join('\n')}\n\n💰 Итого с чаевыми: ${withTips.toLocaleString()} ₽`;
+    const header = restaurantName ? `🍽️ ${t('dinnerPlanFor', { name: restaurantName })}` : `🍽️ ${t('dinnerPlan')}`;
+    return `${header} (${guests})\n\n${items.map((i) => `${i.icon} ${i.name} — ${i.price.toLocaleString()} ₽`).join('\n')}\n\n💰 ${t('totalWithTips')}: ${withTips.toLocaleString()} ₽`;
   })();
 
   const handleShare = () => {
     if (user?.referralCode) {
       setShowShareModal(true);
     } else if (navigator.share) {
-      navigator.share({ title: 'План ужина', text: shareDinnerText });
+      navigator.share({ title: t('dinnerPlan'), text: shareDinnerText });
     } else {
       navigator.clipboard.writeText(shareDinnerText);
     }
@@ -238,7 +240,7 @@ export function BudgetCalcPanel() {
       <div className="px-6 py-[22px] flex justify-between items-center sticky top-0 z-[2] border-b"
         style={{ background: 'var(--bg2)', borderColor: 'var(--card-border)' }}>
         <div>
-          <h3 className="font-serif text-[20px] font-bold text-[var(--text)]">🍽️ Хватит на ужин?</h3>
+          <h3 className="font-serif text-[20px] font-bold text-[var(--text)]">🍽️ {t('title')}</h3>
           {restaurantName && (
             <p className="text-[11px] text-[var(--text3)] mt-0.5 truncate max-w-[240px]">
               {restaurantName}
@@ -267,7 +269,7 @@ export function BudgetCalcPanel() {
           {/* Budget */}
           <div className="flex-1">
             <label className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[var(--text3)] block mb-1.5">
-              Бюджет
+              {t('labelBudget')}
             </label>
             <div className="flex items-center gap-1.5">
               <input
@@ -286,7 +288,7 @@ export function BudgetCalcPanel() {
           {/* Guests */}
           <div style={{ width: 100 }}>
             <label className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[var(--text3)] block mb-1.5">
-              Гостей
+              {t('labelGuests')}
             </label>
             <div className="flex items-center gap-0">
               <button
@@ -336,7 +338,7 @@ export function BudgetCalcPanel() {
               <circle cx="8" cy="14" r="1" fill="currentColor" />
               <circle cx="12" cy="14" r="1" fill="currentColor" />
             </svg>
-            Подобрать случайно на {guests} чел.
+            {t('randomPick', { guests })}
           </button>
         )}
 
@@ -350,11 +352,11 @@ export function BudgetCalcPanel() {
 
         <div className="text-[11px] text-[var(--text3)] mt-1.5 font-mono">
           {!items.length ? (
-            hasMenu ? 'Нажмите «Подобрать» или добавьте блюда вручную' : 'Добавьте блюда из меню'
+            hasMenu ? t('hintPickOrAdd') : t('hintAddDishes')
           ) : rem >= 0 ? (
-            <>Осталось: <span style={{ color: 'var(--teal)', fontWeight: 600 }}>{rem.toLocaleString()} ₽</span></>
+            <>{t('remaining')}: <span style={{ color: 'var(--teal)', fontWeight: 600 }}>{rem.toLocaleString()} ₽</span></>
           ) : (
-            <>Превышение: <span style={{ color: '#FF4646', fontWeight: 600 }}>{Math.abs(rem).toLocaleString()} ₽</span></>
+            <>{t('exceeded')}: <span style={{ color: '#FF4646', fontWeight: 600 }}>{Math.abs(rem).toLocaleString()} ₽</span></>
           )}
         </div>
       </div>
@@ -365,9 +367,9 @@ export function BudgetCalcPanel() {
           <div className="text-center py-10 text-[var(--text3)] text-[13px]">
             <span className="text-[44px] mb-3.5 block opacity-40">🍽️</span>
             {hasMenu ? (
-              <>Нажмите «Подобрать случайно»<br />или добавьте блюда кнопкой «+»</>
+              <span style={{ whiteSpace: 'pre-line' }}>{t('emptyHintRandom')}</span>
             ) : (
-              <>Откройте ресторан и нажмите «+»<br />на блюдах, чтобы собрать ужин</>
+              <span style={{ whiteSpace: 'pre-line' }}>{t('emptyHintManual')}</span>
             )}
           </div>
         ) : (
@@ -376,10 +378,10 @@ export function BudgetCalcPanel() {
               <span className="text-[22px] w-8 text-center">{item.icon}</span>
               <div className="flex-1">
                 <div className="text-[13px] font-medium text-[var(--text)]">{item.name}</div>
-                <div className="text-[10px] text-[var(--text3)]">{item.calories} ккал</div>
+                <div className="text-[10px] text-[var(--text3)]">{item.calories} {t('kcal')}</div>
               </div>
               <span className="text-[13px] font-semibold text-[var(--text)] font-mono">
-                {Math.round(item.price / 100).toLocaleString()} ₽
+                {item.price.toLocaleString()} ₽
               </span>
               <button
                 onClick={() => removeItem(i)}
@@ -405,10 +407,10 @@ export function BudgetCalcPanel() {
         {items.length > 0 && (
           <div className="flex gap-3.5 justify-center p-3 rounded-[10px] mb-3.5 border" style={{ background: 'var(--bg2)', borderColor: 'var(--card-border)' }}>
             {[
-              { label: 'ккал', value: totalCalories() },
-              { label: 'белки', value: `${items.reduce((s, i) => s + (i.protein || 0), 0)}г` },
-              { label: 'жиры', value: `${items.reduce((s, i) => s + (i.fat || 0), 0)}г` },
-              { label: 'углев.', value: `${items.reduce((s, i) => s + (i.carbs || 0), 0)}г` },
+              { label: t('kcal'), value: totalCalories() },
+              { label: t('protein'), value: `${items.reduce((s, i) => s + (i.protein || 0), 0)}г` },
+              { label: t('fat'), value: `${items.reduce((s, i) => s + (i.fat || 0), 0)}г` },
+              { label: t('carbs'), value: `${items.reduce((s, i) => s + (i.carbs || 0), 0)}г` },
             ].map((k) => (
               <div key={k.label} className="text-center text-[9px] text-[var(--text3)] uppercase">
                 <span className="block text-[16px] font-bold text-[var(--text)] font-mono">{k.value}</span>
@@ -420,13 +422,13 @@ export function BudgetCalcPanel() {
 
         <div className="flex flex-col gap-1.5 mb-3.5">
           <div className="flex justify-between text-[12px] text-[var(--text3)]">
-            <span>Блюда ({items.length} шт.)</span><span>{total.toLocaleString()} ₽</span>
+            <span>{t('dishesCount', { count: items.length })}</span><span>{total.toLocaleString()} ₽</span>
           </div>
           <div className="flex justify-between text-[12px] text-[var(--text3)]">
-            <span>Чаевые 10%</span><span>{(withTips - total).toLocaleString()} ₽</span>
+            <span>{t('tips')}</span><span>{(withTips - total).toLocaleString()} ₽</span>
           </div>
           <div className="flex justify-between text-[18px] font-bold text-[var(--text)] pt-2 border-t" style={{ borderColor: 'var(--card-border)' }}>
-            <span>Итого</span><span>{withTips.toLocaleString()} ₽</span>
+            <span>{t('total')}</span><span>{withTips.toLocaleString()} ₽</span>
           </div>
         </div>
 
@@ -435,13 +437,13 @@ export function BudgetCalcPanel() {
             onClick={handleShare}
             className="flex-1 flex items-center justify-center px-4 py-2.5 rounded-full text-[12px] font-semibold border transition-all cursor-pointer"
             style={{ background: 'var(--glass)', color: 'var(--text2)', borderColor: 'var(--glass-border)', backdropFilter: 'blur(8px)' }}>
-            Поделиться
+            {t('share')}
           </button>
           <button
             onClick={() => { close(); router.push(restaurantSlug ? `/restaurants/${restaurantSlug}#booking` : '/restaurants'); }}
             className="flex-1 flex items-center justify-center px-4 py-2.5 rounded-full text-[12px] font-semibold text-white transition-all cursor-pointer border-none"
             style={{ background: 'var(--accent)', boxShadow: '0 0 20px var(--accent-glow)' }}>
-            Забронировать
+            {t('book')}
           </button>
         </div>
       </div>

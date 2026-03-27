@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { useAuthStore } from '@/stores/auth.store';
 import { loyaltyApi } from '@/lib/api';
 
@@ -16,19 +17,19 @@ interface LeaderboardEntry {
 }
 
 /* ───────── Constants ───────── */
-const LEVELS = [
-  { key: 'bronze', label: 'Бронза', min: 0, multiplier: 'x1', gradient: 'linear-gradient(135deg, #cd7f32 0%, #a0522d 100%)', color: '#cd7f32', glow: 'rgba(205,127,50,0.3)', perks: ['Базовое начисление баллов'] },
-  { key: 'silver', label: 'Серебро', min: 500, multiplier: 'x1.5', gradient: 'linear-gradient(135deg, #7a7a86 0%, #52525c 100%)', color: '#c0c0c0', glow: 'rgba(192,192,192,0.3)', perks: ['Бонус x1.5 к начислению'] },
-  { key: 'gold', label: 'Золото', min: 2000, multiplier: 'x2', gradient: 'linear-gradient(135deg, #c9981a 0%, #8a6914 100%)', color: '#ffd700', glow: 'rgba(255,215,0,0.35)', perks: ['Бонус x2 к начислению'] },
+const LEVELS_BASE = [
+  { key: 'bronze' as const, labelKey: 'levelBronze' as const, min: 0, multiplier: 'x1', gradient: 'linear-gradient(135deg, #cd7f32 0%, #a0522d 100%)', color: '#cd7f32', glow: 'rgba(205,127,50,0.3)', perkKey: 'perkBasic' as const },
+  { key: 'silver' as const, labelKey: 'levelSilver' as const, min: 500, multiplier: 'x1.5', gradient: 'linear-gradient(135deg, #7a7a86 0%, #52525c 100%)', color: '#c0c0c0', glow: 'rgba(192,192,192,0.3)', perkKey: 'perkSilver' as const },
+  { key: 'gold' as const, labelKey: 'levelGold' as const, min: 2000, multiplier: 'x2', gradient: 'linear-gradient(135deg, #c9981a 0%, #8a6914 100%)', color: '#ffd700', glow: 'rgba(255,215,0,0.35)', perkKey: 'perkGold' as const },
 ];
 
-const EARN_WAYS = [
-  { icon: '\u2B50', title: 'Первый отзыв', desc: 'Станьте первым, кто оценит ресторан', points: 30, color: '#fbbf24' },
-  { icon: '\uD83D\uDCDD', title: 'Оставляйте отзывы', desc: 'За каждый одобренный отзыв', points: 15, color: '#60a5fa' },
-  { icon: '\uD83D\uDCC5', title: 'Бронируйте столики', desc: 'За каждое завершённое бронирование', points: 20, color: '#34d399' },
-  { icon: '\uD83D\uDC65', title: 'Приглашайте друзей', desc: 'За каждого приглашённого друга', points: 50, color: '#f472b6' },
-  { icon: '\uD83D\uDED2', title: 'Заказ через сервис', desc: 'Плюс 1% от суммы заказа бонусом', points: 10, color: '#a78bfa' },
-  { icon: '\uD83D\uDCF8', title: 'Загружайте фото', desc: 'Добавляйте фото к отзывам', points: 5, color: '#fb923c' },
+const EARN_WAYS_BASE = [
+  { icon: '\u2B50', titleKey: 'earnFirstReview' as const, descKey: 'earnFirstReviewDesc' as const, points: 30, color: '#fbbf24' },
+  { icon: '\uD83D\uDCDD', titleKey: 'earnReviews' as const, descKey: 'earnReviewsDesc' as const, points: 15, color: '#60a5fa' },
+  { icon: '\uD83D\uDCC5', titleKey: 'earnBookings' as const, descKey: 'earnBookingsDesc' as const, points: 20, color: '#34d399' },
+  { icon: '\uD83D\uDC65', titleKey: 'earnReferrals' as const, descKey: 'earnReferralsDesc' as const, points: 50, color: '#f472b6' },
+  { icon: '\uD83D\uDED2', titleKey: 'earnOrders' as const, descKey: 'earnOrdersDesc' as const, points: 10, color: '#a78bfa' },
+  { icon: '\uD83D\uDCF8', titleKey: 'earnPhotos' as const, descKey: 'earnPhotosDesc' as const, points: 5, color: '#fb923c' },
 ];
 
 /* ───────── Animated Counter Hook ───────── */
@@ -98,7 +99,7 @@ function useCountdown(targetDate: Date) {
 }
 
 /* ───────── Weekly Giveaway ───────── */
-function WeeklyGiveaway({ userPoints }: { userPoints?: number }) {
+function WeeklyGiveaway({ userPoints, t }: { userPoints?: number; t: any }) {
   // Target: 30 days from now (static per mount)
   const [target] = useState(() => {
     const d = new Date();
@@ -122,62 +123,62 @@ function WeeklyGiveaway({ userPoints }: { userPoints?: number }) {
         <div className="giveaway-inner">
           {/* Left: Info */}
           <div className="giveaway-info">
-            <div className="giveaway-badge">Еженедельный розыгрыш</div>
-            <h3 className="giveaway-title">Выиграйте ужин до <span className="giveaway-amount">10 000 ₽</span></h3>
+            <div className="giveaway-badge">{t('giveawayBadge')}</div>
+            <h3 className="giveaway-title">{t('giveawayTitle')} <span className="giveaway-amount">{t('giveawayAmount')}</span></h3>
             <p className="giveaway-desc">
-              Каждую неделю среди участников, сделавших заказ через MenuRest, мы разыгрываем покрытие чека в любом ресторане-партнёре.
+              {t('giveawayDesc')}
             </p>
             <div className="giveaway-how">
-              <div className="giveaway-how-title">Как это работает</div>
+              <div className="giveaway-how-title">{t('giveawayHow')}</div>
               <div className="giveaway-how-row">
                 <span className="giveaway-how-icon">🎟️</span>
-                <span>Каждые <strong>100 баллов</strong> = 1 билет в розыгрыше</span>
+                <span>{t('giveawayTicketRule')}</span>
               </div>
               <div className="giveaway-how-row">
                 <span className="giveaway-how-icon">📈</span>
-                <span>Баллы не списываются — копите и увеличивайте шансы</span>
+                <span>{t('giveawayKeepRule')}</span>
               </div>
               <div className="giveaway-how-row">
                 <span className="giveaway-how-icon">♾️</span>
-                <span>Нет потолка — 5 000 баллов = 50 билетов</span>
+                <span>{t('giveawayNoCap')}</span>
               </div>
             </div>
             {userPoints !== undefined && tickets > 0 && (
               <div className="giveaway-your-tickets">
                 <span className="giveaway-ticket-icon">🎟️</span>
-                <span>У вас <strong>{tickets}</strong> {tickets === 1 ? 'билет' : tickets < 5 ? 'билета' : 'билетов'}</span>
-                <span className="giveaway-ticket-hint">+1 за каждые 100 баллов</span>
+                <span>{t('giveawayYourTickets', { count: tickets, tickets: tickets === 1 ? t('ticket1') : tickets < 5 ? t('ticket2') : t('ticket5') })}</span>
+                <span className="giveaway-ticket-hint">{t('giveawayTicketHint')}</span>
               </div>
             )}
             {userPoints !== undefined && tickets === 0 && (
               <div className="giveaway-your-tickets" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>
-                <span>Заработайте баллы, чтобы участвовать</span>
+                <span>{t('giveawayEarnMore')}</span>
               </div>
             )}
           </div>
 
           {/* Right: Timer */}
           <div className="giveaway-timer-wrap">
-            <div className="giveaway-timer-label">До розыгрыша</div>
+            <div className="giveaway-timer-label">{t('giveawayTimer')}</div>
             <div className="giveaway-timer">
               <div className="giveaway-timer-unit">
                 <div className="giveaway-timer-num">{pad(days)}</div>
-                <div className="giveaway-timer-sub">дней</div>
+                <div className="giveaway-timer-sub">{t('timerDays')}</div>
               </div>
               <div className="giveaway-timer-sep">:</div>
               <div className="giveaway-timer-unit">
                 <div className="giveaway-timer-num">{pad(hours)}</div>
-                <div className="giveaway-timer-sub">часов</div>
+                <div className="giveaway-timer-sub">{t('timerHours')}</div>
               </div>
               <div className="giveaway-timer-sep">:</div>
               <div className="giveaway-timer-unit">
                 <div className="giveaway-timer-num">{pad(minutes)}</div>
-                <div className="giveaway-timer-sub">минут</div>
+                <div className="giveaway-timer-sub">{t('timerMinutes')}</div>
               </div>
               <div className="giveaway-timer-sep">:</div>
               <div className="giveaway-timer-unit">
                 <div className="giveaway-timer-num giveaway-timer-sec">{pad(seconds)}</div>
-                <div className="giveaway-timer-sub">секунд</div>
+                <div className="giveaway-timer-sub">{t('timerSeconds')}</div>
               </div>
             </div>
             <div className="giveaway-prize-icon">🎁</div>
@@ -191,6 +192,7 @@ function WeeklyGiveaway({ userPoints }: { userPoints?: number }) {
 /* ───────── Main Page ───────── */
 export default function LoyaltyPage() {
   const router = useRouter();
+  const t = useTranslations('loyalty');
   const { user, isLoggedIn } = useAuthStore();
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [weeklyLeaderboard, setWeeklyLeaderboard] = useState<LeaderboardEntry[]>([]);
@@ -213,8 +215,8 @@ export default function LoyaltyPage() {
     ]).finally(() => setLoaded(true));
   }, []);
 
-  const currentLevel = LEVELS.find(l => l.key === user?.loyaltyLevel) || LEVELS[0];
-  const nextLevel = LEVELS[LEVELS.indexOf(currentLevel) + 1];
+  const currentLevel = LEVELS_BASE.find(l => l.key === user?.loyaltyLevel) || LEVELS_BASE[0];
+  const nextLevel = LEVELS_BASE[LEVELS_BASE.indexOf(currentLevel) + 1];
   const progress = nextLevel && user
     ? Math.min(((user.loyaltyPoints - currentLevel.min) / (nextLevel.min - currentLevel.min)) * 100, 100)
     : 100;
@@ -535,18 +537,18 @@ export default function LoyaltyPage() {
       <div className="loyalty-hero">
         <div className="loyalty-hero-inner" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}>
           <div style={{ flex: '1 1 400px' }}>
-            <h1 className="loyalty-hero-title">Программа лояльности MenuRest</h1>
+            <h1 className="loyalty-hero-title">{t('heroTitle')}</h1>
             <p className="loyalty-hero-sub">
-              Получайте баллы за каждое действие, повышайте уровень и открывайте эксклюзивные привилегии в лучших ресторанах города
+              {t('heroSub')}
             </p>
             <div className="loyalty-hero-stats">
               <div className="loyalty-hero-stat">
                 <div className="loyalty-hero-stat-val">{animatedPoints.toLocaleString('ru-RU')}</div>
-                <div className="loyalty-hero-stat-label">баллов сообщества</div>
+                <div className="loyalty-hero-stat-label">{t('communityPoints')}</div>
               </div>
               <div className="loyalty-hero-stat">
                 <div className="loyalty-hero-stat-val">{animatedMembers.toLocaleString('ru-RU')}</div>
-                <div className="loyalty-hero-stat-label">участников</div>
+                <div className="loyalty-hero-stat-label">{t('members')}</div>
               </div>
             </div>
           </div>
@@ -557,18 +559,18 @@ export default function LoyaltyPage() {
                 <ProgressRing progress={progress} size={120} stroke={8} color={currentLevel.color} />
                 <div className="loyalty-user-ring-text">
                   <div className="loyalty-user-points">{user.loyaltyPoints}</div>
-                  <div className="loyalty-user-label">баллов</div>
+                  <div className="loyalty-user-label">{t('points')}</div>
                 </div>
               </div>
               <div>
                 <div className="loyalty-user-level" style={{ background: `${currentLevel.color}22`, color: currentLevel.color }}>
                   <span style={{ width: 8, height: 8, borderRadius: '50%', background: currentLevel.color, display: 'inline-block' }} />
-                  {currentLevel.label}
+                  {t(currentLevel.labelKey)}
                 </div>
               </div>
               {nextLevel && (
                 <div className="loyalty-user-next">
-                  До {nextLevel.label}: <strong>{nextLevel.min - user.loyaltyPoints}</strong> баллов
+                  {t('levelBronze') && `${t(nextLevel.labelKey)}: `}<strong>{nextLevel.min - user.loyaltyPoints}</strong> {t('points')}
                 </div>
               )}
             </div>
@@ -578,18 +580,18 @@ export default function LoyaltyPage() {
 
       {/* ════════════ HOW TO EARN ════════════ */}
       <div className="loyalty-section">
-        <div className="loyalty-section-title">Как заработать баллы</div>
-        <div className="loyalty-section-sub">Каждое ваше действие приближает к новому уровню</div>
+        <div className="loyalty-section-title">{t('earnTitle')}</div>
+        <div className="loyalty-section-sub">{t('earnSub')}</div>
         <div className="earn-grid">
-          {EARN_WAYS.map((way) => (
-            <div key={way.title} className="earn-card">
+          {EARN_WAYS_BASE.map((way) => (
+            <div key={way.titleKey} className="earn-card">
               <div className="earn-card-icon" style={{ background: `${way.color}18` }}>
                 {way.icon}
               </div>
-              <div className="earn-card-title">{way.title}</div>
-              <div className="earn-card-desc">{way.desc}</div>
+              <div className="earn-card-title">{t(way.titleKey)}</div>
+              <div className="earn-card-desc">{t(way.descKey)}</div>
               <div className="earn-card-points" style={{ background: `${way.color}15`, color: way.color }}>
-                +{way.points} баллов
+                +{way.points} {t('pointsSuffix')}
               </div>
             </div>
           ))}
@@ -598,10 +600,10 @@ export default function LoyaltyPage() {
 
       {/* ════════════ TIER SHOWCASE ════════════ */}
       <div className="loyalty-section" style={{ paddingTop: 0 }}>
-        <div className="loyalty-section-title">Уровни привилегий</div>
-        <div className="loyalty-section-sub">Чем больше баллов, тем выше статус и больше возможностей</div>
+        <div className="loyalty-section-title">{t('tiersTitle')}</div>
+        <div className="loyalty-section-sub">{t('tiersSub')}</div>
         <div className="tier-grid">
-          {LEVELS.map((level) => {
+          {LEVELS_BASE.map((level) => {
             const isActive = user?.loyaltyLevel === level.key;
             return (
               <div key={level.key}
@@ -613,11 +615,9 @@ export default function LoyaltyPage() {
                 <div className="tier-card-content">
                   <div className="tier-card-multiplier">{level.multiplier}</div>
                   <div style={{ fontSize: 28, marginBottom: 6 }}>{level.key === 'gold' ? '\uD83C\uDFC6' : level.key === 'silver' ? '\uD83E\uDD48' : '\uD83E\uDD49'}</div>
-                  <div className="tier-card-label">{level.label}</div>
-                  <div className="tier-card-threshold">от {level.min.toLocaleString('ru-RU')} баллов</div>
-                  {level.perks.map((perk) => (
-                    <div key={perk} className="tier-card-perk">{perk}</div>
-                  ))}
+                  <div className="tier-card-label">{t(level.labelKey)}</div>
+                  <div className="tier-card-threshold">{t('tierFrom', { min: level.min.toLocaleString('ru-RU') })}</div>
+                  <div className="tier-card-perk">{t(level.perkKey)}</div>
                 </div>
               </div>
             );
@@ -626,37 +626,37 @@ export default function LoyaltyPage() {
       </div>
 
       {/* ════════════ WEEKLY GIVEAWAY ════════════ */}
-      <WeeklyGiveaway userPoints={user?.loyaltyPoints} />
+      <WeeklyGiveaway userPoints={user?.loyaltyPoints} t={t} />
 
       {/* ════════════ HOW TO SPEND ════════════ */}
       <div className="loyalty-section" style={{ paddingTop: 0 }}>
-        <div className="loyalty-section-title">Как потратить баллы</div>
-        <div className="loyalty-section-sub">Используйте накопленные баллы для получения скидок</div>
+        <div className="loyalty-section-title">{t('spendTitle')}</div>
+        <div className="loyalty-section-sub">{t('spendSub')}</div>
         <div className="spend-card">
           <div className="spend-exchange">
             <div className="spend-exchange-big">1 = 1\u20BD</div>
-            <div className="spend-exchange-label">один балл равен одному рублю скидки</div>
+            <div className="spend-exchange-label">{t('spendExchange')}</div>
           </div>
           <div className="spend-rules">
             <div className="spend-rule">
               <div className="spend-rule-icon">{'\uD83D\uDCB3'}</div>
               <div className="spend-rule-text">
-                <div className="spend-rule-title">Минимум 100 баллов</div>
-                <div className="spend-rule-desc">Минимальный порог для списания</div>
+                <div className="spend-rule-title">{t('spendMinTitle')}</div>
+                <div className="spend-rule-desc">{t('spendMinDesc')}</div>
               </div>
             </div>
             <div className="spend-rule">
               <div className="spend-rule-icon">{'\uD83D\uDCC9'}</div>
               <div className="spend-rule-text">
-                <div className="spend-rule-title">Максимум 30% от чека</div>
-                <div className="spend-rule-desc">Скидка ограничена суммой заказа</div>
+                <div className="spend-rule-title">{t('spendMaxTitle')}</div>
+                <div className="spend-rule-desc">{t('spendMaxDesc')}</div>
               </div>
             </div>
             <div className="spend-rule">
               <div className="spend-rule-icon">{'\uD83C\uDFEA'}</div>
               <div className="spend-rule-text">
-                <div className="spend-rule-title">У ресторанов-партнёров</div>
-                <div className="spend-rule-desc">В заведениях, подключённых к MenuRest</div>
+                <div className="spend-rule-title">{t('spendPartnerTitle')}</div>
+                <div className="spend-rule-desc">{t('spendPartnerDesc')}</div>
               </div>
             </div>
           </div>
@@ -665,25 +665,25 @@ export default function LoyaltyPage() {
 
       {/* ════════════ LEADERBOARD ════════════ */}
       <div className="loyalty-section" style={{ paddingTop: 0 }}>
-        <div className="loyalty-section-title">Рейтинг участников</div>
-        <div className="loyalty-section-sub">Самые активные пользователи нашего сообщества</div>
+        <div className="loyalty-section-title">{t('leaderboardTitle')}</div>
+        <div className="loyalty-section-sub">{t('leaderboardSub')}</div>
 
         <div className="lb-tabs">
           <button className={`lb-tab ${activeTab === 'weekly' ? 'lb-tab-active' : ''}`} onClick={() => setActiveTab('weekly')}>
-            Лидеры недели
+            {t('leaderboardWeekly')}
           </button>
           <button className={`lb-tab ${activeTab === 'alltime' ? 'lb-tab-active' : ''}`} onClick={() => setActiveTab('alltime')}>
-            Общий рейтинг
+            {t('leaderboardAllTime')}
           </button>
         </div>
 
         <div className="lb-list">
           {activeLeaderboard.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '48px 20px', color: 'var(--text3)', fontSize: 14 }}>
-              Пока нет участников
+              {t('leaderboardEmpty')}
             </div>
           ) : activeLeaderboard.map((entry, i) => {
-            const lvl = LEVELS.find(l => l.key === entry.loyaltyLevel) || LEVELS[0];
+            const lvl = LEVELS_BASE.find(l => l.key === entry.loyaltyLevel) || LEVELS_BASE[0];
             const initials = (entry.name || 'U').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
             const pts = activeTab === 'weekly' ? (entry.weeklyPoints ?? entry.loyaltyPoints) : entry.loyaltyPoints;
             const rankClass = i === 0 ? 'lb-rank-1' : i === 1 ? 'lb-rank-2' : i === 2 ? 'lb-rank-3' : '';
@@ -703,14 +703,14 @@ export default function LoyaltyPage() {
                   }
                 </div>
                 <div className="lb-name">
-                  <span className="lb-name-text">{entry.name || 'Гурман'}</span>
+                  <span className="lb-name-text">{entry.name || t('leaderboardDefaultName')}</span>
                   <span className="lb-name-level" style={{ background: `${lvl.color}18`, color: lvl.color }}>
-                    {lvl.label}
+                    {t(lvl.labelKey)}
                   </span>
                 </div>
                 <div className="lb-points">
                   {pts.toLocaleString('ru-RU')}
-                  <span className="lb-points-label">{activeTab === 'weekly' ? 'за неделю' : 'всего'}</span>
+                  <span className="lb-points-label">{activeTab === 'weekly' ? t('leaderboardWeeklyLabel') : t('leaderboardAllTimeLabel')}</span>
                 </div>
               </div>
             );
@@ -722,10 +722,10 @@ export default function LoyaltyPage() {
       {!isLoggedIn && (
         <div className="loyalty-cta">
           <p style={{ color: 'var(--text3)', fontSize: 16, marginBottom: 24 }}>
-            Присоединяйтесь к программе лояльности и начните получать привилегии уже сегодня
+            {t('ctaText')}
           </p>
           <a href="/login" className="loyalty-cta-btn">
-            Войти и начать копить баллы
+            {t('ctaButton')}
           </a>
         </div>
       )}

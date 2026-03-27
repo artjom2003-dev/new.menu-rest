@@ -4,6 +4,7 @@ import {
 } from 'typeorm';
 import { City } from './city.entity';
 import { Restaurant } from './restaurant.entity';
+import { Allergen } from './allergen.entity';
 
 export type UserRole = 'user' | 'owner' | 'admin';
 export type LoyaltyLevel = 'bronze' | 'silver' | 'gold';
@@ -103,4 +104,12 @@ export class User {
     inverseJoinColumn: { name: 'restaurant_id' },
   })
   wishlistRestaurants: Restaurant[];
+
+  @ManyToMany(() => Allergen)
+  @JoinTable({
+    name: 'user_allergens',
+    joinColumn: { name: 'user_id' },
+    inverseJoinColumn: { name: 'allergen_id' },
+  })
+  allergenProfile: Allergen[];
 }

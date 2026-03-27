@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useAuthStore } from '@/stores/auth.store';
 import { bookingApi } from '@/lib/api';
+import { useTranslations } from 'next-intl';
 
 interface BookingFormProps {
   restaurantId: number;
@@ -12,6 +13,7 @@ interface BookingFormProps {
 }
 
 export function BookingForm({ restaurantId, restaurantName, open, onClose }: BookingFormProps) {
+  const t = useTranslations('booking');
   const { isLoggedIn, user } = useAuthStore();
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -29,7 +31,7 @@ export function BookingForm({ restaurantId, restaurantName, open, onClose }: Boo
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isLoggedIn) { setError('Войдите в аккаунт для бронирования'); return; }
+    if (!isLoggedIn) { setError(t('loginRequired')); return; }
     setError('');
     setLoading(true);
 
@@ -46,7 +48,7 @@ export function BookingForm({ restaurantId, restaurantName, open, onClose }: Boo
       setSuccess(true);
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      setError(Array.isArray(msg) ? msg[0] : msg || 'Ошибка бронирования');
+      setError(Array.isArray(msg) ? msg[0] : msg || t('error'));
     } finally { setLoading(false); }
   };
 
@@ -64,25 +66,25 @@ export function BookingForm({ restaurantId, restaurantName, open, onClose }: Boo
         {success ? (
           <div className="text-center py-8">
             <div className="text-5xl mb-4">🎉</div>
-            <h2 className="font-serif text-[24px] font-bold text-[var(--text)] mb-2">Бронь отправлена!</h2>
+            <h2 className="font-serif text-[24px] font-bold text-[var(--text)] mb-2">{t('successTitle')}</h2>
             <p className="text-[14px] text-[var(--text3)] mb-6">
-              Ресторан подтвердит бронирование. Следите за статусом в профиле.
+              {t('successText')}
             </p>
             <button onClick={onClose}
               className="px-6 py-3 rounded-full text-[13px] font-semibold text-white border-none cursor-pointer"
               style={{ background: 'var(--accent)' }}>
-              Готово
+              {t('done')}
             </button>
           </div>
         ) : (
           <>
-            <h2 className="font-serif text-[24px] font-bold text-[var(--text)] mb-1">Забронировать</h2>
+            <h2 className="font-serif text-[24px] font-bold text-[var(--text)] mb-1">{t('title')}</h2>
             <p className="text-[13px] text-[var(--text3)] mb-6">{restaurantName}</p>
 
             <form onSubmit={handleSubmit} className="space-y-3.5">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[11px] font-semibold text-[var(--text2)] block mb-1.5">Дата</label>
+                  <label className="text-[11px] font-semibold text-[var(--text2)] block mb-1.5">{t('labelDate')}</label>
                   <input type="date" required value={form.bookingDate}
                     onChange={e => setForm({ ...form, bookingDate: e.target.value })}
                     min={new Date().toISOString().split('T')[0]}
@@ -90,7 +92,7 @@ export function BookingForm({ restaurantId, restaurantName, open, onClose }: Boo
                     style={{ background: 'var(--bg3)', borderColor: 'var(--card-border)' }} />
                 </div>
                 <div>
-                  <label className="text-[11px] font-semibold text-[var(--text2)] block mb-1.5">Время</label>
+                  <label className="text-[11px] font-semibold text-[var(--text2)] block mb-1.5">{t('labelTime')}</label>
                   <input type="time" required value={form.bookingTime}
                     onChange={e => setForm({ ...form, bookingTime: e.target.value })}
                     className="w-full px-4 py-3 rounded-[10px] text-[14px] text-[var(--text)] outline-none border"
@@ -99,7 +101,7 @@ export function BookingForm({ restaurantId, restaurantName, open, onClose }: Boo
               </div>
 
               <div>
-                <label className="text-[11px] font-semibold text-[var(--text2)] block mb-1.5">Количество гостей</label>
+                <label className="text-[11px] font-semibold text-[var(--text2)] block mb-1.5">{t('labelGuests')}</label>
                 <div className="flex gap-2">
                   {[1, 2, 3, 4, 5, 6, 8, 10].map(n => (
                     <button key={n} type="button" onClick={() => setForm({ ...form, guestsCount: n })}
@@ -116,7 +118,7 @@ export function BookingForm({ restaurantId, restaurantName, open, onClose }: Boo
               </div>
 
               <div>
-                <label className="text-[11px] font-semibold text-[var(--text2)] block mb-1.5">Ваше имя</label>
+                <label className="text-[11px] font-semibold text-[var(--text2)] block mb-1.5">{t('labelName')}</label>
                 <input required value={form.contactName}
                   onChange={e => setForm({ ...form, contactName: e.target.value })}
                   className="w-full px-4 py-3 rounded-[10px] text-[14px] text-[var(--text)] outline-none border"
@@ -124,19 +126,19 @@ export function BookingForm({ restaurantId, restaurantName, open, onClose }: Boo
               </div>
 
               <div>
-                <label className="text-[11px] font-semibold text-[var(--text2)] block mb-1.5">Телефон</label>
+                <label className="text-[11px] font-semibold text-[var(--text2)] block mb-1.5">{t('labelPhone')}</label>
                 <input type="tel" required value={form.contactPhone}
                   onChange={e => setForm({ ...form, contactPhone: e.target.value })}
-                  placeholder="+7 999 123-45-67"
+                  placeholder={t('placeholderPhone')}
                   className="w-full px-4 py-3 rounded-[10px] text-[14px] text-[var(--text)] outline-none border"
                   style={{ background: 'var(--bg3)', borderColor: 'var(--card-border)' }} />
               </div>
 
               <div>
-                <label className="text-[11px] font-semibold text-[var(--text2)] block mb-1.5">Пожелания</label>
+                <label className="text-[11px] font-semibold text-[var(--text2)] block mb-1.5">{t('labelWishes')}</label>
                 <textarea value={form.comment}
                   onChange={e => setForm({ ...form, comment: e.target.value })}
-                  rows={2} placeholder="Столик у окна..."
+                  rows={2} placeholder={t('placeholderWishes')}
                   className="w-full px-4 py-3 rounded-[10px] text-[14px] text-[var(--text)] outline-none border resize-none"
                   style={{ background: 'var(--bg3)', borderColor: 'var(--card-border)' }} />
               </div>
@@ -146,7 +148,7 @@ export function BookingForm({ restaurantId, restaurantName, open, onClose }: Boo
               <button type="submit" disabled={loading}
                 className="w-full py-3.5 rounded-full text-[13px] font-semibold text-white border-none cursor-pointer transition-all disabled:opacity-60"
                 style={{ background: 'var(--accent)', boxShadow: '0 0 20px var(--accent-glow)' }}>
-                {loading ? 'Бронируем...' : '📅 Забронировать'}
+                {loading ? t('submitting') : t('submit')}
               </button>
             </form>
           </>
