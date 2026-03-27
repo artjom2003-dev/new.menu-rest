@@ -80,8 +80,8 @@ function HeaderCityPicker() {
           onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--chat-user-border)'; }}
           onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--search-border)'; }}
         >
-          <span className="text-[10px]">📍</span>
-          {name}
+          <span className="text-[10px] max-sm:text-[8px]">📍</span>
+          <span className="max-sm:max-w-[60px] truncate">{name}</span>
           <span className="text-[8px] opacity-40">▾</span>
         </button>
 
@@ -144,8 +144,8 @@ function HeaderCityPicker() {
           animationDuration: '3s',
         }}
       >
-        <span className="text-[10px]">📍</span>
-        Выбрать город
+        <span className="text-[10px] max-sm:text-[8px]">📍</span>
+        <span className="max-sm:text-[10px]">Выбрать город</span>
       </button>
 
       {open && (
@@ -343,7 +343,7 @@ export function Header() {
             </Link>
 
             <span className="max-lg:hidden"><LanguageSwitcher /></span>
-            <HeaderCityPicker />
+            <span className="flex-shrink-0"><HeaderCityPicker /></span>
           </div>
 
           {/* Nav — pill container */}
@@ -435,8 +435,9 @@ export function Header() {
 
 
 
-          {/* Mobile right: auth button */}
-          <div className="hidden max-lg:flex items-center">
+          {/* Mobile right: language + auth */}
+          <div className="hidden max-lg:flex items-center gap-1.5">
+            <LanguageSwitcher />
             {mounted && isLoggedIn ? (
               <Link href="/profile"
                 className="flex items-center gap-1 px-3 py-1.5 rounded-full text-[12px] font-semibold border transition-all no-underline"
