@@ -694,7 +694,7 @@ export default function FeaturesPage() {
         <div className="absolute rounded-full pointer-events-none"
           style={{ width: 500, height: 500, background: 'rgba(255,92,40,0.06)', filter: 'blur(80px)', top: -150, right: -100 }} />
         <div className="relative z-10 text-center max-w-[680px] mx-auto">
-          <h1 className="font-serif text-[48px] font-black text-[var(--text)] leading-[1.05] mb-4">
+          <h1 className="font-serif text-[48px] max-md:text-[36px] max-sm:text-[28px] font-black text-[var(--text)] leading-[1.05] mb-4">
             Возможности{' '}
             <span style={{
               background: 'linear-gradient(135deg, var(--accent), var(--lime))',
@@ -708,7 +708,7 @@ export default function FeaturesPage() {
       </section>
 
       {/* ── Animated showcase ── */}
-      <section className="max-w-[1100px] mx-auto px-10 max-md:px-4 max-sm:px-3 py-10 relative" style={{ minHeight: 560 }}>
+      <section className="max-w-[1100px] mx-auto px-10 max-md:px-4 max-sm:px-3 py-10 relative max-sm:hidden" style={{ minHeight: 560 }}>
 
         {/* Scene decorations — restaurants, clouds, sun */}
         <SceneDecorations personX={personX} />

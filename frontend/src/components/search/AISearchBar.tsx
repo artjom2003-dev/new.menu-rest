@@ -372,7 +372,7 @@ export function AISearchBar() {
     <div>
       {/* Label */}
       {!hasStarted && (
-        <div className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-[var(--accent)] mb-2.5">
+        <div className="inline-flex items-center gap-1.5 text-[13px] max-sm:text-[11px] font-semibold text-[var(--accent)] mb-2.5 flex-wrap">
           <span className="animate-pulse-dot">🔍</span>
           {t('aiLabel')} <span className="font-bold">{t('aiName')}</span> {t('aiDesc')}
         </div>

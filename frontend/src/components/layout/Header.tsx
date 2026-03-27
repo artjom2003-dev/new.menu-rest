@@ -319,16 +319,16 @@ export function Header() {
         }}>
         <div className="w-full flex items-center justify-between">
           {/* Left: Language + City + Logo */}
-          <div className="flex items-center gap-3">
-            <LanguageSwitcher />
+          <div className="flex items-center gap-3 max-sm:gap-2 min-w-0">
+            <span className="max-sm:hidden"><LanguageSwitcher /></span>
             <HeaderCityPicker />
 
-            <Link href="/" className="font-serif text-[26px] max-sm:text-[20px] font-bold text-[var(--text)] no-underline tracking-[-0.03em] flex items-center gap-2.5 max-sm:gap-1.5 group">
-              <span className="w-9 h-9 rounded-[10px] flex items-center justify-center text-[12px] font-black tracking-tight transition-transform duration-300 group-hover:scale-110"
+            <Link href="/" className="font-serif text-[26px] max-sm:text-[20px] font-bold text-[var(--text)] no-underline tracking-[-0.03em] flex items-center gap-2.5 max-sm:gap-1.5 group flex-shrink-0">
+              <span className="w-9 h-9 max-sm:w-8 max-sm:h-8 rounded-[10px] flex items-center justify-center text-[12px] max-sm:text-[10px] font-black tracking-tight transition-transform duration-300 group-hover:scale-110"
                 style={{ background: 'linear-gradient(135deg, var(--accent), #D44A20)', color: 'white', boxShadow: '0 2px 8px var(--accent-glow)' }}>
                 MR
               </span>
-              <span>Menu-<b style={{ color: 'var(--accent)', fontWeight: 900 }}>Rest</b></span>
+              <span className="max-sm:hidden">Menu-<b style={{ color: 'var(--accent)', fontWeight: 900 }}>Rest</b></span>
             </Link>
           </div>
 
