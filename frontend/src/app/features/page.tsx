@@ -708,7 +708,7 @@ export default function FeaturesPage() {
       </section>
 
       {/* ── Animated showcase ── */}
-      <section className="max-w-[1100px] mx-auto px-10 max-md:px-4 max-sm:px-3 py-10 max-sm:py-6 relative" style={{ minHeight: 'min(560px, 70vh)' }}>
+      <section className="max-w-[1100px] mx-auto px-10 max-md:px-4 max-sm:px-3 py-10 relative max-sm:hidden" style={{ minHeight: 'min(560px, 70vh)' }}>
 
         {/* Scene decorations — restaurants, clouds, sun */}
         <SceneDecorations personX={personX} />
@@ -820,14 +820,30 @@ export default function FeaturesPage() {
         ))}
       </div>
 
+      {/* ── Mobile feature cards (replacing animation) ── */}
+      <section className="hidden max-sm:block max-w-[1400px] mx-auto px-3 pb-6">
+        <div className="grid grid-cols-2 gap-2">
+          {features.map((f, i) => {
+            const S = shapeComponents[i];
+            return (
+              <div key={f.title} className="rounded-[14px] p-3 border" style={{ background: 'var(--card)', borderColor: 'var(--card-border)' }}>
+                <div className="w-7 h-7 mb-2 opacity-70"><S color={f.color} /></div>
+                <h3 className="text-[13px] font-bold text-[var(--text)] mb-0.5">{f.title}</h3>
+                <p className="text-[10px] text-[var(--text3)] leading-snug">{f.subtitle}</p>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
       {/* ── Full feature list ── */}
-      <section className="max-w-[1400px] mx-auto px-10 max-md:px-4 max-sm:px-3 pb-20">
-        <h2 className="font-serif text-[32px] font-bold text-[var(--text)] text-center mb-10">
+      <section className="max-w-[1400px] mx-auto px-10 max-md:px-4 max-sm:px-3 pb-20 max-sm:pb-10">
+        <h2 className="font-serif text-[32px] max-sm:text-[22px] font-bold text-[var(--text)] text-center mb-10 max-sm:mb-5">
           Все возможности
         </h2>
 
         {/* Stats row — first 3 */}
-        <div className="grid grid-cols-3 gap-5 mb-5 max-sm:grid-cols-1">
+        <div className="grid grid-cols-3 gap-5 mb-5 max-sm:grid-cols-2 max-sm:gap-2">
           {features.slice(0, 3).map((f, i) => {
             const S = shapeComponents[i];
             return (
@@ -856,7 +872,7 @@ export default function FeaturesPage() {
         </div>
 
         {/* Rest — 4 columns */}
-        <div className="grid grid-cols-4 gap-4 max-lg:grid-cols-2 max-sm:grid-cols-1">
+        <div className="grid grid-cols-4 gap-4 max-lg:grid-cols-2 max-sm:grid-cols-2 max-sm:gap-2">
           {features.slice(3).map((f, rawI) => {
             const i = rawI + 3;
             const S = shapeComponents[i];

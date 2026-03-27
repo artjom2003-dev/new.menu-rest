@@ -318,8 +318,8 @@ export function Header() {
           boxShadow: scrolled ? '0 4px 24px rgba(0,0,0,0.12)' : 'none',
         }}>
         <div className="w-full flex items-center justify-between">
-          {/* Left: Burger (mobile) + Language + City + Logo */}
-          <div className="flex items-center gap-3 max-sm:gap-1.5 min-w-0">
+          {/* Left: Burger (mobile) + Logo + City */}
+          <div className="flex items-center gap-3 max-sm:gap-2 min-w-0">
             {/* Mobile burger — left side */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -334,16 +334,16 @@ export function Header() {
               </svg>
             </button>
 
-            <LanguageSwitcher />
-            <span className="max-sm:hidden"><HeaderCityPicker /></span>
-
-            <Link href="/" className="font-serif text-[26px] max-sm:text-[18px] font-bold text-[var(--text)] no-underline tracking-[-0.03em] flex items-center gap-2 max-sm:gap-1 group flex-shrink-0">
+            <Link href="/" className="font-serif text-[26px] max-sm:text-[17px] font-bold text-[var(--text)] no-underline tracking-[-0.03em] flex items-center gap-2 max-sm:gap-1 group flex-shrink-0">
               <span className="w-9 h-9 max-sm:w-7 max-sm:h-7 rounded-[10px] max-sm:rounded-[7px] flex items-center justify-center text-[12px] max-sm:text-[9px] font-black tracking-tight transition-transform duration-300 group-hover:scale-110"
                 style={{ background: 'linear-gradient(135deg, var(--accent), #D44A20)', color: 'white', boxShadow: '0 2px 8px var(--accent-glow)' }}>
                 MR
               </span>
-              <span className="max-sm:text-[16px]">Menu-<b style={{ color: 'var(--accent)', fontWeight: 900 }}>Rest</b></span>
+              <span>Menu-<b style={{ color: 'var(--accent)', fontWeight: 900 }}>Rest</b></span>
             </Link>
+
+            <span className="max-lg:hidden"><LanguageSwitcher /></span>
+            <HeaderCityPicker />
           </div>
 
           {/* Nav — pill container */}
@@ -435,7 +435,24 @@ export function Header() {
 
 
 
-          {/* Right */}
+          {/* Mobile right: auth button */}
+          <div className="hidden max-lg:flex items-center">
+            {mounted && isLoggedIn ? (
+              <Link href="/profile"
+                className="flex items-center gap-1 px-3 py-1.5 rounded-full text-[12px] font-semibold border transition-all no-underline"
+                style={{ background: 'var(--glass)', color: 'var(--text2)', borderColor: 'var(--glass-border)' }}>
+                👤 {user?.name?.split(' ')[0] || t('profile')}
+              </Link>
+            ) : (
+              <button onClick={() => setAuthOpen(true)}
+                className="flex items-center gap-1 px-3 py-1.5 rounded-full text-[12px] font-semibold border transition-all cursor-pointer"
+                style={{ background: 'var(--glass)', color: 'var(--text2)', borderColor: 'var(--glass-border)' }}>
+                {t('login')}
+              </button>
+            )}
+          </div>
+
+          {/* Right — desktop */}
           <div className="flex gap-2.5 max-lg:hidden items-center">
             {/* Budget calc — guests only */}
             {!isOwner && (
@@ -593,19 +610,15 @@ export function Header() {
         <div className="fixed inset-0 z-[999] hidden max-lg:block" onClick={() => setMobileMenuOpen(false)}>
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
           <div
-            className="absolute top-[64px] left-0 right-0 p-4 max-sm:p-3 flex flex-col gap-1.5 max-h-[calc(100vh-64px)] overflow-y-auto"
-            style={{ background: 'var(--header-bg-scroll)', backdropFilter: 'blur(40px) saturate(1.4)', borderBottom: '1px solid var(--header-border)' }}
+            className="absolute top-[64px] left-3 w-[240px] max-sm:w-[220px] p-3 flex flex-col gap-1 rounded-2xl border"
+            style={{ background: 'var(--dropdown-bg)', borderColor: 'var(--dropdown-border)', boxShadow: 'var(--dropdown-shadow)', backdropFilter: 'blur(24px)' }}
             onClick={(e) => e.stopPropagation()}>
-            {/* City picker in mobile menu */}
-            <div className="hidden max-sm:block px-2 pb-2">
-              <HeaderCityPicker />
-            </div>
             {NAV_ITEMS.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
                 onClick={() => setMobileMenuOpen(false)}
-                className="px-4 py-2.5 rounded-xl text-[14px] font-semibold no-underline transition-all"
+                className="px-3 py-2 rounded-lg text-[13px] font-semibold no-underline transition-all"
                 style={{
                   color: pathname === item.href ? 'white' : 'var(--text2)',
                   background: pathname === item.href ? 'var(--accent)' : 'transparent',
@@ -618,43 +631,23 @@ export function Header() {
                 key={item.href}
                 href={item.href}
                 onClick={() => setMobileMenuOpen(false)}
-                className="px-4 py-3 rounded-xl text-[15px] font-semibold no-underline transition-all"
+                className="px-3 py-2 rounded-lg text-[13px] font-semibold no-underline transition-all"
                 style={{ color: isBlogActive ? 'var(--accent)' : 'var(--text3)' }}>
                 {item.label}
               </Link>
             ))}
-            <hr className="border-[var(--card-border)] my-1" />
             {!isOwner && (
-              <button
-                onClick={() => { toggleCalc(); setMobileMenuOpen(false); }}
-                className="px-4 py-3 rounded-xl text-[15px] font-semibold text-left border-none cursor-pointer"
-                style={{ background: 'transparent', color: 'var(--text2)' }}>
-                🍽️ {t('budgetCalc')}
-              </button>
+              <>
+                <hr className="border-[var(--card-border)] my-0.5" />
+                <button
+                  onClick={() => { toggleCalc(); setMobileMenuOpen(false); }}
+                  className="px-3 py-2 rounded-lg text-[13px] font-semibold text-left border-none cursor-pointer"
+                  style={{ background: 'transparent', color: 'var(--text2)' }}>
+                  🍽️ {t('budgetCalc')}
+                </button>
+              </>
+
             )}
-            {mounted && isLoggedIn ? (
-              <Link
-                href="/profile"
-                onClick={() => setMobileMenuOpen(false)}
-                className="px-4 py-3 rounded-xl text-[15px] font-semibold no-underline"
-                style={{ color: 'var(--text2)' }}>
-                👤 {user?.name?.split(' ')[0] || t('profile')}
-              </Link>
-            ) : (
-              <button
-                onClick={() => { setAuthOpen(true); setMobileMenuOpen(false); }}
-                className="px-4 py-3 rounded-xl text-[15px] font-semibold text-left border-none cursor-pointer"
-                style={{ background: 'transparent', color: 'var(--text2)' }}>
-                {t('login')}
-              </button>
-            )}
-            <Link
-              href="/restaurants"
-              onClick={() => setMobileMenuOpen(false)}
-              className="mx-4 mb-2 py-3 rounded-full text-[15px] font-semibold text-white no-underline text-center"
-              style={{ background: 'var(--accent)' }}>
-              {t('book')}
-            </Link>
           </div>
         </div>
       )}

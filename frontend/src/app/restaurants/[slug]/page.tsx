@@ -89,7 +89,7 @@ export default async function RestaurantPage({ params }: { params: { slug: strin
   }));
 
   return (
-    <>
+    <div className="overflow-x-hidden">
       <BudgetRestaurantContext name={restaurant.name} slug={params.slug} menu={menu} />
       <RestaurantHero restaurant={restaurant} />
       <div className="max-w-[1400px] mx-auto px-10 max-md:px-4 max-sm:px-3 pb-24">
@@ -99,6 +99,6 @@ export default async function RestaurantPage({ params }: { params: { slug: strin
         <ReviewSection restaurantId={restaurant.id} />
         <RestaurantActions restaurantId={restaurant.id} restaurantName={restaurant.name} />
       </div>
-    </>
+    </div>
   );
 }
