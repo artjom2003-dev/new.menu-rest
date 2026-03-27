@@ -349,12 +349,12 @@ export function AISearchBar() {
             const ev = JSON.parse(line.slice(6));
             if (ev.type === 'restaurants') { foundR = ev.restaurants || []; setStreamRestaurants(foundR); }
             else if (ev.type === 'token') { accText += ev.text; setStreamText(accText); }
-          } catch {}
+          } catch (_e) {}
         }
       }
       setChatHistory(prev => [...prev, { role: 'ai', text: accText, restaurants: foundR }]);
       setStreamText(''); setStreamRestaurants([]);
-    } catch {
+    } catch (e) {
       setChatHistory(prev => [...prev, { role: 'ai', text: 'Произошла ошибка. Попробуйте ещё раз.' }]);
       toast(t('aiUnavailable'), 'error');
     } finally {
