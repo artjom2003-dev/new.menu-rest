@@ -109,7 +109,7 @@ function FeatureCard({ feature, index }: { feature: Feature; index: number }) {
 
 export function FeaturesSection() {
   return (
-    <section className="max-w-[1400px] mx-auto px-10 pb-20">
+    <section className="max-w-[1400px] mx-auto px-10 max-md:px-4 max-sm:px-3 pb-20">
       {/* Header */}
       <div className="text-center mb-12">
         <h2 className="font-serif text-[36px] font-bold text-[var(--text)] mb-3">

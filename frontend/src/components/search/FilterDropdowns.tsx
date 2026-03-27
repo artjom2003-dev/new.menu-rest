@@ -146,7 +146,7 @@ function CitySearch({ options, value, onChange, placeholder: cityPlaceholder }: 
         )}
       </div>
       {focused && matches.length > 0 && (
-        <div className="absolute top-[calc(100%+6px)] left-0 min-w-[200px] max-h-[280px] overflow-y-auto rounded-2xl p-1.5 z-[100] border"
+        <div className="absolute top-[calc(100%+6px)] left-0 max-sm:left-auto max-sm:right-0 min-w-[200px] max-sm:min-w-[calc(100vw-24px)] max-h-[280px] max-sm:max-h-[50vh] overflow-y-auto rounded-2xl p-1.5 z-[100] border"
           style={{ background: 'var(--bg2)', borderColor: 'var(--card-border)', boxShadow: '0 20px 60px rgba(0,0,0,0.5)' }}>
           {matches.map(o => (
             <div key={o.value}
@@ -679,7 +679,7 @@ function FiltersBarInner() {
 
   return (
     <div className="filters-strip">
-    <div className="max-w-[1400px] mx-auto px-10 space-y-4">
+    <div className="max-w-[1400px] mx-auto px-10 max-md:px-4 max-sm:px-3 space-y-4">
       {/* Row 1: Dropdowns + Price + active tags */}
       <div className="flex items-center gap-3 flex-wrap">
         <CitySearch options={cities} value={filters.city} onChange={handleCityChange} placeholder={t('cityPlaceholder')} />
@@ -714,7 +714,7 @@ function FiltersBarInner() {
 
 export function FiltersBar() {
   return (
-    <Suspense fallback={<div className="max-w-[1400px] mx-auto px-10 py-5 h-[52px]" />}>
+    <Suspense fallback={<div className="max-w-[1400px] mx-auto px-10 max-md:px-4 max-sm:px-3 py-5 h-[52px]" />}>
       <FiltersBarInner />
     </Suspense>
   );

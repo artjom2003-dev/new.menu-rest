@@ -23,7 +23,7 @@ export default function ForBusinessPage() {
         <div className="absolute rounded-full pointer-events-none"
           style={{ width: 500, height: 500, background: 'rgba(57,255,209,0.04)', filter: 'blur(100px)', bottom: -150, left: -100 }} />
 
-        <div className="max-w-[1100px] mx-auto px-10 pt-20 pb-14 relative z-10 text-center">
+        <div className="max-w-[1100px] mx-auto px-10 max-md:px-4 max-sm:px-3 pt-20 pb-14 relative z-10 text-center">
           <span className="inline-block px-4 py-1.5 rounded-full text-[12px] font-semibold mb-7"
             style={{ background: 'rgba(255,92,40,0.1)', color: 'var(--accent)', border: '1px solid rgba(255,92,40,0.2)' }}>
             Платформа для ресторанов и кафе
@@ -62,7 +62,7 @@ export default function ForBusinessPage() {
       </section>
 
       {/* ── TABS ── */}
-      <section className="max-w-[1100px] mx-auto px-10 pb-20">
+      <section className="max-w-[1100px] mx-auto px-10 max-md:px-4 max-sm:px-3 pb-20">
         {/* Tab bar */}
         <div className="flex justify-center mb-12">
           <div className="inline-flex gap-2 p-1.5 rounded-full max-sm:flex-col max-sm:w-full"
@@ -529,7 +529,7 @@ export default function ForBusinessPage() {
       </section>
 
       {/* ── ФИНАЛЬНЫЙ CTA ── */}
-      <section className="max-w-[800px] mx-auto px-10 pb-20">
+      <section className="max-w-[800px] mx-auto px-10 max-md:px-4 max-sm:px-3 pb-20">
         <div className="rounded-[24px] px-8 py-12 text-center relative overflow-hidden"
           style={{ background: 'linear-gradient(135deg, var(--accent), #D44A20)', boxShadow: '0 16px 60px rgba(255,92,40,0.2)' }}>
           <div className="absolute rounded-full" style={{ top: -60, right: -60, width: 260, height: 260, background: 'rgba(255,255,255,0.06)' }} />

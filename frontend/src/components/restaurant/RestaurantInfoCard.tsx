@@ -276,18 +276,18 @@ export function RestaurantInfoCard({ restaurant }: { restaurant: Restaurant }) {
   ].filter((item) => item.value);
 
   return (
-    <div className="border rounded-[24px] p-6 mb-9 flex gap-7 max-lg:flex-col"
+    <div className="border rounded-[24px] p-6 max-sm:p-4 mb-9 flex gap-7 max-lg:flex-col"
       style={{ background: 'var(--bg2)', borderColor: 'var(--card-border)' }}>
 
       {/* Left — Photo slider */}
-      <div className="w-[45%] max-lg:w-full flex-shrink-0 min-h-[380px] max-lg:min-h-[280px]">
+      <div className="w-[45%] max-lg:w-full flex-shrink-0 min-h-[380px] max-lg:min-h-[280px] max-sm:min-h-[220px]">
         <PhotoSlider photos={restaurant.photos || []} name={displayName} cuisines={restaurant.cuisines} />
       </div>
 
       {/* Right — Info */}
       <div className="flex-1 flex flex-col justify-between min-w-0">
         <div>
-          <h1 className="font-serif text-[38px] font-black text-[var(--text)] tracking-[-0.03em] mb-2 leading-[1.1]">
+          <h1 className="font-serif text-[38px] max-sm:text-[26px] font-black text-[var(--text)] tracking-[-0.03em] mb-2 leading-[1.1]">
             {displayName}
           </h1>
 

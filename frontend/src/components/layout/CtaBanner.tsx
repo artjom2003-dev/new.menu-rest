@@ -6,7 +6,7 @@ export function CtaBanner() {
   const t = useTranslations('cta');
 
   return (
-    <div className="max-w-[1400px] mx-auto px-10 mb-14">
+    <div className="max-w-[1400px] mx-auto px-10 max-md:px-4 max-sm:px-3 mb-14">
       <div className="rounded-[24px] px-12 py-14 flex items-center justify-between gap-9 relative overflow-hidden"
         style={{
           background: 'linear-gradient(135deg, var(--accent), #D44A20)',

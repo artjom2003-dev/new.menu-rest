@@ -56,7 +56,7 @@ export function BookingForm({ restaurantId, restaurantName, open, onClose }: Boo
     <div className="fixed inset-0 z-[2000] flex items-center justify-center p-5"
       style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(10px)' }}
       onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="border rounded-[22px] p-8 max-w-[480px] w-full relative"
+      <div className="border rounded-[22px] p-8 max-sm:p-5 max-w-[480px] w-full relative"
         style={{ background: 'var(--bg2)', borderColor: 'var(--card-border)' }}>
 
         <button onClick={onClose}

@@ -59,7 +59,7 @@ export default async function CityCuisinePage({ params }: { params: { city: stri
   });
 
   return (
-    <div className="max-w-[1400px] mx-auto px-10 py-12">
+    <div className="max-w-[1400px] mx-auto px-10 max-md:px-4 max-sm:px-3 py-12">
       <nav className="flex items-center gap-2 text-[12px] text-[var(--text3)] mb-6">
         <Link href="/" className="no-underline text-[var(--text3)] hover:text-[var(--accent)]">Главная</Link>
         <span>/</span>

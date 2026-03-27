@@ -176,7 +176,7 @@ function BlogPageInner() {
   const tabInfo = TABS.find((t) => t.id === tab)!;
 
   return (
-    <div className="max-w-[1400px] mx-auto px-10 py-12">
+    <div className="max-w-[1400px] mx-auto px-10 max-md:px-4 max-sm:px-3 py-12">
       <h1 className="font-serif text-[42px] font-bold text-[var(--text)] mb-2">Журнал</h1>
       <p className="text-[14px] text-[var(--text3)] mb-8">
         Статьи, события, акции и новости ресторанного мира
@@ -313,7 +313,7 @@ function BlogPageInner() {
 export default function BlogPage() {
   return (
     <Suspense fallback={
-      <div className="max-w-[1400px] mx-auto px-10 py-12">
+      <div className="max-w-[1400px] mx-auto px-10 max-md:px-4 max-sm:px-3 py-12">
         <div className="h-10 w-48 rounded bg-[var(--bg3)] animate-pulse mb-6" />
         <div className="grid grid-cols-3 gap-6 max-lg:grid-cols-2 max-sm:grid-cols-1">
           {Array.from({ length: 3 }).map((_, i) => (

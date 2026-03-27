@@ -96,14 +96,14 @@ export function RestaurantGrid() {
 
   return (
     <>
-      <div className="max-w-[1400px] mx-auto px-10 pt-6 pb-5 flex justify-between items-baseline">
+      <div className="max-w-[1400px] mx-auto px-10 max-md:px-4 max-sm:px-3 pt-6 pb-5 flex justify-between items-baseline">
         <h2 className="font-serif text-[36px] font-bold text-[var(--text)]">{t('recommend')}</h2>
         <a href="/restaurants" className="text-[13px] text-[var(--accent)] font-medium no-underline">
           {t('all')}
         </a>
       </div>
 
-      <div className="max-w-[1400px] mx-auto px-10 pb-12 grid grid-cols-4 gap-4 max-xl:grid-cols-3 max-lg:grid-cols-2 max-sm:grid-cols-1">
+      <div className="max-w-[1400px] mx-auto px-10 max-md:px-4 max-sm:px-3 pb-12 grid grid-cols-4 gap-4 max-xl:grid-cols-3 max-lg:grid-cols-2 max-sm:grid-cols-1">
         {loading ? (
           Array.from({ length: 8 }).map((_, i) => (
             <div key={i} className="h-[240px] rounded-[16px] animate-pulse" style={{ background: 'var(--bg3)' }} />

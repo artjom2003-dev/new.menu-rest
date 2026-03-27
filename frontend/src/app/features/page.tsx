@@ -690,7 +690,7 @@ export default function FeaturesPage() {
   return (
     <>
       {/* Hero */}
-      <section className="max-w-[1400px] mx-auto px-10 pt-12 pb-6 relative">
+      <section className="max-w-[1400px] mx-auto px-10 max-md:px-4 max-sm:px-3 pt-12 pb-6 relative">
         <div className="absolute rounded-full pointer-events-none"
           style={{ width: 500, height: 500, background: 'rgba(255,92,40,0.06)', filter: 'blur(80px)', top: -150, right: -100 }} />
         <div className="relative z-10 text-center max-w-[680px] mx-auto">
@@ -708,7 +708,7 @@ export default function FeaturesPage() {
       </section>
 
       {/* ── Animated showcase ── */}
-      <section className="max-w-[1100px] mx-auto px-10 py-10 relative" style={{ minHeight: 560 }}>
+      <section className="max-w-[1100px] mx-auto px-10 max-md:px-4 max-sm:px-3 py-10 relative" style={{ minHeight: 560 }}>
 
         {/* Scene decorations — restaurants, clouds, sun */}
         <SceneDecorations personX={personX} />
@@ -821,7 +821,7 @@ export default function FeaturesPage() {
       </div>
 
       {/* ── Full feature list ── */}
-      <section className="max-w-[1400px] mx-auto px-10 pb-20">
+      <section className="max-w-[1400px] mx-auto px-10 max-md:px-4 max-sm:px-3 pb-20">
         <h2 className="font-serif text-[32px] font-bold text-[var(--text)] text-center mb-10">
           Все возможности
         </h2>
@@ -887,7 +887,7 @@ export default function FeaturesPage() {
       </section>
 
       {/* ── CTA ── */}
-      <section className="max-w-[800px] mx-auto px-10 pb-16">
+      <section className="max-w-[800px] mx-auto px-10 max-md:px-4 max-sm:px-3 pb-16">
         <div className="rounded-[18px] px-8 py-9 text-center relative overflow-hidden"
           style={{ background: 'linear-gradient(135deg, var(--accent), #D44A20)', boxShadow: '0 16px 50px rgba(255,92,40,0.15)' }}>
           <div className="absolute rounded-full" style={{ top: -60, right: -60, width: 240, height: 240, background: 'rgba(255,255,255,0.06)' }} />

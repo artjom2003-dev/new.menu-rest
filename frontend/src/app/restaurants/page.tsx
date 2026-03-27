@@ -206,7 +206,7 @@ function RestaurantsPageInner() {
       <AddRestaurantModal open={showAddModal} onClose={() => setShowAddModal(false)} />
       {/* Gastro quiz moved to /quiz page */}
 
-      <div className="max-w-[1400px] mx-auto px-10 pt-10 pb-4">
+      <div className="max-w-[1400px] mx-auto px-10 max-md:px-4 max-sm:px-3 pt-10 pb-4">
         <div className="mb-2">
           <h1 className="font-serif text-[42px] font-bold text-[var(--text)]">Рестораны</h1>
           <p className="text-[14px] text-[var(--text3)] mb-6">
@@ -236,7 +236,7 @@ function RestaurantsPageInner() {
 
       <FiltersBar />
 
-      <div className="max-w-[1400px] mx-auto px-10 pt-4 pb-6 flex items-center gap-3 flex-wrap">
+      <div className="max-w-[1400px] mx-auto px-10 max-md:px-4 max-sm:px-3 pt-4 pb-6 flex items-center gap-3 flex-wrap">
         {lat && (
           <span className="px-4 py-2 rounded-full text-[12px] font-semibold border"
             style={{ background: 'var(--accent)', color: '#fff', borderColor: 'var(--accent)' }}>
@@ -294,7 +294,7 @@ function RestaurantsPageInner() {
         </button>
       </div>
 
-      <div className="max-w-[1400px] mx-auto px-10 pb-10">
+      <div className="max-w-[1400px] mx-auto px-10 max-md:px-4 max-sm:px-3 pb-10">
         <div className="flex gap-6 items-start">
           {/* Main content */}
           <div className="flex-1 min-w-0">
@@ -417,7 +417,7 @@ function RestaurantsPageInner() {
       </div>
 
       {/* CTA Banner */}
-      <div className="max-w-[1400px] mx-auto px-10 pb-8">
+      <div className="max-w-[1400px] mx-auto px-10 max-md:px-4 max-sm:px-3 pb-8">
         <div
           className="relative overflow-hidden rounded-[20px] p-8 flex items-center justify-between gap-6 max-sm:flex-col max-sm:text-center"
           style={{
@@ -461,7 +461,7 @@ function RestaurantsPageInner() {
 
       {/* Pagination — hidden when showing reco */}
       {!showReco && meta && meta.pages > 1 && (
-        <div className="max-w-[1400px] mx-auto px-10 pb-20 flex justify-center gap-2">
+        <div className="max-w-[1400px] mx-auto px-10 max-md:px-4 max-sm:px-3 pb-20 flex justify-center gap-2">
           {page > 1 && (
             <button onClick={() => goToPage(page - 1)} className="px-4 py-2 rounded-full text-[13px] font-semibold border cursor-pointer"
               style={{ background: 'var(--glass)', color: 'var(--text2)', borderColor: 'var(--glass-border)' }}>
@@ -497,7 +497,7 @@ function RestaurantsPageInner() {
 export default function RestaurantsPage() {
   return (
     <Suspense fallback={
-      <div className="max-w-[1400px] mx-auto px-10 pt-10 pb-20">
+      <div className="max-w-[1400px] mx-auto px-10 max-md:px-4 max-sm:px-3 pt-10 pb-20">
         <div className="h-8 w-48 rounded bg-[var(--bg3)] animate-pulse mb-6" />
         <div className="grid grid-cols-4 gap-4 max-xl:grid-cols-3 max-lg:grid-cols-2 max-sm:grid-cols-1">
           {Array.from({ length: 6 }).map((_, i) => (

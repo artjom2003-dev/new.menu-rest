@@ -238,6 +238,7 @@ export function Header() {
   const [scrolled, setScrolled] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { theme, setTheme } = useTheme();
   const { isLoggedIn, user } = useAuthStore();
   const { toggle: toggleCalc } = useBudgetStore();
@@ -309,7 +310,7 @@ export function Header() {
   return (
     <>
       <header
-        className="fixed top-0 left-0 right-0 z-[1000] h-[64px] flex items-center px-10 transition-all duration-[400ms]"
+        className="fixed top-0 left-0 right-0 z-[1000] h-[64px] flex items-center px-10 max-md:px-4 max-sm:px-3 transition-all duration-[400ms]"
         style={{
           background: scrolled ? 'var(--header-bg-scroll)' : 'var(--header-bg)',
           backdropFilter: 'blur(40px) saturate(1.4)',
@@ -322,7 +323,7 @@ export function Header() {
             <LanguageSwitcher />
             <HeaderCityPicker />
 
-            <Link href="/" className="font-serif text-[26px] font-bold text-[var(--text)] no-underline tracking-[-0.03em] flex items-center gap-2.5 group">
+            <Link href="/" className="font-serif text-[26px] max-sm:text-[20px] font-bold text-[var(--text)] no-underline tracking-[-0.03em] flex items-center gap-2.5 max-sm:gap-1.5 group">
               <span className="w-9 h-9 rounded-[10px] flex items-center justify-center text-[12px] font-black tracking-tight transition-transform duration-300 group-hover:scale-110"
                 style={{ background: 'linear-gradient(135deg, var(--accent), #D44A20)', color: 'white', boxShadow: '0 2px 8px var(--accent-glow)' }}>
                 MR
@@ -332,7 +333,7 @@ export function Header() {
           </div>
 
           {/* Nav — pill container */}
-          <nav className="flex gap-0.5 max-sm:hidden items-center rounded-full px-1 py-1"
+          <nav className="flex gap-0.5 max-lg:hidden items-center rounded-full px-1 py-1"
             style={{ background: 'var(--nav-bg)', border: '1px solid var(--nav-border)' }}>
             {NAV_ITEMS.map((item) => (
               <NavLink
@@ -418,8 +419,22 @@ export function Header() {
 
           </nav>
 
+          {/* Mobile burger button */}
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="hidden max-lg:flex items-center justify-center w-10 h-10 rounded-xl border cursor-pointer transition-all"
+            style={{ background: 'var(--glass)', borderColor: 'var(--glass-border)' }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text2)" strokeWidth="2" strokeLinecap="round">
+              {mobileMenuOpen ? (
+                <><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></>
+              ) : (
+                <><line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" /></>
+              )}
+            </svg>
+          </button>
+
           {/* Right */}
-          <div className="flex gap-2.5 items-center">
+          <div className="flex gap-2.5 max-lg:hidden items-center">
             {/* Budget calc — guests only */}
             {!isOwner && (
               <button
@@ -570,6 +585,73 @@ export function Header() {
           </div>
         </div>
       </header>
+
+      {/* Mobile menu overlay */}
+      {mobileMenuOpen && (
+        <div className="fixed inset-0 z-[999] hidden max-lg:block" onClick={() => setMobileMenuOpen(false)}>
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+          <div
+            className="absolute top-[64px] left-0 right-0 p-4 flex flex-col gap-2 max-h-[calc(100vh-64px)] overflow-y-auto"
+            style={{ background: 'var(--header-bg-scroll)', backdropFilter: 'blur(40px) saturate(1.4)', borderBottom: '1px solid var(--header-border)' }}
+            onClick={(e) => e.stopPropagation()}>
+            {NAV_ITEMS.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={() => setMobileMenuOpen(false)}
+                className="px-4 py-3 rounded-xl text-[15px] font-semibold no-underline transition-all"
+                style={{
+                  color: pathname === item.href ? 'white' : 'var(--text2)',
+                  background: pathname === item.href ? 'var(--accent)' : 'transparent',
+                }}>
+                {item.label}
+              </Link>
+            ))}
+            {!isOwner && BLOG_ITEMS.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={() => setMobileMenuOpen(false)}
+                className="px-4 py-3 rounded-xl text-[15px] font-semibold no-underline transition-all"
+                style={{ color: isBlogActive ? 'var(--accent)' : 'var(--text3)' }}>
+                {item.label}
+              </Link>
+            ))}
+            <hr className="border-[var(--card-border)] my-1" />
+            {!isOwner && (
+              <button
+                onClick={() => { toggleCalc(); setMobileMenuOpen(false); }}
+                className="px-4 py-3 rounded-xl text-[15px] font-semibold text-left border-none cursor-pointer"
+                style={{ background: 'transparent', color: 'var(--text2)' }}>
+                🍽️ {t('budgetCalc')}
+              </button>
+            )}
+            {mounted && isLoggedIn ? (
+              <Link
+                href="/profile"
+                onClick={() => setMobileMenuOpen(false)}
+                className="px-4 py-3 rounded-xl text-[15px] font-semibold no-underline"
+                style={{ color: 'var(--text2)' }}>
+                👤 {user?.name?.split(' ')[0] || t('profile')}
+              </Link>
+            ) : (
+              <button
+                onClick={() => { setAuthOpen(true); setMobileMenuOpen(false); }}
+                className="px-4 py-3 rounded-xl text-[15px] font-semibold text-left border-none cursor-pointer"
+                style={{ background: 'transparent', color: 'var(--text2)' }}>
+                {t('login')}
+              </button>
+            )}
+            <Link
+              href="/restaurants"
+              onClick={() => setMobileMenuOpen(false)}
+              className="mx-4 mb-2 py-3 rounded-full text-[15px] font-semibold text-white no-underline text-center"
+              style={{ background: 'var(--accent)' }}>
+              {t('book')}
+            </Link>
+          </div>
+        </div>
+      )}
 
       <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} />
 

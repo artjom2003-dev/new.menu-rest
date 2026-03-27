@@ -40,8 +40,8 @@ export function Footer() {
     <footer
       className="border-t mt-24"
       style={{ background: 'var(--bg2)', borderColor: 'var(--card-border)' }}>
-      <div className="max-w-[1400px] mx-auto px-10 py-14">
-        <div className="grid grid-cols-4 gap-10 max-md:grid-cols-2 max-sm:grid-cols-1">
+      <div className="max-w-[1400px] mx-auto px-10 max-md:px-4 max-sm:px-3 py-14 max-sm:py-8">
+        <div className="grid grid-cols-4 gap-10 max-md:grid-cols-2 max-sm:grid-cols-1 max-sm:gap-6">
           {/* Brand */}
           <div>
             <Link href="/" className="font-serif text-[22px] font-bold text-[var(--text)] no-underline tracking-[-0.03em] block mb-3">

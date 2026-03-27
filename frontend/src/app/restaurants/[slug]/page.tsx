@@ -92,7 +92,7 @@ export default async function RestaurantPage({ params }: { params: { slug: strin
     <>
       <BudgetRestaurantContext name={restaurant.name} slug={params.slug} menu={menu} />
       <RestaurantHero restaurant={restaurant} />
-      <div className="max-w-[1400px] mx-auto px-10 pb-24">
+      <div className="max-w-[1400px] mx-auto px-10 max-md:px-4 max-sm:px-3 pb-24">
         <RestaurantInfoCard restaurant={restaurant} />
         <WishlistUsersSection restaurantId={restaurant.id} />
         <MenuSection categories={menu} isVerified={!!restaurant.isVerified} phone={restaurant.phone} />

@@ -7,7 +7,7 @@ export function HeroSection() {
   const t = useTranslations('hero');
 
   return (
-    <section className="flex items-center px-10 pt-16 pb-8 relative overflow-hidden">
+    <section className="flex items-center px-10 max-md:px-4 max-sm:px-3 pt-16 pb-8 relative overflow-hidden">
       {/* Ambient orbs */}
       <div
         className="absolute rounded-full pointer-events-none animate-orb-float"

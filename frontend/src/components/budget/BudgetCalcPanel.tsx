@@ -228,7 +228,7 @@ export function BudgetCalcPanel() {
 
   return (
     <div
-      className="fixed right-0 top-[72px] bottom-0 w-[380px] flex flex-col z-[900] transition-transform duration-[450ms] max-sm:w-full"
+      className="fixed right-0 top-[64px] bottom-0 w-[380px] max-md:w-full flex flex-col z-[900] transition-transform duration-[450ms]"
       style={{
         background: 'var(--bg2)',
         borderLeft: '1px solid var(--card-border)',
