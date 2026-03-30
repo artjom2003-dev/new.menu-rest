@@ -234,8 +234,8 @@ function getMood(index: number, goingRight: boolean): Mood {
   if (!goingRight) return 'happy';
   if (index === 0) return 'sad';
   if (index === 1) return 'curious';
-  if (index >= 3 && index <= 6) return 'interested';
-  if (index === 7) return 'booking';
+  if (index >= 2 && index <= 4) return 'interested';
+  if (index === 5) return 'booking';
   return 'happy';
 }
 
@@ -524,9 +524,9 @@ function SceneDecorations({ personX }: { personX: number }) {
 /* ─── Data ────────────────────────────────────────────────── */
 
 const shapeComponents = [
-  ShapeRestaurants, ShapeCities, ShapeLanguages,
-  ShapeAI, ShapeMenu, ShapeAllergen, ShapeBudget,
-  ShapeBooking, ShapeReviews, ShapeFavorites, ShapeLoyalty,
+  ShapeRestaurants, ShapeLanguages,
+  ShapeAI, ShapeMenu, ShapeBudget,
+  ShapeBooking, ShapeReviews, ShapeLoyalty,
 ];
 
 function useIsLight() {
@@ -543,42 +543,31 @@ function useIsLight() {
 
 const featuresDark = [
   { color: '#FF5C28', glow: 'rgba(255,92,40,0.3)' },
-  { color: '#39FFD1', glow: 'rgba(57,255,209,0.3)' },
   { color: '#C4A1FF', glow: 'rgba(196,161,255,0.3)' },
-  { color: '#FF5C28', glow: 'rgba(255,92,40,0.3)' },
-  { color: '#BAFF39', glow: 'rgba(186,255,57,0.3)' },
-  { color: '#FF6B6B', glow: 'rgba(255,107,107,0.3)' },
-  { color: '#FFD700', glow: 'rgba(255,215,0,0.3)' },
   { color: '#39FFD1', glow: 'rgba(57,255,209,0.3)' },
-  { color: '#FF5C28', glow: 'rgba(255,92,40,0.3)' },
-  { color: '#FF6B9D', glow: 'rgba(255,107,157,0.3)' },
   { color: '#BAFF39', glow: 'rgba(186,255,57,0.3)' },
+  { color: '#FFD700', glow: 'rgba(255,215,0,0.3)' },
+  { color: '#FF6B9D', glow: 'rgba(255,107,157,0.3)' },
+  { color: '#FF5C28', glow: 'rgba(255,92,40,0.3)' },
+  { color: '#39FFD1', glow: 'rgba(57,255,209,0.3)' },
 ];
 
 const featuresLight = [
   { color: '#D94520', glow: 'rgba(217,69,32,0.25)' },
-  { color: '#0E8C7A', glow: 'rgba(14,140,122,0.2)' },
   { color: '#7B4FCC', glow: 'rgba(123,79,204,0.2)' },
-  { color: '#D94520', glow: 'rgba(217,69,32,0.25)' },
-  { color: '#4A8C10', glow: 'rgba(74,140,16,0.2)' },
-  { color: '#CC3333', glow: 'rgba(204,51,51,0.2)' },
-  { color: '#B8920E', glow: 'rgba(184,146,14,0.25)' },
   { color: '#0E8C7A', glow: 'rgba(14,140,122,0.2)' },
-  { color: '#D94520', glow: 'rgba(217,69,32,0.25)' },
-  { color: '#CC3366', glow: 'rgba(204,51,102,0.2)' },
   { color: '#4A8C10', glow: 'rgba(74,140,16,0.2)' },
+  { color: '#B8920E', glow: 'rgba(184,146,14,0.25)' },
+  { color: '#CC3366', glow: 'rgba(204,51,102,0.2)' },
+  { color: '#D94520', glow: 'rgba(217,69,32,0.25)' },
+  { color: '#0E8C7A', glow: 'rgba(14,140,122,0.2)' },
 ];
 
 const featuresBase = [
   {
-    title: '123 000 ресторанов',
-    subtitle: 'Крупнейшая база заведений',
-    detail: 'От уютных кафе до роскошных ресторанов — выбирайте из огромного каталога с подробными карточками, фото и меню',
-  },
-  {
-    title: '221 город',
-    subtitle: 'Вся Россия на одной карте',
-    detail: 'Москва, Петербург, Казань, Сочи и ещё 217 городов. Находите лучшие рестораны в любом уголке страны',
+    title: '123 000+ ресторанов в 221 городе',
+    subtitle: 'Крупнейшая база заведений России',
+    detail: 'От уютных кафе до роскошных ресторанов — Москва, Петербург, Казань, Сочи и ещё 217 городов с подробными карточками, фото и меню',
   },
   {
     title: '8 языков',
@@ -591,14 +580,9 @@ const featuresBase = [
     detail: 'Опишите, что хотите — «уютное место с пастой на двоих до 3000₽» — и получите подборку за секунду',
   },
   {
-    title: 'Меню с КБЖУ',
-    subtitle: 'Считайте рацион при выборе',
-    detail: 'Калории, белки, жиры и углеводы для каждого блюда. Следите за питанием, не отказываясь от ресторанов',
-  },
-  {
-    title: 'Фильтр аллергенов',
-    subtitle: 'Безопасный выбор блюд',
-    detail: 'Укажите аллергены в профиле — мы пометим опасные блюда и подскажем безопасные альтернативы',
+    title: 'Здоровое питание',
+    subtitle: 'КБЖУ и фильтр аллергенов',
+    detail: 'Калории, белки, жиры и углеводы для каждого блюда. Укажите аллергены — мы пометим опасные блюда и подскажем альтернативы',
   },
   {
     title: 'Калькулятор бюджета',
@@ -613,12 +597,7 @@ const featuresBase = [
   {
     title: 'Честные отзывы',
     subtitle: 'Четыре оценки вместо одной',
-    detail: 'Кухня, обслуживание, атмосфера, цена/качество — оцениваются отдельно',
-  },
-  {
-    title: 'Избранное',
-    subtitle: 'Ваша личная коллекция',
-    detail: 'Сохраняйте понравившиеся рестораны одним кликом и возвращайтесь к ним в любой момент',
+    detail: 'Кухня, обслуживание, атмосфера, цена/качество — оцениваются отдельно. Избранное и история',
   },
   {
     title: 'Программа лояльности',
@@ -820,22 +799,51 @@ export default function FeaturesPage() {
         ))}
       </div>
 
-      {/* ── Mobile feature cards (replacing animation) ── */}
-      <section className="hidden max-sm:block max-w-[1400px] mx-auto px-3 pb-6">
-        <div className="flex flex-col gap-2">
-          {features.map((f, i) => {
-            const S = shapeComponents[i];
-            return (
-              <div key={f.title} className="rounded-[14px] p-3 border flex items-center gap-3" style={{ background: 'var(--card)', borderColor: 'var(--card-border)' }}>
-                <div className="w-8 h-8 flex-shrink-0 opacity-70"><S color={f.color} /></div>
-                <div className="min-w-0">
-                  <h3 className="text-[13px] font-bold mb-0.5" style={{ color: f.color }}>{f.title}</h3>
-                  <p className="text-[11px] text-[var(--text3)] leading-snug">{f.subtitle}</p>
-                </div>
+      {/* ── Mobile feature carousel (replacing desktop animation) ── */}
+      <section className="hidden max-sm:block px-3 pb-8 relative">
+        {/* Active card — animated */}
+        <div className="relative overflow-hidden rounded-[20px] border mx-auto"
+          style={{ borderColor: feat.color, background: 'var(--card)', boxShadow: `0 8px 32px ${feat.glow}` }}>
+          <div className="absolute -top-16 -right-16 w-40 h-40 rounded-full pointer-events-none"
+            style={{ background: feat.color, opacity: 0.07, filter: 'blur(24px)' }} />
+          <div className="p-5 relative z-10"
+            style={{ animation: transitioning ? 'none' : 'mobileCardIn 0.4s ease-out' }}>
+            <div className="flex items-start gap-4 mb-3">
+              <div className="w-12 h-12 flex-shrink-0" style={{ filter: `drop-shadow(0 0 8px ${feat.glow})` }}>
+                <Shape color={feat.color} />
               </div>
-            );
-          })}
+              <div>
+                <h3 className="text-[17px] font-bold leading-tight mb-1" style={{ color: feat.color }}>{feat.title}</h3>
+                <p className="text-[13px] font-medium text-[var(--text)]">{feat.subtitle}</p>
+              </div>
+            </div>
+            <p className="text-[12px] text-[var(--text3)] leading-relaxed">{feat.detail}</p>
+          </div>
+          {/* Progress bar */}
+          <div className="h-[3px] w-full" style={{ background: 'var(--card-border)' }}>
+            <div className="h-full transition-all duration-300" style={{ width: `${((active + 1) / features.length) * 100}%`, background: feat.color }} />
+          </div>
         </div>
+
+        {/* Dots */}
+        <div className="flex justify-center gap-2 mt-4">
+          {features.map((f, i) => (
+            <button key={i}
+              onClick={() => { setTransitioning(true); setTimeout(() => { setActive(i); setGoingRight(i > active); setTransitioning(false); }, 200); }}
+              className="rounded-full border-none cursor-pointer transition-all duration-300"
+              style={{
+                width: i === active ? 24 : 8,
+                height: 8,
+                background: i === active ? f.color : 'var(--card-border)',
+                boxShadow: i === active ? `0 0 8px ${f.glow}` : 'none',
+              }} />
+          ))}
+        </div>
+
+        {/* Swipe hint */}
+        <p className="text-center text-[11px] text-[var(--text3)] mt-2 opacity-50">
+          {active + 1} / {features.length}
+        </p>
       </section>
 
       {/* ── Full feature list ── */}
@@ -844,9 +852,9 @@ export default function FeaturesPage() {
           Все возможности
         </h2>
 
-        {/* Stats row — first 3 */}
-        <div className="grid grid-cols-3 gap-5 mb-5 max-sm:grid-cols-1 max-sm:gap-2">
-          {features.slice(0, 3).map((f, i) => {
+        {/* Stats row — first 2 */}
+        <div className="grid grid-cols-2 gap-5 mb-5 max-sm:grid-cols-1 max-sm:gap-2">
+          {features.slice(0, 2).map((f, i) => {
             const S = shapeComponents[i];
             return (
               <div key={f.title}
@@ -875,10 +883,10 @@ export default function FeaturesPage() {
           })}
         </div>
 
-        {/* Rest — 4 columns */}
-        <div className="grid grid-cols-4 gap-4 max-lg:grid-cols-2 max-sm:grid-cols-2 max-sm:gap-2">
-          {features.slice(3).map((f, rawI) => {
-            const i = rawI + 3;
+        {/* Rest — 3 columns */}
+        <div className="grid grid-cols-3 gap-4 max-lg:grid-cols-2 max-sm:grid-cols-2 max-sm:gap-2">
+          {features.slice(2).map((f, rawI) => {
+            const i = rawI + 2;
             const S = shapeComponents[i];
             return (
               <div key={f.title}
@@ -962,6 +970,10 @@ export default function FeaturesPage() {
         }
         .animate-float-particle {
           animation: float-particle 4s ease-in-out infinite;
+        }
+        @keyframes mobileCardIn {
+          0% { opacity: 0; transform: translateX(30px); }
+          100% { opacity: 1; transform: translateX(0); }
         }
       `}} />
     </div>

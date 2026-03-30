@@ -339,7 +339,7 @@ export function Header() {
                 style={{ background: 'linear-gradient(135deg, var(--accent), #D44A20)', color: 'white', boxShadow: '0 2px 8px var(--accent-glow)' }}>
                 MR
               </span>
-              <span className="max-[380px]:hidden">Menu-<b style={{ color: 'var(--accent)', fontWeight: 900 }}>Rest</b></span>
+              <span>Menu-<b style={{ color: 'var(--accent)', fontWeight: 900 }}>Rest</b></span>
             </Link>
 
             <span className="max-lg:hidden"><LanguageSwitcher /></span>
