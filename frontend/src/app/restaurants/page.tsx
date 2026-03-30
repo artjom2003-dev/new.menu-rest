@@ -164,7 +164,7 @@ function RestaurantsPageInner() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await restaurantApi.list({ page, limit: 24, city, cuisine, priceLevelMin, priceLevelMax, sortBy: lat ? undefined : sortBy, search, features, metro, district, venueType, ...(hasMenu ? { hasMenu: 'true' } : {}), ...(lat && lng ? { lat, lng } : {}) });
+      const res = await restaurantApi.list({ page, limit: 24, city: search ? undefined : city, cuisine: search ? undefined : cuisine, priceLevelMin: search ? undefined : priceLevelMin, priceLevelMax: search ? undefined : priceLevelMax, sortBy: lat ? undefined : sortBy, search, features: search ? undefined : features, metro: search ? undefined : metro, district: search ? undefined : district, venueType: search ? undefined : venueType, ...(hasMenu && !search ? { hasMenu: 'true' } : {}), ...(lat && lng && !search ? { lat, lng } : {}) });
       setRestaurants(res.data.items);
       setMeta(res.data.meta);
     } catch {
