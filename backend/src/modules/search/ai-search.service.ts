@@ -947,15 +947,19 @@ ${restaurantContext}
     }
     const extraSearchTerms = Array.isArray(llmParsed.searchTerms) ? llmParsed.searchTerms as string[] : [];
 
-    // Apply saved city from frontend CityDetector if no city/location was extracted from the query text
+    // Apply saved city from frontend CityDetector — but only if query doesn't mention a specific city
+    const CITY_SLUGS_SET = new Set(['moscow', 'spb', 'kazan', 'sochi', 'nizhny-novgorod', 'yekaterinburg', 'novosibirsk', 'krasnodar', 'rostov-na-donu', 'samara', 'voronezh', 'ufa', 'kaliningrad']);
+    const queryMentionsCity = params.location && CITY_SLUGS_SET.has(params.location);
+
     if (!params.location && savedCity) {
       params.location = savedCity;
-      // Clear rawLocation that LLM might have guessed — trust the explicit user choice
       if (params.rawLocation) {
         this.logger.log(`[AI-Stream] overriding rawLocation="${params.rawLocation}" with savedCity="${savedCity}"`);
         params.rawLocation = undefined;
       }
       this.logger.log(`[AI-Stream] applied saved city: ${savedCity} (${savedCityName || 'no name'})`);
+    } else if (queryMentionsCity && params.location !== savedCity) {
+      this.logger.log(`[AI-Stream] query mentions city "${params.location}" — overriding savedCity "${savedCity}"`);
     }
 
     // Detect if user wants nearby/proximity results (specific location, not just a city)

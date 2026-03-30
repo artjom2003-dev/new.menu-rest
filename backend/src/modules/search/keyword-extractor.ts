@@ -331,10 +331,19 @@ export function extractKeywords(query: string): ExtractedParams {
   } else {
     const q = query.toLowerCase();
     // Find which key matched to preserve original Russian text for DB search
+    // Cities take priority over districts/areas (e.g. "центр екатеринбурга" → ekaterinburg, not center)
+    const CITY_SLUGS = new Set(['moscow', 'spb', 'kazan', 'sochi', 'nizhny-novgorod', 'yekaterinburg', 'novosibirsk', 'krasnodar', 'rostov-na-donu', 'samara', 'voronezh', 'ufa', 'kaliningrad']);
     let matchedKey: string | undefined;
     let matchedSlug: string | undefined;
+    // First pass: look for cities
     for (const [key, value] of Object.entries(LOCATION_MAP)) {
-      if (q.includes(key)) { matchedKey = key; matchedSlug = value; break; }
+      if (q.includes(key) && CITY_SLUGS.has(value)) { matchedKey = key; matchedSlug = value; break; }
+    }
+    // Second pass: if no city found, look for any location (metro, district, etc.)
+    if (!matchedSlug) {
+      for (const [key, value] of Object.entries(LOCATION_MAP)) {
+        if (q.includes(key)) { matchedKey = key; matchedSlug = value; break; }
+      }
     }
     if (matchedSlug) {
       params.location = matchedSlug;
