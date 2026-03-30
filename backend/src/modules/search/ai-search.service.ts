@@ -74,9 +74,12 @@ export class AiSearchService {
     if (!this.ollamaUrl) return {};
 
     try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 15000);
       const response = await fetch(`${this.ollamaUrl}/api/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
         body: JSON.stringify({
           model: this.ollamaModel,
           messages: [
@@ -111,6 +114,7 @@ export class AiSearchService {
         }),
       });
 
+      clearTimeout(timeout);
       if (!response.ok) return {};
 
       const data = await response.json();
@@ -1207,18 +1211,22 @@ ${restaurantContext}
     const messages = this.buildPromptMessages(query, restaurants, params, context);
 
     try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 90000);
       const response = await fetch(`${this.ollamaUrl}/api/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
         body: JSON.stringify({
           model: this.ollamaModel,
           messages,
           stream: true,
-          options: { temperature: 0.2, num_predict: 600 },
+          options: { temperature: 0.25, num_predict: 500 },
         }),
       });
 
       if (!response.ok || !response.body) {
+        clearTimeout(timeout);
         const fallback = this.buildFallbackRecommendation(query, restaurants);
         yield JSON.stringify({ type: 'token', text: fallback });
         return;
@@ -1260,6 +1268,7 @@ ${restaurantContext}
           // skip
         }
       }
+      clearTimeout(timeout);
     } catch (err) {
       this.logger.warn(`LLM stream failed: ${(err as Error).message}`);
       const fallback = this.buildFallbackRecommendation(query, restaurants);
