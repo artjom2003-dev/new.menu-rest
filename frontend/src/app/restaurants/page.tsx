@@ -201,42 +201,96 @@ function RestaurantsPageInner() {
     branchCount: (r as any).branchCount,
   });
 
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const activeFilterCount = [city, cuisine, priceLevelMin, features, metro, district, venueType, lat].filter(Boolean).length;
+
   return (
     <>
       <AddRestaurantModal open={showAddModal} onClose={() => setShowAddModal(false)} />
-      {/* Gastro quiz moved to /quiz page */}
 
-      <div className="max-w-[1400px] mx-auto px-10 max-md:px-4 max-sm:px-3 pt-10 pb-4">
-        <div className="mb-2">
+      <div className="max-w-[1400px] mx-auto px-10 max-md:px-4 max-sm:px-3 pt-10 max-sm:pt-4 pb-4 max-sm:pb-2">
+        {/* Desktop: title + search */}
+        <div className="mb-2 max-sm:hidden">
           <h1 className="font-serif text-[42px] font-bold text-[var(--text)]">Рестораны</h1>
           <p className="text-[14px] text-[var(--text3)] mb-6">
             {meta ? `${meta.total} заведений` : 'Загрузка...'}
           </p>
         </div>
 
-        {/* Search with autocomplete */}
-        <SearchWithSuggestions
-          value={searchInput}
-          onChange={setSearchInput}
-          onSearch={(q) => {
-            const params = new URLSearchParams(searchParams.toString());
-            if (q.trim()) { params.set('search', q.trim()); } else { params.delete('search'); }
-            params.set('page', '1');
-            router.push(`/restaurants?${params.toString()}`);
-          }}
-          onClear={search ? () => {
-            setSearchInput('');
-            const params = new URLSearchParams(searchParams.toString());
-            params.delete('search');
-            params.set('page', '1');
-            router.push(`/restaurants?${params.toString()}`);
-          } : undefined}
-        />
+        {/* Mobile: search + filter icon in one row */}
+        <div className="hidden max-sm:flex gap-2 items-center mb-3">
+          <form
+            onSubmit={(e) => { e.preventDefault(); const params = new URLSearchParams(searchParams.toString()); if (searchInput.trim()) { params.set('search', searchInput.trim()); } else { params.delete('search'); } params.set('page', '1'); router.push(`/restaurants?${params.toString()}`); }}
+            className="flex-1 relative">
+            <input
+              type="text"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              placeholder="Ресторан, кухня или блюдо"
+              className="w-full px-4 py-2.5 pl-10 rounded-full text-[13px] text-[var(--text)] placeholder-[var(--text3)] outline-none border transition-all font-sans"
+              style={{ background: 'var(--bg3)', borderColor: 'var(--card-border)' }}
+              onFocus={(e) => { e.currentTarget.style.borderColor = 'var(--accent)'; }}
+              onBlur={(e) => { e.currentTarget.style.borderColor = 'var(--card-border)'; }}
+            />
+            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[14px] opacity-40">🔍</span>
+          </form>
+          <button
+            onClick={() => setMobileFiltersOpen(!mobileFiltersOpen)}
+            className="relative flex items-center justify-center w-10 h-10 rounded-full border cursor-pointer transition-all flex-shrink-0"
+            style={{
+              background: activeFilterCount > 0 ? 'var(--accent-glow)' : 'var(--bg3)',
+              borderColor: activeFilterCount > 0 ? 'var(--accent)' : 'var(--card-border)',
+            }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={activeFilterCount > 0 ? 'var(--accent)' : 'var(--text2)'} strokeWidth="2" strokeLinecap="round">
+              <line x1="4" y1="6" x2="20" y2="6" /><line x1="6" y1="12" x2="18" y2="12" /><line x1="9" y1="18" x2="15" y2="18" />
+            </svg>
+            {activeFilterCount > 0 && (
+              <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full text-[9px] font-bold text-white flex items-center justify-center"
+                style={{ background: 'var(--accent)' }}>
+                {activeFilterCount}
+              </span>
+            )}
+          </button>
+          {meta && (
+            <span className="text-[11px] text-[var(--text3)] whitespace-nowrap flex-shrink-0">{meta.total}</span>
+          )}
+        </div>
+
+        {/* Desktop search */}
+        <div className="max-sm:hidden">
+          <SearchWithSuggestions
+            value={searchInput}
+            onChange={setSearchInput}
+            onSearch={(q) => {
+              const params = new URLSearchParams(searchParams.toString());
+              if (q.trim()) { params.set('search', q.trim()); } else { params.delete('search'); }
+              params.set('page', '1');
+              router.push(`/restaurants?${params.toString()}`);
+            }}
+            onClear={search ? () => {
+              setSearchInput('');
+              const params = new URLSearchParams(searchParams.toString());
+              params.delete('search');
+              params.set('page', '1');
+              router.push(`/restaurants?${params.toString()}`);
+            } : undefined}
+          />
+        </div>
       </div>
 
-      <FiltersBar />
+      {/* Desktop filters */}
+      <div className="max-sm:hidden">
+        <FiltersBar />
+      </div>
 
-      <div className="max-w-[1400px] mx-auto px-10 max-md:px-4 max-sm:px-3 pt-4 pb-6 flex items-center gap-3 flex-wrap">
+      {/* Mobile filters panel */}
+      {mobileFiltersOpen && (
+        <div className="hidden max-sm:block">
+          <FiltersBar />
+        </div>
+      )}
+
+      <div className="max-w-[1400px] mx-auto px-10 max-md:px-4 max-sm:px-3 pt-4 max-sm:pt-1 pb-6 max-sm:pb-3 flex items-center gap-3 max-sm:gap-2 flex-wrap">
         {lat && (
           <span className="px-4 py-2 rounded-full text-[12px] font-semibold border"
             style={{ background: 'var(--accent)', color: '#fff', borderColor: 'var(--accent)' }}>
@@ -258,7 +312,7 @@ function RestaurantsPageInner() {
                 params.set('page', '1');
                 router.push(`/restaurants?${params.toString()}`);
               }}
-              className="px-4 py-2 rounded-full text-[12px] font-semibold border transition-all cursor-pointer"
+              className="px-4 max-sm:px-3 py-2 max-sm:py-1.5 rounded-full text-[12px] max-sm:text-[11px] font-semibold border transition-all cursor-pointer"
               style={{
                 background: isActive ? 'var(--accent)' : 'var(--glass)',
                 color: isActive ? '#fff' : 'var(--text2)',
@@ -283,7 +337,7 @@ function RestaurantsPageInner() {
             params.set('page', '1');
             router.push(`/restaurants?${params.toString()}`);
           }}
-          className="px-4 py-2 rounded-full text-[12px] font-semibold border transition-all cursor-pointer"
+          className="px-4 max-sm:px-3 py-2 max-sm:py-1.5 rounded-full text-[12px] max-sm:text-[11px] font-semibold border transition-all cursor-pointer"
           style={{
             background: hasMenu ? 'linear-gradient(135deg, rgba(57,255,209,0.15), rgba(57,255,209,0.06))' : 'var(--glass)',
             color: hasMenu ? 'var(--teal)' : 'var(--text2)',

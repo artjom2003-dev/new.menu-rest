@@ -318,8 +318,8 @@ export function Header() {
           boxShadow: scrolled ? '0 4px 24px rgba(0,0,0,0.12)' : 'none',
         }}>
         <div className="w-full flex items-center justify-between">
-          {/* Left: Burger (mobile) + Logo + City */}
-          <div className="flex items-center gap-3 max-sm:gap-1.5 min-w-0 overflow-hidden">
+          {/* Left: Burger (mobile) + Logo */}
+          <div className="flex items-center gap-3 max-sm:gap-1.5 min-w-0">
             {/* Mobile burger — left side */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -334,8 +334,8 @@ export function Header() {
               </svg>
             </button>
 
-            <Link href="/" className="font-serif text-[26px] max-sm:text-[15px] font-bold text-[var(--text)] no-underline tracking-[-0.03em] flex items-center gap-2 max-sm:gap-1 group flex-shrink-0">
-              <span className="w-9 h-9 max-sm:w-6 max-sm:h-6 rounded-[10px] max-sm:rounded-[6px] flex items-center justify-center text-[12px] max-sm:text-[8px] font-black tracking-tight transition-transform duration-300 group-hover:scale-110"
+            <Link href="/" className="font-serif text-[26px] max-sm:text-[18px] font-bold text-[var(--text)] no-underline tracking-[-0.03em] flex items-center gap-2 max-sm:gap-1.5 group flex-shrink-0">
+              <span className="w-9 h-9 max-sm:w-7 max-sm:h-7 rounded-[10px] max-sm:rounded-[7px] flex items-center justify-center text-[12px] max-sm:text-[9px] font-black tracking-tight transition-transform duration-300 group-hover:scale-110"
                 style={{ background: 'linear-gradient(135deg, var(--accent), #D44A20)', color: 'white', boxShadow: '0 2px 8px var(--accent-glow)' }}>
                 MR
               </span>
@@ -343,7 +343,7 @@ export function Header() {
             </Link>
 
             <span className="max-lg:hidden"><LanguageSwitcher /></span>
-            <span className="flex-shrink-0 max-sm:[&_button]:text-[10px] max-sm:[&_button]:px-2 max-sm:[&_button]:py-0.5"><HeaderCityPicker /></span>
+            <span className="max-lg:hidden flex-shrink-0"><HeaderCityPicker /></span>
           </div>
 
           {/* Nav — pill container */}
@@ -436,16 +436,17 @@ export function Header() {
 
 
           {/* Mobile right: auth */}
-          <div className="hidden max-lg:flex items-center gap-1 flex-shrink-0">
+          <div className="hidden max-lg:flex items-center gap-2 flex-shrink-0">
+            <span className="flex-shrink-0 [&_button]:text-[11px] [&_button]:px-2.5 [&_button]:py-1"><HeaderCityPicker /></span>
             {mounted && isLoggedIn ? (
               <Link href="/profile"
-                className="flex items-center gap-1 px-2.5 py-1 max-sm:px-2 rounded-full text-[11px] max-sm:text-[10px] font-semibold border transition-all no-underline whitespace-nowrap"
+                className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold border transition-all no-underline whitespace-nowrap"
                 style={{ background: 'var(--glass)', color: 'var(--text2)', borderColor: 'var(--glass-border)' }}>
                 👤 {user?.name?.split(' ')[0] || t('profile')}
               </Link>
             ) : (
               <button onClick={() => setAuthOpen(true)}
-                className="flex items-center gap-1 px-2.5 py-1 max-sm:px-2 rounded-full text-[11px] max-sm:text-[10px] font-semibold border transition-all cursor-pointer whitespace-nowrap"
+                className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold border transition-all cursor-pointer whitespace-nowrap"
                 style={{ background: 'var(--glass)', color: 'var(--text2)', borderColor: 'var(--glass-border)' }}>
                 {t('login')}
               </button>
