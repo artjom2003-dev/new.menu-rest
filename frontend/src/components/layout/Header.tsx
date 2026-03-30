@@ -319,11 +319,11 @@ export function Header() {
         }}>
         <div className="w-full flex items-center justify-between">
           {/* Left: Burger (mobile) + Logo + City */}
-          <div className="flex items-center gap-3 max-sm:gap-2 min-w-0">
+          <div className="flex items-center gap-3 max-sm:gap-1.5 min-w-0 overflow-hidden">
             {/* Mobile burger — left side */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="hidden max-lg:flex items-center justify-center w-9 h-9 rounded-lg border cursor-pointer transition-all flex-shrink-0"
+              className="hidden max-lg:flex items-center justify-center w-9 h-9 max-sm:w-8 max-sm:h-8 rounded-lg border cursor-pointer transition-all flex-shrink-0"
               style={{ background: 'var(--glass)', borderColor: 'var(--glass-border)' }}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--text2)" strokeWidth="2" strokeLinecap="round">
                 {mobileMenuOpen ? (
@@ -334,16 +334,16 @@ export function Header() {
               </svg>
             </button>
 
-            <Link href="/" className="font-serif text-[26px] max-sm:text-[17px] font-bold text-[var(--text)] no-underline tracking-[-0.03em] flex items-center gap-2 max-sm:gap-1 group flex-shrink-0">
-              <span className="w-9 h-9 max-sm:w-7 max-sm:h-7 rounded-[10px] max-sm:rounded-[7px] flex items-center justify-center text-[12px] max-sm:text-[9px] font-black tracking-tight transition-transform duration-300 group-hover:scale-110"
+            <Link href="/" className="font-serif text-[26px] max-sm:text-[15px] font-bold text-[var(--text)] no-underline tracking-[-0.03em] flex items-center gap-2 max-sm:gap-1 group flex-shrink-0">
+              <span className="w-9 h-9 max-sm:w-6 max-sm:h-6 rounded-[10px] max-sm:rounded-[6px] flex items-center justify-center text-[12px] max-sm:text-[8px] font-black tracking-tight transition-transform duration-300 group-hover:scale-110"
                 style={{ background: 'linear-gradient(135deg, var(--accent), #D44A20)', color: 'white', boxShadow: '0 2px 8px var(--accent-glow)' }}>
                 MR
               </span>
-              <span>Menu-<b style={{ color: 'var(--accent)', fontWeight: 900 }}>Rest</b></span>
+              <span className="max-[380px]:hidden">Menu-<b style={{ color: 'var(--accent)', fontWeight: 900 }}>Rest</b></span>
             </Link>
 
             <span className="max-lg:hidden"><LanguageSwitcher /></span>
-            <span className="flex-shrink-0"><HeaderCityPicker /></span>
+            <span className="flex-shrink-0 max-sm:[&_button]:text-[10px] max-sm:[&_button]:px-2 max-sm:[&_button]:py-0.5"><HeaderCityPicker /></span>
           </div>
 
           {/* Nav — pill container */}
@@ -436,16 +436,16 @@ export function Header() {
 
 
           {/* Mobile right: auth */}
-          <div className="hidden max-lg:flex items-center gap-1.5">
+          <div className="hidden max-lg:flex items-center gap-1 flex-shrink-0">
             {mounted && isLoggedIn ? (
               <Link href="/profile"
-                className="flex items-center gap-1 px-3 py-1.5 rounded-full text-[12px] font-semibold border transition-all no-underline"
+                className="flex items-center gap-1 px-2.5 py-1 max-sm:px-2 rounded-full text-[11px] max-sm:text-[10px] font-semibold border transition-all no-underline whitespace-nowrap"
                 style={{ background: 'var(--glass)', color: 'var(--text2)', borderColor: 'var(--glass-border)' }}>
                 👤 {user?.name?.split(' ')[0] || t('profile')}
               </Link>
             ) : (
               <button onClick={() => setAuthOpen(true)}
-                className="flex items-center gap-1 px-3 py-1.5 rounded-full text-[12px] font-semibold border transition-all cursor-pointer"
+                className="flex items-center gap-1 px-2.5 py-1 max-sm:px-2 rounded-full text-[11px] max-sm:text-[10px] font-semibold border transition-all cursor-pointer whitespace-nowrap"
                 style={{ background: 'var(--glass)', color: 'var(--text2)', borderColor: 'var(--glass-border)' }}>
                 {t('login')}
               </button>

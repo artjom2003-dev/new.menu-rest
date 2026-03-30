@@ -845,12 +845,12 @@ export default function FeaturesPage() {
         </h2>
 
         {/* Stats row — first 3 */}
-        <div className="grid grid-cols-3 gap-5 mb-5 max-sm:grid-cols-2 max-sm:gap-2">
+        <div className="grid grid-cols-3 gap-5 mb-5 max-sm:grid-cols-1 max-sm:gap-2">
           {features.slice(0, 3).map((f, i) => {
             const S = shapeComponents[i];
             return (
               <div key={f.title}
-                className="rounded-[18px] p-6 border transition-all duration-300 cursor-pointer group text-center"
+                className="rounded-[18px] p-6 max-sm:p-4 border transition-all duration-300 cursor-pointer group text-center max-sm:flex max-sm:items-center max-sm:gap-3 max-sm:text-left"
                 style={{ background: 'var(--card)', borderColor: 'var(--card-border)' }}
                 onClick={() => { setActive(i); setGoingRight(i > active); window.scrollTo({ top: 200, behavior: 'smooth' }); }}
                 onMouseEnter={(e) => {
@@ -863,11 +863,13 @@ export default function FeaturesPage() {
                   (e.currentTarget as HTMLElement).style.boxShadow = 'none';
                   (e.currentTarget as HTMLElement).style.transform = 'none';
                 }}>
-                <div className="w-14 h-14 mx-auto mb-3 opacity-70 group-hover:opacity-100 transition-opacity">
+                <div className="w-14 h-14 max-sm:w-10 max-sm:h-10 mx-auto max-sm:mx-0 mb-3 max-sm:mb-0 opacity-70 group-hover:opacity-100 transition-opacity flex-shrink-0">
                   <S color={f.color} />
                 </div>
-                <h3 className="text-[20px] font-black mb-1" style={{ color: f.color }}>{f.title}</h3>
-                <p className="text-[12px] text-[var(--text3)] leading-relaxed">{f.subtitle}</p>
+                <div>
+                  <h3 className="text-[20px] max-sm:text-[16px] font-black mb-1" style={{ color: f.color }}>{f.title}</h3>
+                  <p className="text-[12px] text-[var(--text3)] leading-relaxed">{f.subtitle}</p>
+                </div>
               </div>
             );
           })}
@@ -880,7 +882,7 @@ export default function FeaturesPage() {
             const S = shapeComponents[i];
             return (
               <div key={f.title}
-                className="rounded-[18px] p-6 border transition-all duration-300 cursor-pointer group"
+                className="rounded-[18px] p-6 max-sm:p-3.5 border transition-all duration-300 cursor-pointer group"
                 style={{ background: 'var(--card)', borderColor: 'var(--card-border)' }}
                 onClick={() => { setActive(i); setGoingRight(i > active); window.scrollTo({ top: 200, behavior: 'smooth' }); }}
                 onMouseEnter={(e) => {
@@ -893,11 +895,11 @@ export default function FeaturesPage() {
                   (e.currentTarget as HTMLElement).style.boxShadow = 'none';
                   (e.currentTarget as HTMLElement).style.transform = 'none';
                 }}>
-                <div className="w-10 h-10 mb-3 opacity-70 group-hover:opacity-100 transition-opacity">
+                <div className="w-10 h-10 max-sm:w-8 max-sm:h-8 mb-3 max-sm:mb-2 opacity-70 group-hover:opacity-100 transition-opacity">
                   <S color={f.color} />
                 </div>
-                <h3 className="text-[15px] font-bold text-[var(--text)] mb-1">{f.title}</h3>
-                <p className="text-[12px] text-[var(--text3)] leading-relaxed">{f.subtitle}</p>
+                <h3 className="text-[15px] max-sm:text-[13px] font-bold text-[var(--text)] mb-1">{f.title}</h3>
+                <p className="text-[12px] max-sm:text-[11px] text-[var(--text3)] leading-relaxed">{f.subtitle}</p>
               </div>
             );
           })}

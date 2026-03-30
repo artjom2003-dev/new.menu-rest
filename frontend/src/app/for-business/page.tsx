@@ -23,14 +23,14 @@ export default function ForBusinessPage() {
         <div className="absolute rounded-full pointer-events-none"
           style={{ width: 500, height: 500, background: 'rgba(57,255,209,0.04)', filter: 'blur(100px)', bottom: -150, left: -100 }} />
 
-        <div className="max-w-[1100px] mx-auto px-10 max-md:px-4 max-sm:px-3 pt-20 pb-14 relative z-10 text-center">
+        <div className="max-w-[1100px] mx-auto px-10 max-md:px-4 max-sm:px-3 pt-14 max-sm:pt-10 pb-10 max-sm:pb-6 relative z-10 text-center">
           <span className="inline-block px-4 py-1.5 rounded-full text-[12px] font-semibold mb-7"
             style={{ background: 'rgba(255,92,40,0.1)', color: 'var(--accent)', border: '1px solid rgba(255,92,40,0.2)' }}>
             Платформа для ресторанов и кафе
           </span>
 
-          <h1 className="font-serif font-black text-[var(--text)] leading-[1.05] mb-4 max-sm:text-[32px]"
-            style={{ fontSize: 'clamp(36px, 5.5vw, 56px)' }}>
+          <h1 className="font-serif font-black text-[var(--text)] leading-[1.05] mb-3 max-sm:text-[26px]"
+            style={{ fontSize: 'clamp(30px, 5.5vw, 56px)' }}>
             Мы приводим гостей —{' '}
             <span style={{
               background: 'linear-gradient(135deg, var(--accent), #FFD700)',
@@ -45,7 +45,7 @@ export default function ForBusinessPage() {
           </p>
 
           {/* Stats */}
-          <div className="flex justify-center gap-12 mb-0 flex-wrap max-sm:gap-6">
+          <div className="flex justify-center gap-10 mb-0 flex-wrap max-sm:gap-4">
             {[
               { value: '123 000+', label: 'ресторанов' },
               { value: '221', label: 'город' },
@@ -53,8 +53,8 @@ export default function ForBusinessPage() {
               { value: '0 ₽', label: 'за старт' },
             ].map((s) => (
               <div key={s.label} className="text-center">
-                <div className="text-[28px] font-black text-[var(--text)] max-sm:text-[22px]">{s.value}</div>
-                <div className="text-[12px] text-[var(--text3)] mt-0.5">{s.label}</div>
+                <div className="text-[28px] font-black text-[var(--text)] max-sm:text-[18px]">{s.value}</div>
+                <div className="text-[12px] max-sm:text-[10px] text-[var(--text3)] mt-0.5">{s.label}</div>
               </div>
             ))}
           </div>
@@ -62,9 +62,9 @@ export default function ForBusinessPage() {
       </section>
 
       {/* ── TABS ── */}
-      <section className="max-w-[1100px] mx-auto px-10 max-md:px-4 max-sm:px-3 pb-20">
+      <section className="max-w-[1100px] mx-auto px-10 max-md:px-4 max-sm:px-3 pb-14 max-sm:pb-10">
         {/* Tab bar */}
-        <div className="flex justify-center mb-12">
+        <div className="flex justify-center mb-8 max-sm:mb-6">
           <div className="inline-flex gap-2 p-1.5 rounded-full max-sm:flex-col max-sm:w-full"
             style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
             {TABS.map((t) => (
@@ -107,17 +107,17 @@ export default function ForBusinessPage() {
             </div>
 
             {/* Features grid */}
-            <div className="grid grid-cols-3 gap-5 max-lg:grid-cols-2 max-sm:grid-cols-1 mb-10">
+            <div className="grid grid-cols-3 gap-5 max-lg:grid-cols-2 max-sm:grid-cols-2 max-sm:gap-2.5 mb-8">
               {[
-                { icon: '📋', title: 'Полноценная карточка', desc: 'Фото, меню, часы работы, средний чек, кухня — всё в одном месте. Создаётся автоматически или вами.', color: '#FF5C28' },
-                { icon: '🤖', title: 'AI-поиск нового поколения', desc: '«Романтический ужин без глютена до 3000 ₽» — гости описывают словами, AI находит именно вас.', color: '#39FFD1' },
-                { icon: '🌍', title: '8 языков, 221 город', desc: 'Туристы находят ваш ресторан на своём языке. Карточка автоматически переводится.', color: '#C4A1FF' },
-                { icon: '🔍', title: 'Видимость в каталоге', desc: 'Фильтры по кухне, цене, расположению, особенностям. Ваше заведение находят те, кому оно подходит.', color: '#FFD700' },
-                { icon: '📣', title: '2 публикации в месяц', desc: 'Расскажите об акциях, новом меню или событии — и попадите в ленту и рекомендации.', color: '#FF6B9D' },
-                { icon: '📈', title: 'Рост без рисков', desc: 'Нет заказов — нет комиссии. Бесплатный тариф без ограничений по времени.', color: '#BAFF39' },
+                { icon: '📋', title: 'Полноценная карточка', desc: 'Фото, меню, часы работы, средний чек, кухня — всё в одном месте.', color: '#FF5C28' },
+                { icon: '🤖', title: 'AI-поиск', desc: 'Гости описывают словами — AI находит именно вас.', color: '#39FFD1' },
+                { icon: '🌍', title: '8 языков, 221 город', desc: 'Туристы находят ресторан на своём языке.', color: '#C4A1FF' },
+                { icon: '🔍', title: 'Видимость в каталоге', desc: 'Фильтры по кухне, цене, расположению.', color: '#FFD700' },
+                { icon: '📣', title: '2 публикации/мес', desc: 'Акции, новое меню — в ленту и рекомендации.', color: '#FF6B9D' },
+                { icon: '📈', title: 'Рост без рисков', desc: 'Нет заказов — нет комиссии.', color: '#BAFF39' },
               ].map((f) => (
                 <div key={f.title}
-                  className="rounded-[18px] p-6 border transition-all duration-300"
+                  className="rounded-[18px] max-sm:rounded-[14px] p-6 max-sm:p-3.5 border transition-all duration-300"
                   style={{ background: 'var(--card)', borderColor: 'var(--card-border)' }}
                   onMouseEnter={(e) => {
                     const el = e.currentTarget as HTMLElement;
@@ -131,9 +131,9 @@ export default function ForBusinessPage() {
                     el.style.boxShadow = 'none';
                     el.style.transform = 'none';
                   }}>
-                  <span className="text-[28px] mb-3 block">{f.icon}</span>
-                  <h3 className="text-[15px] font-bold text-[var(--text)] mb-2">{f.title}</h3>
-                  <p className="text-[13px] text-[var(--text3)] leading-relaxed">{f.desc}</p>
+                  <span className="text-[28px] max-sm:text-[20px] mb-3 max-sm:mb-2 block">{f.icon}</span>
+                  <h3 className="text-[15px] max-sm:text-[13px] font-bold text-[var(--text)] mb-1.5 max-sm:mb-1">{f.title}</h3>
+                  <p className="text-[13px] max-sm:text-[11px] text-[var(--text3)] leading-relaxed">{f.desc}</p>
                 </div>
               ))}
             </div>
@@ -195,7 +195,7 @@ export default function ForBusinessPage() {
             </div>
 
             {/* Features 2-col */}
-            <div className="grid grid-cols-2 gap-5 max-sm:grid-cols-1 mb-12">
+            <div className="grid grid-cols-2 gap-4 max-sm:grid-cols-1 max-sm:gap-2.5 mb-10">
               {[
                 { icon: '📅', title: 'Онлайн-бронирование', desc: 'Гости бронируют в 2 клика — без звонков. Вы управляете заявками в личном кабинете, снижаете no-show.' },
                 { icon: '📊', title: 'Аналитика и отчёты', desc: 'Источники трафика, тепловая карта просмотров, CTR карточки, конверсия в бронь. Экспорт в PDF.' },
@@ -205,7 +205,7 @@ export default function ForBusinessPage() {
                 { icon: '🎯', title: 'Попадание в подборки', desc: 'AI-рекомендации, тематические и сезонные подборки — дополнительные точки контакта с аудиторией.' },
               ].map((f) => (
                 <div key={f.title}
-                  className="rounded-[18px] p-6 border flex gap-4 transition-all duration-300"
+                  className="rounded-[18px] max-sm:rounded-[14px] p-6 max-sm:p-4 border flex gap-4 max-sm:gap-3 transition-all duration-300"
                   style={{ background: 'var(--card)', borderColor: 'var(--card-border)' }}
                   onMouseEnter={(e) => {
                     const el = e.currentTarget as HTMLElement;
@@ -219,7 +219,7 @@ export default function ForBusinessPage() {
                     el.style.boxShadow = 'none';
                     el.style.transform = 'none';
                   }}>
-                  <span className="text-[28px] flex-shrink-0">{f.icon}</span>
+                  <span className="text-[28px] max-sm:text-[22px] flex-shrink-0">{f.icon}</span>
                   <div>
                     <h3 className="text-[15px] font-bold text-[var(--text)] mb-1.5">{f.title}</h3>
                     <p className="text-[13px] text-[var(--text3)] leading-relaxed">{f.desc}</p>
@@ -333,7 +333,7 @@ export default function ForBusinessPage() {
             </div>
 
             {/* Kiosk showcase */}
-            <div className="grid items-center gap-10 mb-16 max-lg:gap-8" style={{ gridTemplateColumns: '1fr 1fr' }}>
+            <div className="grid items-center gap-10 mb-12 max-lg:gap-8 max-sm:!grid-cols-1 max-sm:gap-6" style={{ gridTemplateColumns: '1fr 1fr' }}>
               {/* Photo */}
               <div className="relative flex justify-center max-lg:order-2">
                 <div className="absolute pointer-events-none"
@@ -366,7 +366,7 @@ export default function ForBusinessPage() {
               </div>
 
               {/* 3 products */}
-              <div className="flex flex-col gap-5 max-lg:order-1">
+              <div className="flex flex-col gap-4 max-sm:gap-3 max-lg:order-1">
                 {[
                   {
                     title: 'Электронное меню',
@@ -388,7 +388,7 @@ export default function ForBusinessPage() {
                   },
                 ].map((p) => (
                   <div key={p.title}
-                    className="rounded-[18px] p-6 border transition-all duration-300"
+                    className="rounded-[18px] max-sm:rounded-[14px] p-6 max-sm:p-4 border transition-all duration-300"
                     style={{ background: 'var(--card)', borderColor: 'var(--card-border)' }}
                     onMouseEnter={(e) => {
                       const el = e.currentTarget as HTMLElement;
@@ -420,7 +420,7 @@ export default function ForBusinessPage() {
               Продвижение и подборки
             </h3>
 
-            <div className="grid grid-cols-2 gap-5 max-sm:grid-cols-1 mb-12">
+            <div className="grid grid-cols-2 gap-5 max-sm:grid-cols-1 max-sm:gap-3 mb-10">
               {/* Продвижение */}
               <div className="rounded-[20px] border overflow-hidden"
                 style={{ borderColor: 'var(--card-border)', background: 'var(--card)' }}>
@@ -529,8 +529,8 @@ export default function ForBusinessPage() {
       </section>
 
       {/* ── ФИНАЛЬНЫЙ CTA ── */}
-      <section className="max-w-[800px] mx-auto px-10 max-md:px-4 max-sm:px-3 pb-20">
-        <div className="rounded-[24px] px-8 py-12 text-center relative overflow-hidden"
+      <section className="max-w-[800px] mx-auto px-10 max-md:px-4 max-sm:px-3 pb-14 max-sm:pb-10">
+        <div className="rounded-[24px] max-sm:rounded-[18px] px-8 max-sm:px-5 py-12 max-sm:py-8 text-center relative overflow-hidden"
           style={{ background: 'linear-gradient(135deg, var(--accent), #D44A20)', boxShadow: '0 16px 60px rgba(255,92,40,0.2)' }}>
           <div className="absolute rounded-full" style={{ top: -60, right: -60, width: 260, height: 260, background: 'rgba(255,255,255,0.06)' }} />
           <div className="absolute rounded-full" style={{ bottom: -40, left: -40, width: 200, height: 200, background: 'rgba(255,255,255,0.04)' }} />

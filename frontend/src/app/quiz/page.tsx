@@ -688,12 +688,13 @@ export default function QuizPage() {
     return (
       <div
         className="min-h-screen flex flex-col items-center justify-center relative"
-        style={{ background: 'var(--bg)', padding: '40px 20px' }}
+        style={{ background: 'var(--bg)', padding: '24px 16px' }}
       >
         <FloatingEmojis />
 
-        <div className="relative z-10 flex flex-col items-center gap-6 max-w-lg text-center">
+        <div className="relative z-10 flex flex-col items-center gap-4 max-sm:gap-3 max-w-lg text-center">
           <div
+            className="max-sm:text-[48px]"
             style={{
               fontSize: 80,
               lineHeight: 1,
@@ -704,6 +705,7 @@ export default function QuizPage() {
           </div>
 
           <h1
+            className="max-sm:!text-[28px]"
             style={{
               fontSize: 40,
               fontWeight: 800,
@@ -717,6 +719,7 @@ export default function QuizPage() {
           </h1>
 
           <p
+            className="max-sm:!text-[15px]"
             style={{
               fontSize: 18,
               color: 'var(--text2)',
@@ -731,7 +734,7 @@ export default function QuizPage() {
 
           <button
             onClick={handleStart}
-            className="group"
+            className="group max-sm:!py-3 max-sm:!px-10 max-sm:!text-[15px]"
             style={{
               padding: '16px 48px',
               borderRadius: 16,
@@ -787,13 +790,14 @@ export default function QuizPage() {
     return (
       <div
         className="min-h-screen flex flex-col items-center relative"
-        style={{ background: 'var(--bg)', padding: '40px 20px' }}
+        style={{ background: 'var(--bg)', padding: '24px 16px' }}
       >
         <FloatingEmojis />
 
-        <div className="relative z-10 flex flex-col items-center gap-6 w-full" style={{ maxWidth: 840 }}>
+        <div className="relative z-10 flex flex-col items-center gap-4 max-sm:gap-3 w-full" style={{ maxWidth: 840 }}>
           {/* Archetype */}
           <div
+            className="max-sm:!text-[48px]"
             style={{
               fontSize: 72,
               lineHeight: 1,
@@ -804,6 +808,7 @@ export default function QuizPage() {
           </div>
 
           <h1
+            className="max-sm:!text-[24px]"
             style={{
               fontSize: 32,
               fontWeight: 800,
@@ -817,6 +822,7 @@ export default function QuizPage() {
           </h1>
 
           <p
+            className="max-sm:!text-[14px]"
             style={{
               fontSize: 16,
               color: 'var(--text2)',
@@ -831,6 +837,7 @@ export default function QuizPage() {
 
           {/* Radar Chart */}
           <div
+            className="max-sm:!p-3"
             style={{
               background: 'var(--bg2)',
               border: '1px solid var(--card-border)',
@@ -842,7 +849,7 @@ export default function QuizPage() {
               animation: 'fadeUp 0.6s ease-out 0.6s both',
             }}
           >
-            <RadarChart axes={profile.axes} size={300} />
+            <RadarChart axes={profile.axes} size={240} />
           </div>
 
           {/* Top axes tags */}
@@ -1058,7 +1065,7 @@ export default function QuizPage() {
       {/* Question area */}
       <div
         className="flex-1 flex flex-col items-center justify-center"
-        style={{ padding: '32px 20px', maxWidth: 520, margin: '0 auto', width: '100%' }}
+        style={{ padding: '20px 16px', maxWidth: 520, margin: '0 auto', width: '100%' }}
       >
         <div
           key={slideKey}
@@ -1068,11 +1075,12 @@ export default function QuizPage() {
           }}
         >
           {/* Question */}
-          <div className="text-center mb-8">
-            <span style={{ fontSize: 48, display: 'block', marginBottom: 16 }}>
+          <div className="text-center mb-6 max-sm:mb-4">
+            <span className="max-sm:!text-[36px]" style={{ fontSize: 48, display: 'block', marginBottom: 12 }}>
               {currentQ?.emoji}
             </span>
             <h2
+              className="max-sm:!text-[18px]"
               style={{
                 fontSize: 22,
                 fontWeight: 700,
@@ -1086,14 +1094,14 @@ export default function QuizPage() {
           </div>
 
           {/* Options */}
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-2.5 max-sm:gap-2">
             {currentQ?.options.map((opt) => {
               const isSelected = selectedOptions.includes(opt.id);
               return (
                 <button
                   key={opt.id}
                   onClick={() => handleOptionClick(opt.id)}
-                  className="w-full text-left"
+                  className="w-full text-left max-sm:!py-3 max-sm:!px-4 max-sm:!rounded-xl"
                   style={{
                     padding: '16px 20px',
                     borderRadius: 16,
@@ -1126,8 +1134,9 @@ export default function QuizPage() {
                     }
                   }}
                 >
-                  <span style={{ fontSize: 28, flexShrink: 0 }}>{opt.emoji}</span>
+                  <span className="max-sm:!text-[22px]" style={{ fontSize: 28, flexShrink: 0 }}>{opt.emoji}</span>
                   <span
+                    className="max-sm:!text-[13px]"
                     style={{
                       fontSize: 15,
                       fontWeight: isSelected ? 600 : 500,

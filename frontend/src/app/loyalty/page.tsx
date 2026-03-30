@@ -436,9 +436,16 @@ export default function LoyaltyPage() {
           50% { transform: translateY(-6px) scale(1.05); }
         }
         @media (max-width: 768px) {
-          .giveaway-inner { flex-direction: column; padding: 28px 20px; gap: 28px; }
-          .giveaway-title { font-size: 22px; }
-          .giveaway-timer-num { width: 52px; height: 60px; font-size: 26px; }
+          .giveaway-inner { flex-direction: column; padding: 20px 16px; gap: 20px; }
+          .giveaway-title { font-size: 20px; }
+          .giveaway-desc { font-size: 12px; margin-bottom: 14px; }
+          .giveaway-badge { font-size: 10px; padding: 4px 12px; margin-bottom: 12px; }
+          .giveaway-how { margin-bottom: 14px; }
+          .giveaway-how-row { font-size: 12px; padding: 3px 0; }
+          .giveaway-timer-num { width: 44px; height: 52px; font-size: 22px; border-radius: 10px; }
+          .giveaway-timer-sep { font-size: 22px; padding-top: 10px; }
+          .giveaway-timer-sub { font-size: 9px; }
+          .giveaway-prize-icon { font-size: 36px; margin-top: 14px; }
         }
 
         /* ── Spend Section ── */
@@ -521,12 +528,34 @@ export default function LoyaltyPage() {
 
         /* ── Responsive ── */
         @media (max-width: 768px) {
-          .loyalty-hero { padding: 50px 16px 40px; }
-          .loyalty-hero-title { font-size: 28px; }
-          .loyalty-user-card { position: static; transform: none; width: 100%; margin-top: 32px; }
-          .earn-grid, .tier-grid { grid-template-columns: 1fr; }
-          .spend-card { grid-template-columns: 1fr; }
-          .loyalty-hero-stats { gap: 24px; }
+          .loyalty-hero { padding: 36px 16px 28px; }
+          .loyalty-hero-title { font-size: 24px; }
+          .loyalty-hero-sub { font-size: 14px; }
+          .loyalty-hero-stats { gap: 20px; margin-top: 20px; }
+          .loyalty-hero-stat-val { font-size: 26px; }
+          .loyalty-user-card { position: static; transform: none; width: 100%; margin-top: 20px; padding: 20px; }
+          .loyalty-user-points { font-size: 22px; }
+          .loyalty-section { padding: 32px 16px; }
+          .loyalty-section-title { font-size: 22px; margin-bottom: 4px; }
+          .loyalty-section-sub { font-size: 13px; margin-bottom: 20px; }
+          .earn-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+          .earn-card { padding: 16px 14px; border-radius: 16px; }
+          .earn-card-icon { width: 36px; height: 36px; border-radius: 10px; font-size: 18px; margin-bottom: 10px; }
+          .earn-card-title { font-size: 13px; }
+          .earn-card-desc { font-size: 11px; margin-bottom: 8px; }
+          .earn-card-points { font-size: 12px; padding: 3px 10px; }
+          .tier-grid { grid-template-columns: 1fr; gap: 12px; }
+          .tier-card { padding: 16px; border-radius: 14px; }
+          .tier-card-label { font-size: 16px; }
+          .spend-card { grid-template-columns: 1fr; padding: 24px 20px; gap: 20px; }
+          .spend-exchange-big { font-size: 40px; }
+          .spend-rule { padding: 10px 14px; }
+          .lb-row { padding: 10px 14px; gap: 10px; }
+          .lb-rank { width: 30px; height: 30px; font-size: 12px; border-radius: 8px; }
+          .lb-avatar { width: 34px; height: 34px; border-radius: 10px; font-size: 12px; }
+          .lb-name-text { font-size: 13px; }
+          .lb-points { font-size: 13px; }
+          .loyalty-cta { padding: 32px 16px 48px; }
         }
         @media (min-width: 769px) and (max-width: 1024px) {
           .earn-grid { grid-template-columns: repeat(2, 1fr); }
