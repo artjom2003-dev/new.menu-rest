@@ -558,8 +558,8 @@ export function Header() {
               </button>
             )}
 
-            {/* CTA: guests = Book, owners = Logout */}
-            {isOwner ? (
+            {/* CTA: owners = Logout */}
+            {isOwner && (
               <button
                 onClick={() => {
                   useAuthStore.getState().logout();
@@ -586,21 +586,6 @@ export function Header() {
                 }}>
                 {t('logout')}
               </button>
-            ) : (
-              <Link
-                href="/restaurants"
-                className="flex items-center gap-1.5 px-6 py-2.5 rounded-full text-[13px] font-semibold text-white no-underline cursor-pointer transition-all"
-                style={{ background: 'var(--accent)', boxShadow: '0 0 20px var(--accent-glow)' }}
-                onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px)';
-                  (e.currentTarget as HTMLElement).style.boxShadow = '0 0 40px var(--accent-glow), 0 8px 32px var(--chat-user-border)';
-                }}
-                onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLElement).style.transform = 'none';
-                  (e.currentTarget as HTMLElement).style.boxShadow = '0 0 20px var(--accent-glow)';
-                }}>
-                {t('book')}
-              </Link>
             )}
           </div>
         </div>
