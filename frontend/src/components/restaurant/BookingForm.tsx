@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useAuthStore } from '@/stores/auth.store';
 import { bookingApi } from '@/lib/api';
+import { AuthModal } from '@/components/auth/AuthModal';
 import { useTranslations } from 'next-intl';
 
 interface BookingFormProps {
@@ -29,12 +30,13 @@ export function BookingForm({ restaurantId, restaurantName, open, onClose }: Boo
 
   if (!open) return null;
 
+  // If not logged in, show AuthModal directly (user stays on same page after login)
+  if (!isLoggedIn) {
+    return <AuthModal open={true} onClose={onClose} />;
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isLoggedIn) {
-      setError('Для бронирования необходимо войти в аккаунт');
-      return;
-    }
     setError('');
     setLoading(true);
 
@@ -66,20 +68,7 @@ export function BookingForm({ restaurantId, restaurantName, open, onClose }: Boo
           className="absolute top-3.5 right-3.5 w-[30px] h-[30px] rounded-full flex items-center justify-center text-[14px] text-[var(--text3)] cursor-pointer border"
           style={{ background: 'var(--card)', borderColor: 'var(--card-border)' }}>✕</button>
 
-        {!isLoggedIn ? (
-          <div className="text-center py-8">
-            <div className="text-5xl mb-4">🔐</div>
-            <h2 className="font-serif text-[24px] font-bold text-[var(--text)] mb-2">Необходима авторизация</h2>
-            <p className="text-[14px] text-[var(--text3)] mb-6">
-              Для бронирования столика необходимо войти в аккаунт или зарегистрироваться
-            </p>
-            <a href="/login"
-              className="inline-block px-8 py-3 rounded-full text-[14px] font-semibold text-white no-underline"
-              style={{ background: 'var(--accent)', boxShadow: '0 0 20px var(--accent-glow)' }}>
-              Войти / Зарегистрироваться
-            </a>
-          </div>
-        ) : success ? (
+        {success ? (
           <div className="text-center py-8">
             <div className="text-5xl mb-4">🎉</div>
             <h2 className="font-serif text-[24px] font-bold text-[var(--text)] mb-2">{t('successTitle')}</h2>
