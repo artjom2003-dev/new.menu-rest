@@ -104,6 +104,16 @@ export class UserController {
     return this.service.createMyRestaurantPost(req.user.id, dto);
   }
 
+  @Delete('restaurant/posts/:id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Удалить пост ресторана' })
+  deleteMyRestaurantPost(
+    @Request() req: { user: { id: number } },
+    @Param('id', ParseIntPipe) postId: number,
+  ) {
+    return this.service.deleteMyRestaurantPost(req.user.id, postId);
+  }
+
   // ─── Owner: Listings ──────────────────────────────────
 
   @Get('restaurant/listings')

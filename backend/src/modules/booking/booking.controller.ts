@@ -1,5 +1,5 @@
 import {
-  Controller, Get, Post, Patch, Param, Body, Query,
+  Controller, Get, Post, Patch, Param, Body, Query, Request,
   ParseIntPipe, UseGuards, DefaultValuePipe,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
@@ -15,13 +15,13 @@ export class BookingController {
   constructor(private readonly service: BookingService) {}
 
   @Post()
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Создать бронь' })
+  @ApiOperation({ summary: 'Создать бронь (авторизация опциональна)' })
   create(
-    @CurrentUser('id') userId: number,
     @Body() dto: CreateBookingDto,
+    @Request() req: any,
   ) {
+    // Try to extract user from JWT if present, otherwise null
+    const userId = req.user?.id || null;
     return this.service.create(userId, dto);
   }
 

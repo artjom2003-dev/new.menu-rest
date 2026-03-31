@@ -210,6 +210,16 @@ export class UserService {
     return saved;
   }
 
+  async deleteMyRestaurantPost(userId: number, postId: number): Promise<void> {
+    const restaurant = await this.restaurantRepo.findOneBy({ ownerId: userId });
+    if (!restaurant) throw new NotFoundException('У вас нет привязанного ресторана');
+
+    const article = await this.articleRepo.findOneBy({ id: postId });
+    if (!article) throw new NotFoundException('Публикация не найдена');
+
+    await this.articleRepo.remove(article);
+  }
+
   // ─── Owner: Listings (jobs + suppliers) ───────────────
 
   async getMyListings(userId: number): Promise<Listing[]> {
