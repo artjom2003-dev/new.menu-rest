@@ -74,7 +74,6 @@ export class BookingService {
   async findByRestaurant(restaurantId: number, date?: string, page = 1, limit = 20) {
     const qb = this.bookingRepo
       .createQueryBuilder('b')
-      .leftJoinAndSelect('b.user', 'u')
       .where('b.restaurant_id = :restaurantId', { restaurantId })
       .orderBy('b.booking_date', 'DESC')
       .addOrderBy('b.booking_time', 'ASC');
