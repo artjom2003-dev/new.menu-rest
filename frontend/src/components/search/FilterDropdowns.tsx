@@ -457,16 +457,20 @@ function FiltersBarInner() {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Apply saved city from CityDetector when no city in URL
+  // Runs on mount and when savedCitySlug changes
   useEffect(() => {
     const urlCity = searchParams.get('city');
-    if (!urlCity && savedCitySlug && !filters.city) {
+    if (!urlCity && savedCitySlug) {
       setFilter('city', savedCitySlug);
       const params = new URLSearchParams(searchParams.toString());
       params.set('city', savedCitySlug);
       params.set('page', '1');
       router.replace(`/restaurants?${params.toString()}`);
+    } else if (urlCity && urlCity !== filters.city) {
+      // URL has city but store doesn't match — sync store from URL
+      setFilter('city', urlCity);
     }
-  }, [savedCitySlug]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [savedCitySlug, searchParams.get('city')]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Restore occasion/atmosphere/entertainment from URL once options are loaded
   useEffect(() => {
@@ -522,10 +526,13 @@ function FiltersBarInner() {
     setFilter('city', v);
     setSelectedMetro(undefined);
     setSelectedDistrict(undefined);
-    // Sync with global city store
+    // Always sync with global city store
     if (v) {
       const cityOption = cities.find(c => c.value === v);
       if (cityOption) useCityStore.getState().setCity(v, cityOption.label);
+    } else {
+      // Reset city store when filter is cleared
+      useCityStore.getState().clear();
     }
     pushFilters({ city: v, metro: undefined, district: undefined });
   };
