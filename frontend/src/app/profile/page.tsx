@@ -232,14 +232,12 @@ function ProfileContent() {
     if (!isLoggedIn) { router.push('/login'); return; }
     setNameInput(user?.name || '');
 
-    // Fetch fresh user data to get role
+    // Fetch fresh user data to get role and sync store
     userApi.getMe().then(r => {
-      // Safety check: if server returns a different user, token is stale — force logout
+      // If server returns a different user, update store to match server (token is truth)
       if (r.data?.id && user?.id && r.data.id !== user.id) {
-        console.warn(`[Profile] Token mismatch: store user ${user.id}, server user ${r.data.id}. Logging out.`);
-        logout();
-        router.push('/login');
-        return;
+        console.warn(`[Profile] Store user ${user.id} differs from server user ${r.data.id}. Syncing from server.`);
+        updateUser({ id: r.data.id, name: r.data.name, email: r.data.email });
       }
       const role = r.data?.role;
       if (role && role !== user?.role) updateUser({ role });
