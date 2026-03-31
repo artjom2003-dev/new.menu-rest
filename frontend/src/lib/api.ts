@@ -6,10 +6,20 @@ const api = axios.create({
   headers: { 'Content-Type': 'application/json' },
 });
 
-// Attach JWT token from cookie/localStorage
+// Attach JWT token — try Zustand store first, fallback to localStorage
 api.interceptors.request.use((config) => {
   if (typeof window !== 'undefined') {
-    const token = localStorage.getItem('access_token');
+    // Primary: read from Zustand persisted state (single source of truth)
+    let token: string | null = null;
+    try {
+      const stored = localStorage.getItem('menurest-auth');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        token = parsed?.state?.accessToken || null;
+      }
+    } catch {}
+    // Fallback: legacy key
+    if (!token) token = localStorage.getItem('access_token');
     if (token) config.headers.Authorization = `Bearer ${token}`;
   }
   return config;

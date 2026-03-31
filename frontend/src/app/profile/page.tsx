@@ -234,6 +234,13 @@ function ProfileContent() {
 
     // Fetch fresh user data to get role
     userApi.getMe().then(r => {
+      // Safety check: if server returns a different user, token is stale — force logout
+      if (r.data?.id && user?.id && r.data.id !== user.id) {
+        console.warn(`[Profile] Token mismatch: store user ${user.id}, server user ${r.data.id}. Logging out.`);
+        logout();
+        router.push('/login');
+        return;
+      }
       const role = r.data?.role;
       if (role && role !== user?.role) updateUser({ role });
       const ownerRole = role === 'owner' || role === 'admin';
