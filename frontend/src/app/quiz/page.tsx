@@ -849,11 +849,11 @@ export default function QuizPage() {
               animation: 'fadeUp 0.6s ease-out 0.6s both',
             }}
           >
-            <RadarChart axes={profile.axes} size={240} />
+            <RadarChart axes={profile.axes || {}} size={240} />
           </div>
 
           {/* Top axes tags */}
-          {profile.topAxes.length > 0 && (
+          {profile.topAxes?.length > 0 && (
             <div
               className="flex flex-wrap gap-2 justify-center"
               style={{ animation: 'fadeUp 0.6s ease-out 0.8s both' }}
@@ -878,7 +878,7 @@ export default function QuizPage() {
           )}
 
           {/* Dietary tags */}
-          {profile.dietaryTags.length > 0 && (
+          {profile.dietaryTags?.length > 0 && (
             <div
               className="flex flex-wrap gap-2 justify-center"
               style={{ animation: 'fadeUp 0.6s ease-out 1s both' }}
