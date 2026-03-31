@@ -338,37 +338,40 @@ export function RestaurantInfoCard({ restaurant }: { restaurant: Restaurant }) {
             </a>
           </div>
         ) : !isOwnerAccount ? (
-          <div className="flex gap-2.5 mt-5">
-            <button onClick={openCalc}
-              className="flex-1 flex items-center justify-center gap-2 px-5 py-3 rounded-full text-[13px] font-semibold border transition-all"
-              style={{ background: 'var(--glass)', color: 'var(--text2)', borderColor: 'var(--glass-border)', backdropFilter: 'blur(8px)' }}>
-              🍽️ {t('budgetCalc')}
-            </button>
-            <button
-              onClick={() => hasBooking ? setBookingOpen(true) : setBookingError(true)}
-              className="flex-1 flex items-center justify-center gap-2 px-5 py-3 rounded-full text-[13px] font-semibold text-white transition-all"
-              style={{ background: 'var(--accent)', boxShadow: '0 0 20px var(--accent-glow)' }}>
-              📅 {t('book')}
-            </button>
-          </div>
-
-          {/* Booking error for restaurants without owner */}
-          {bookingError && (
-            <div className="mt-3 px-4 py-3 rounded-xl text-[12px] text-[var(--text3)] leading-relaxed"
-              style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.15)' }}>
-              <span className="text-red-400 font-semibold">Бронирование недоступно.</span>{' '}
-              Этот ресторан пока не подключил систему бронирований MenuRest.
-              <button onClick={() => setBookingError(false)} className="ml-2 text-[var(--text3)] hover:text-[var(--text)] cursor-pointer text-[11px]">✕</button>
+          <>
+            <div className="flex gap-2.5 mt-5">
+              <button onClick={openCalc}
+                className="flex-1 flex items-center justify-center gap-2 px-5 py-3 rounded-full text-[13px] font-semibold border transition-all"
+                style={{ background: 'var(--glass)', color: 'var(--text2)', borderColor: 'var(--glass-border)', backdropFilter: 'blur(8px)' }}>
+                🍽️ {t('budgetCalc')}
+              </button>
+              <button
+                onClick={() => hasBooking ? setBookingOpen(true) : setBookingError(true)}
+                className="flex-1 flex items-center justify-center gap-2 px-5 py-3 rounded-full text-[13px] font-semibold text-white transition-all"
+                style={{ background: 'var(--accent)', boxShadow: '0 0 20px var(--accent-glow)' }}>
+                📅 {t('book')}
+              </button>
             </div>
-          )}
 
+            {bookingError && (
+              <div className="mt-3 px-4 py-3 rounded-xl text-[12px] text-[var(--text3)] leading-relaxed"
+                style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.15)' }}>
+                <span className="text-red-400 font-semibold">Бронирование недоступно.</span>{' '}
+                Этот ресторан пока не подключил систему бронирований MenuRest.
+                <button onClick={() => setBookingError(false)} className="ml-2 text-[var(--text3)] hover:text-[var(--text)] cursor-pointer text-[11px]">✕</button>
+              </div>
+            )}
+          </>
+        ) : null}
+
+        {restaurant.id && (
           <BookingForm
             restaurantId={restaurant.id}
             restaurantName={displayName}
             open={bookingOpen}
             onClose={() => setBookingOpen(false)}
           />
-        ) : null}
+        )}
 
         {/* Owner claim */}
         {!isOwnerAccount && (
