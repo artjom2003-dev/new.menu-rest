@@ -13,9 +13,9 @@ export class BookingService {
     private readonly loyaltyService: LoyaltyService,
   ) {}
 
-  async create(userId: number | null, dto: CreateBookingDto): Promise<Booking> {
+  async create(userId: number, dto: CreateBookingDto): Promise<Booking> {
     const booking = this.bookingRepo.create({
-      userId: userId || undefined,
+      userId,
       restaurantId: dto.restaurantId,
       bookingDate: dto.bookingDate,
       bookingTime: dto.bookingTime,

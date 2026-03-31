@@ -31,6 +31,10 @@ export function BookingForm({ restaurantId, restaurantName, open, onClose }: Boo
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isLoggedIn) {
+      setError('Для бронирования необходимо войти в аккаунт');
+      return;
+    }
     setError('');
     setLoading(true);
 

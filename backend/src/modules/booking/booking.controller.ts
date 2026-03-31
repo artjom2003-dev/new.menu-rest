@@ -15,13 +15,13 @@ export class BookingController {
   constructor(private readonly service: BookingService) {}
 
   @Post()
-  @ApiOperation({ summary: 'Создать бронь (авторизация опциональна)' })
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Создать бронь' })
   create(
+    @CurrentUser('id') userId: number,
     @Body() dto: CreateBookingDto,
-    @Request() req: any,
   ) {
-    // Try to extract user from JWT if present, otherwise null
-    const userId = req.user?.id || null;
     return this.service.create(userId, dto);
   }
 

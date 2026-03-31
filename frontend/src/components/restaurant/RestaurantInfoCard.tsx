@@ -6,6 +6,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import { useAuthStore } from '@/stores/auth.store';
 import { useBudgetStore } from '@/stores/budget.store';
 import { AddRestaurantModal } from './AddRestaurantModal';
+import { BookingForm } from './BookingForm';
 
 interface Restaurant {
   id?: number;
@@ -247,6 +248,9 @@ export function RestaurantInfoCard({ restaurant }: { restaurant: Restaurant }) {
   const { open: openCalc } = useBudgetStore();
   const { user } = useAuthStore();
   const [claimOpen, setClaimOpen] = useState(false);
+  const [bookingOpen, setBookingOpen] = useState(false);
+  const [bookingError, setBookingError] = useState(false);
+  const hasBooking = !!restaurant.ownerId; // Only restaurants with owner support bookings
   const t = useTranslations('restaurant');
   const locale = useLocale();
   const tr = restaurant.translations;
@@ -341,11 +345,29 @@ export function RestaurantInfoCard({ restaurant }: { restaurant: Restaurant }) {
               🍽️ {t('budgetCalc')}
             </button>
             <button
+              onClick={() => hasBooking ? setBookingOpen(true) : setBookingError(true)}
               className="flex-1 flex items-center justify-center gap-2 px-5 py-3 rounded-full text-[13px] font-semibold text-white transition-all"
               style={{ background: 'var(--accent)', boxShadow: '0 0 20px var(--accent-glow)' }}>
-              {t('book')}
+              📅 {t('book')}
             </button>
           </div>
+
+          {/* Booking error for restaurants without owner */}
+          {bookingError && (
+            <div className="mt-3 px-4 py-3 rounded-xl text-[12px] text-[var(--text3)] leading-relaxed"
+              style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.15)' }}>
+              <span className="text-red-400 font-semibold">Бронирование недоступно.</span>{' '}
+              Этот ресторан пока не подключил систему бронирований MenuRest.
+              <button onClick={() => setBookingError(false)} className="ml-2 text-[var(--text3)] hover:text-[var(--text)] cursor-pointer text-[11px]">✕</button>
+            </div>
+          )}
+
+          <BookingForm
+            restaurantId={restaurant.id}
+            restaurantName={displayName}
+            open={bookingOpen}
+            onClose={() => setBookingOpen(false)}
+          />
         ) : null}
 
         {/* Owner claim */}
