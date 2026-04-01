@@ -6,10 +6,44 @@ import Link from 'next/link';
 const TABS = [
   { id: 'free', label: 'Бесплатное присутствие', color: 'var(--teal)', bg: 'rgba(57,255,209,0.08)', border: 'rgba(57,255,209,0.2)' },
   { id: 'partner', label: 'Подписка «Партнёр»', color: 'var(--accent)', bg: 'rgba(255,92,40,0.08)', border: 'rgba(255,92,40,0.2)' },
-  { id: 'services', label: 'Доп. услуги и сервисы', color: '#FFA83C', bg: 'rgba(255,168,60,0.08)', border: 'rgba(255,168,60,0.2)' },
+  { id: 'services', label: 'Технологии и сервисы', color: '#FFA83C', bg: 'rgba(255,168,60,0.08)', border: 'rgba(255,168,60,0.2)' },
+  { id: 'integrations', label: 'Интеграции', color: '#3b82f6', bg: 'rgba(59,130,246,0.08)', border: 'rgba(59,130,246,0.2)' },
+  { id: 'consulting', label: 'Консалтинг', color: '#8b5cf6', bg: 'rgba(139,92,246,0.08)', border: 'rgba(139,92,246,0.2)' },
 ] as const;
 
 type TabId = typeof TABS[number]['id'];
+
+/* ── Reusable card with hover ── */
+function Card({ children, color, className = '' }: { children: React.ReactNode; color?: string; className?: string }) {
+  return (
+    <div
+      className={`rounded-[18px] max-sm:rounded-[14px] p-6 max-sm:p-4 border transition-all duration-300 ${className}`}
+      style={{ background: 'var(--card)', borderColor: 'var(--card-border)' }}
+      onMouseEnter={(e) => {
+        const el = e.currentTarget as HTMLElement;
+        if (color) el.style.borderColor = color;
+        el.style.boxShadow = `0 8px 30px ${color || 'rgba(255,92,40,0.08)'}25`;
+        el.style.transform = 'translateY(-4px)';
+      }}
+      onMouseLeave={(e) => {
+        const el = e.currentTarget as HTMLElement;
+        el.style.borderColor = 'var(--card-border)';
+        el.style.boxShadow = 'none';
+        el.style.transform = 'none';
+      }}>
+      {children}
+    </div>
+  );
+}
+
+function Tag({ label, color }: { label: string; color: string }) {
+  return (
+    <span className="px-2.5 py-1 rounded-full text-[10px] font-semibold"
+      style={{ background: `color-mix(in srgb, ${color} 10%, transparent)`, color, border: `1px solid color-mix(in srgb, ${color} 15%, transparent)` }}>
+      {label}
+    </span>
+  );
+}
 
 export default function ForBusinessPage() {
   const [tab, setTab] = useState<TabId>('free');
@@ -61,17 +95,154 @@ export default function ForBusinessPage() {
         </div>
       </section>
 
+      {/* ══════════════════════════════════════════════════════
+          ЦЕПОЧКА ЗАКАЗА — QR → Официант → Кухня
+          ══════════════════════════════════════════════════════ */}
+      <section className="max-w-[1100px] mx-auto px-10 max-md:px-4 max-sm:px-3 pb-14 max-sm:pb-8">
+        <div className="text-center mb-10 max-sm:mb-6">
+          <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[12px] font-bold mb-5"
+            style={{ background: 'rgba(186,255,57,0.08)', color: '#BAFF39', border: '1px solid rgba(186,255,57,0.15)' }}>
+            <span className="w-2 h-2 rounded-full" style={{ background: '#BAFF39' }} />
+            Полная автоматизация зала
+          </span>
+          <h2 className="font-serif font-black text-[var(--text)] mb-3 max-sm:text-[24px]"
+            style={{ fontSize: 'clamp(26px, 3.5vw, 40px)' }}>
+            От QR-кода до кухни —{' '}
+            <span style={{
+              background: 'linear-gradient(135deg, #BAFF39, var(--teal))',
+              WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+            }}>без единого звонка</span>
+          </h2>
+          <p className="text-[15px] text-[var(--text3)] max-w-[560px] mx-auto leading-relaxed">
+            Три приложения, которые работают как единая система.
+            Гость заказывает — официант видит — повар готовит. Всё в реальном времени.
+          </p>
+        </div>
+
+        {/* Pipeline: 3 cards with arrows */}
+        <div className="grid grid-cols-3 gap-0 max-lg:grid-cols-1 max-lg:gap-4 mb-10 items-stretch">
+          {/* Step 1: QR / Electronic menu */}
+          <div className="relative">
+            <Card color="#BAFF39" className="h-full">
+              <div className="flex items-center gap-3 mb-4">
+                <span className="w-10 h-10 rounded-xl flex items-center justify-center text-lg font-black"
+                  style={{ background: 'rgba(186,255,57,0.12)', color: '#BAFF39' }}>1</span>
+                <h3 className="text-[16px] font-bold text-[var(--text)]">Электронное меню</h3>
+              </div>
+              <p className="text-[13px] text-[var(--text3)] leading-relaxed mb-4">
+                QR-код на столе — гость сканирует телефоном и видит меню с фото, описанием и ценами.
+                Выбирает блюда и оформляет заказ самостоятельно.
+              </p>
+              <div className="space-y-2">
+                {['Без бумажных меню — экономия', 'Мгновенные обновления цен и стоп-листа', 'Работает на 8 языках для туристов', 'Фото и описание каждого блюда', 'Фильтрация по аллергенам'].map((b) => (
+                  <div key={b} className="flex items-start gap-2 text-[12px]">
+                    <span style={{ color: '#BAFF39' }} className="mt-0.5 flex-shrink-0">+</span>
+                    <span className="text-[var(--text2)]">{b}</span>
+                  </div>
+                ))}
+              </div>
+            </Card>
+            {/* Arrow */}
+            <div className="absolute top-1/2 -right-5 w-10 h-10 flex items-center justify-center z-10 max-lg:hidden">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <path d="M5 12h14M14 7l5 5-5 5" stroke="#BAFF39" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </div>
+            <div className="hidden max-lg:flex justify-center py-2">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <path d="M12 5v14M7 14l5 5 5-5" stroke="#BAFF39" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </div>
+          </div>
+
+          {/* Step 2: Waiter app */}
+          <div className="relative">
+            <Card color="var(--accent)" className="h-full">
+              <div className="flex items-center gap-3 mb-4">
+                <span className="w-10 h-10 rounded-xl flex items-center justify-center text-lg font-black"
+                  style={{ background: 'rgba(255,92,40,0.12)', color: 'var(--accent)' }}>2</span>
+                <h3 className="text-[16px] font-bold text-[var(--text)]">Приложение официанта</h3>
+              </div>
+              <p className="text-[13px] text-[var(--text3)] leading-relaxed mb-4">
+                Заказ мгновенно появляется на планшете или смартфоне официанта.
+                Управление столами, статусами и чеками — всё в одном экране.
+              </p>
+              <div className="space-y-2">
+                {['Карта зала с реальными статусами столов', 'Push-уведомления о новых заказах', 'Добавление позиций на ходу', 'Предчек и закрытие заказа в 1 тап', 'PIN-авторизация за 2 секунды'].map((b) => (
+                  <div key={b} className="flex items-start gap-2 text-[12px]">
+                    <span style={{ color: 'var(--accent)' }} className="mt-0.5 flex-shrink-0">+</span>
+                    <span className="text-[var(--text2)]">{b}</span>
+                  </div>
+                ))}
+              </div>
+            </Card>
+            {/* Arrow */}
+            <div className="absolute top-1/2 -right-5 w-10 h-10 flex items-center justify-center z-10 max-lg:hidden">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <path d="M5 12h14M14 7l5 5-5 5" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </div>
+            <div className="hidden max-lg:flex justify-center py-2">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <path d="M12 5v14M7 14l5 5 5-5" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </div>
+          </div>
+
+          {/* Step 3: Kitchen display */}
+          <div>
+            <Card color="var(--teal)" className="h-full">
+              <div className="flex items-center gap-3 mb-4">
+                <span className="w-10 h-10 rounded-xl flex items-center justify-center text-lg font-black"
+                  style={{ background: 'rgba(57,255,209,0.12)', color: 'var(--teal)' }}>3</span>
+                <h3 className="text-[16px] font-bold text-[var(--text)]">Экран кухни (KDS)</h3>
+              </div>
+              <p className="text-[13px] text-[var(--text3)] leading-relaxed mb-4">
+                Заказ появляется на экране повара в ту же секунду. Таймер, статус готовности,
+                звуковое оповещение — ничего не потеряется.
+              </p>
+              <div className="space-y-2">
+                {['Мгновенное отображение без задержек', 'Цветовые таймеры: серый → жёлтый → красный', 'Звуковой сигнал при новом заказе', 'Кнопка «Готово» — официант сразу видит', 'Работает на планшете, мониторе или ТВ'].map((b) => (
+                  <div key={b} className="flex items-start gap-2 text-[12px]">
+                    <span style={{ color: 'var(--teal)' }} className="mt-0.5 flex-shrink-0">+</span>
+                    <span className="text-[var(--text2)]">{b}</span>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          </div>
+        </div>
+
+        {/* Pipeline summary bar */}
+        <div className="rounded-[20px] p-6 max-sm:p-4 text-center"
+          style={{ background: 'linear-gradient(135deg, rgba(186,255,57,0.04), rgba(57,255,209,0.04))', border: '1px solid rgba(186,255,57,0.1)' }}>
+          <div className="flex items-center justify-center gap-8 flex-wrap max-sm:gap-4">
+            {[
+              { value: '0 сек', label: 'от заказа до кухни', color: '#BAFF39' },
+              { value: '−40%', label: 'ошибок в заказах', color: 'var(--accent)' },
+              { value: '−25%', label: 'среднее время подачи', color: 'var(--teal)' },
+              { value: '×2', label: 'оборачиваемость столов', color: '#FFD700' },
+            ].map((s) => (
+              <div key={s.label} className="text-center">
+                <div className="text-[24px] max-sm:text-[18px] font-black" style={{ color: s.color }}>{s.value}</div>
+                <div className="text-[11px] text-[var(--text3)] mt-0.5">{s.label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ── TABS ── */}
       <section className="max-w-[1100px] mx-auto px-10 max-md:px-4 max-sm:px-3 pb-14 max-sm:pb-10">
         {/* Tab bar */}
         <div className="flex justify-center mb-8 max-sm:mb-6">
-          <div className="inline-flex gap-2 p-1.5 rounded-full max-sm:flex-col max-sm:w-full"
+          <div className="inline-flex gap-1.5 p-1.5 rounded-full max-sm:flex-col max-sm:w-full flex-wrap justify-center"
             style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
             {TABS.map((t) => (
               <button
                 key={t.id}
                 onClick={() => setTab(t.id)}
-                className="px-6 py-2.5 rounded-full text-[13px] font-semibold transition-all duration-300 border-none cursor-pointer max-sm:w-full"
+                className="px-5 py-2.5 rounded-full text-[12px] font-semibold transition-all duration-300 border-none cursor-pointer max-sm:w-full"
                 style={{
                   fontFamily: 'inherit',
                   background: tab === t.id ? t.bg : 'transparent',
@@ -88,7 +259,6 @@ export default function ForBusinessPage() {
         {/* ═══ TAB 1: Бесплатное присутствие ═══ */}
         {tab === 'free' && (
           <div>
-            {/* Header */}
             <div className="text-center mb-10">
               <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[12px] font-bold mb-5"
                 style={{ background: 'rgba(57,255,209,0.08)', color: 'var(--teal)', border: '1px solid rgba(57,255,209,0.15)' }}>
@@ -106,7 +276,6 @@ export default function ForBusinessPage() {
               </p>
             </div>
 
-            {/* Features grid */}
             <div className="grid grid-cols-3 gap-5 max-lg:grid-cols-2 max-sm:grid-cols-2 max-sm:gap-2.5 mb-8">
               {[
                 { icon: '📋', title: 'Полноценная карточка', desc: 'Фото, меню, часы работы, средний чек, кухня — всё в одном месте.', color: '#FF5C28' },
@@ -116,29 +285,14 @@ export default function ForBusinessPage() {
                 { icon: '📣', title: '2 публикации/мес', desc: 'Акции, новое меню — в ленту и рекомендации.', color: '#FF6B9D' },
                 { icon: '📈', title: 'Рост без рисков', desc: 'Нет заказов — нет комиссии.', color: '#BAFF39' },
               ].map((f) => (
-                <div key={f.title}
-                  className="rounded-[18px] max-sm:rounded-[14px] p-6 max-sm:p-3.5 border transition-all duration-300"
-                  style={{ background: 'var(--card)', borderColor: 'var(--card-border)' }}
-                  onMouseEnter={(e) => {
-                    const el = e.currentTarget as HTMLElement;
-                    el.style.borderColor = f.color;
-                    el.style.boxShadow = `0 8px 30px ${f.color}25`;
-                    el.style.transform = 'translateY(-4px)';
-                  }}
-                  onMouseLeave={(e) => {
-                    const el = e.currentTarget as HTMLElement;
-                    el.style.borderColor = 'var(--card-border)';
-                    el.style.boxShadow = 'none';
-                    el.style.transform = 'none';
-                  }}>
+                <Card key={f.title} color={f.color}>
                   <span className="text-[28px] max-sm:text-[20px] mb-3 max-sm:mb-2 block">{f.icon}</span>
                   <h3 className="text-[15px] max-sm:text-[13px] font-bold text-[var(--text)] mb-1.5 max-sm:mb-1">{f.title}</h3>
                   <p className="text-[13px] max-sm:text-[11px] text-[var(--text3)] leading-relaxed">{f.desc}</p>
-                </div>
+                </Card>
               ))}
             </div>
 
-            {/* Preorder note */}
             <div className="rounded-[16px] p-5 mb-10 flex items-start gap-3 max-w-[620px] mx-auto"
               style={{ background: 'rgba(255,92,40,0.05)', border: '1px solid rgba(255,92,40,0.12)' }}>
               <span className="text-[20px] flex-shrink-0 mt-0.5">🛒</span>
@@ -148,29 +302,18 @@ export default function ForBusinessPage() {
               </p>
             </div>
 
-            {/* CTA */}
             <div className="text-center">
               <Link href="/restaurants"
                 className="inline-flex items-center gap-2 px-8 py-4 rounded-full text-[15px] font-bold no-underline transition-all duration-300"
                 style={{ color: 'var(--bg)', background: 'var(--teal)', boxShadow: '0 6px 30px var(--teal-glow)' }}
-                onMouseEnter={(e) => {
-                  const el = e.currentTarget as HTMLElement;
-                  el.style.transform = 'translateY(-3px)';
-                  el.style.boxShadow = '0 10px 40px rgba(57,255,209,0.25)';
-                }}
-                onMouseLeave={(e) => {
-                  const el = e.currentTarget as HTMLElement;
-                  el.style.transform = 'none';
-                  el.style.boxShadow = '0 6px 30px var(--teal-glow)';
-                }}>
+                onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.transform = 'translateY(-3px)'; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.transform = 'none'; }}>
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                   <path d="M8 2v12M2 8h12" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
                 </svg>
                 Добавить ресторан бесплатно
               </Link>
-              <p className="text-[12px] text-[var(--text3)] mt-3 opacity-60">
-                Без скрытых платежей. Работает прямо сейчас.
-              </p>
+              <p className="text-[12px] text-[var(--text3)] mt-3 opacity-60">Без скрытых платежей. Работает прямо сейчас.</p>
             </div>
           </div>
         )}
@@ -178,7 +321,6 @@ export default function ForBusinessPage() {
         {/* ═══ TAB 2: Подписка «Партнёр» ═══ */}
         {tab === 'partner' && (
           <div>
-            {/* Header */}
             <div className="text-center mb-10">
               <h2 className="font-serif font-black text-[var(--text)] mb-3 max-sm:text-[26px]"
                 style={{ fontSize: 'clamp(26px, 3.5vw, 38px)' }}>
@@ -190,62 +332,38 @@ export default function ForBusinessPage() {
               </h2>
               <p className="text-[15px] text-[var(--text3)] max-w-[520px] mx-auto leading-relaxed">
                 Всё из бесплатного + бронирования, аналитика, приоритет в выдаче и продвижение.
-                Превращайте просмотры в реальных гостей.
               </p>
             </div>
 
-            {/* Features 2-col */}
             <div className="grid grid-cols-2 gap-4 max-sm:grid-cols-1 max-sm:gap-2.5 mb-10">
               {[
-                { icon: '📅', title: 'Онлайн-бронирование', desc: 'Гости бронируют в 2 клика — без звонков. Вы управляете заявками в личном кабинете, снижаете no-show.' },
-                { icon: '📊', title: 'Аналитика и отчёты', desc: 'Источники трафика, тепловая карта просмотров, CTR карточки, конверсия в бронь. Экспорт в PDF.' },
-                { icon: '🏅', title: 'Бейдж «Проверено» и приоритет', desc: 'Повышенное ранжирование в каталоге и AI-поиске. Бейдж доверия увеличивает CTR на 35%.' },
-                { icon: '📣', title: 'До 15 публикаций в месяц', desc: 'Акции, новое меню, события — попадайте в ленту, подборки и push-уведомления гостей.' },
+                { icon: '📅', title: 'Онлайн-бронирование', desc: 'Гости бронируют в 2 клика — без звонков. Вы управляете заявками в личном кабинете.' },
+                { icon: '📊', title: 'Аналитика и отчёты', desc: 'Источники трафика, тепловая карта, CTR карточки, конверсия в бронь. Экспорт в PDF.' },
+                { icon: '🏅', title: 'Бейдж «Проверено» и приоритет', desc: 'Повышенное ранжирование в каталоге и AI-поиске. Бейдж увеличивает CTR на 35%.' },
+                { icon: '📣', title: 'До 15 публикаций в месяц', desc: 'Акции, новое меню, события — попадайте в ленту и push-уведомления гостей.' },
                 { icon: '🛒', title: 'Предзаказ блюд', desc: 'Гости выбирают блюда заранее — вы знаете загрузку кухни. Сервисный сбор всего 5%.' },
-                { icon: '🎯', title: 'Попадание в подборки', desc: 'AI-рекомендации, тематические и сезонные подборки — дополнительные точки контакта с аудиторией.' },
+                { icon: '🎯', title: 'Попадание в подборки', desc: 'AI-рекомендации, тематические и сезонные подборки — доп. точки контакта с аудиторией.' },
               ].map((f) => (
-                <div key={f.title}
-                  className="rounded-[18px] max-sm:rounded-[14px] p-6 max-sm:p-4 border flex gap-4 max-sm:gap-3 transition-all duration-300"
-                  style={{ background: 'var(--card)', borderColor: 'var(--card-border)' }}
-                  onMouseEnter={(e) => {
-                    const el = e.currentTarget as HTMLElement;
-                    el.style.borderColor = 'rgba(255,92,40,0.3)';
-                    el.style.boxShadow = '0 8px 30px rgba(255,92,40,0.08)';
-                    el.style.transform = 'translateY(-3px)';
-                  }}
-                  onMouseLeave={(e) => {
-                    const el = e.currentTarget as HTMLElement;
-                    el.style.borderColor = 'var(--card-border)';
-                    el.style.boxShadow = 'none';
-                    el.style.transform = 'none';
-                  }}>
+                <Card key={f.title} color="rgba(255,92,40,0.5)" className="flex gap-4 max-sm:gap-3">
                   <span className="text-[28px] max-sm:text-[22px] flex-shrink-0">{f.icon}</span>
                   <div>
                     <h3 className="text-[15px] font-bold text-[var(--text)] mb-1.5">{f.title}</h3>
                     <p className="text-[13px] text-[var(--text3)] leading-relaxed">{f.desc}</p>
                   </div>
-                </div>
+                </Card>
               ))}
             </div>
 
             {/* Price + 50% promo */}
-            <div
-              className="relative overflow-hidden rounded-[28px] p-[2px]"
+            <div className="relative overflow-hidden rounded-[28px] p-[2px]"
               style={{
                 background: 'linear-gradient(135deg, var(--accent), #FFD700, var(--teal), var(--accent))',
                 backgroundSize: '300% 300%',
                 animation: 'promo-shimmer 4s ease infinite',
               }}>
-              <div
-                className="relative overflow-hidden rounded-[26px] px-10 py-12 max-sm:px-6 max-sm:py-8"
+              <div className="relative overflow-hidden rounded-[26px] px-10 py-12 max-sm:px-6 max-sm:py-8"
                 style={{ background: 'var(--bg)' }}>
-                <div className="absolute pointer-events-none"
-                  style={{ width: 400, height: 400, top: -150, left: -100, background: 'radial-gradient(circle, rgba(255,92,40,0.08) 0%, transparent 70%)' }} />
-                <div className="absolute pointer-events-none"
-                  style={{ width: 350, height: 350, bottom: -120, right: -80, background: 'radial-gradient(circle, rgba(255,215,0,0.06) 0%, transparent 70%)' }} />
-
                 <div className="relative z-10">
-                  {/* Big headline */}
                   <div className="text-center mb-8">
                     <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[12px] font-bold mb-5"
                       style={{ background: 'rgba(255,92,40,0.1)', color: 'var(--accent)', border: '1px solid rgba(255,92,40,0.2)' }}>
@@ -258,66 +376,52 @@ export default function ForBusinessPage() {
                       <span style={{
                         background: 'linear-gradient(135deg, var(--accent), #FFD700)',
                         WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-                        filter: 'drop-shadow(0 0 20px rgba(255,92,40,0.3))',
                       }}>−50%</span>
                     </h3>
                   </div>
 
                   <div className="flex items-center gap-10 max-md:flex-col max-md:text-center">
-                  {/* Left — price */}
-                  <div className="flex-1">
-                    <div className="flex items-baseline gap-3 mb-1 max-md:justify-center flex-wrap">
-                      <span className="text-[28px] font-bold line-through text-[var(--text3)] opacity-40">6 900 &#8381;</span>
-                      <span className="text-[52px] font-black max-sm:text-[38px]"
-                        style={{
-                          background: 'linear-gradient(135deg, var(--accent), #FFD700)',
-                          WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-                        }}>
-                        3 450 &#8381;
-                      </span>
-                      <span className="text-[14px] text-[var(--text3)]">/первый мес</span>
+                    <div className="flex-1">
+                      <div className="flex items-baseline gap-3 mb-1 max-md:justify-center flex-wrap">
+                        <span className="text-[28px] font-bold line-through text-[var(--text3)] opacity-40">6 900 &#8381;</span>
+                        <span className="text-[52px] font-black max-sm:text-[38px]"
+                          style={{
+                            background: 'linear-gradient(135deg, var(--accent), #FFD700)',
+                            WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+                          }}>
+                          3 450 &#8381;
+                        </span>
+                        <span className="text-[14px] text-[var(--text3)]">/первый мес</span>
+                      </div>
+                      <p className="text-[14px] text-[var(--text3)]">Далее 6 900 ₽/мес. Отмена в любой момент.</p>
                     </div>
-                    <p className="text-[14px] text-[var(--text3)]">
-                      Далее 6 900 ₽/мес. Отмена в любой момент.
-                    </p>
-                  </div>
 
-                  {/* Right — CTA */}
-                  <div className="flex flex-col items-center gap-3">
-                    <a href="mailto:business@menu-rest.ru"
-                      className="inline-flex items-center gap-2 px-8 py-4 rounded-full text-[15px] font-bold text-white no-underline transition-all duration-300 whitespace-nowrap"
-                      style={{
-                        background: 'linear-gradient(135deg, var(--accent), #D44A20)',
-                        boxShadow: '0 6px 30px rgba(255,92,40,0.35)',
-                      }}
-                      onMouseEnter={(e) => {
-                        const el = e.currentTarget as HTMLElement;
-                        el.style.transform = 'translateY(-3px) scale(1.03)';
-                        el.style.boxShadow = '0 10px 40px rgba(255,92,40,0.45)';
-                      }}
-                      onMouseLeave={(e) => {
-                        const el = e.currentTarget as HTMLElement;
-                        el.style.transform = 'none';
-                        el.style.boxShadow = '0 6px 30px rgba(255,92,40,0.35)';
-                      }}>
-                      Забрать скидку 50%
-                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                        <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                    </a>
-                    <span className="text-[11px] text-[var(--text3)] opacity-50">Для новых подключений</span>
+                    <div className="flex flex-col items-center gap-3">
+                      <a href="mailto:business@menu-rest.ru"
+                        className="inline-flex items-center gap-2 px-8 py-4 rounded-full text-[15px] font-bold text-white no-underline transition-all duration-300 whitespace-nowrap"
+                        style={{
+                          background: 'linear-gradient(135deg, var(--accent), #D44A20)',
+                          boxShadow: '0 6px 30px rgba(255,92,40,0.35)',
+                        }}
+                        onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.transform = 'translateY(-3px) scale(1.03)'; }}
+                        onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.transform = 'none'; }}>
+                        Забрать скидку 50%
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                          <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      </a>
+                      <span className="text-[11px] text-[var(--text3)] opacity-50">Для новых подключений</span>
+                    </div>
                   </div>
-                </div>
                 </div>
               </div>
             </div>
           </div>
         )}
 
-        {/* ═══ TAB 3: Доп. услуги и сервисы ═══ */}
+        {/* ═══ TAB 3: Технологии и сервисы ═══ */}
         {tab === 'services' && (
           <div>
-            {/* ── Цифровые сервисы (акцент) ── */}
             <div className="text-center mb-10">
               <h2 className="font-serif font-black text-[var(--text)] mb-3 max-sm:text-[26px]"
                 style={{ fontSize: 'clamp(26px, 3.5vw, 38px)' }}>
@@ -327,101 +431,38 @@ export default function ForBusinessPage() {
                   WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
                 }}>вместо бумаги и очередей</span>
               </h2>
-              <p className="text-[15px] text-[var(--text3)] max-w-[500px] mx-auto leading-relaxed">
-                Электронное меню, приложение для кухни и информационный терминал
-              </p>
             </div>
 
-            {/* Kiosk showcase */}
-            <div className="grid items-center gap-10 mb-12 max-lg:gap-8 max-sm:!grid-cols-1 max-sm:gap-6" style={{ gridTemplateColumns: '1fr 1fr' }}>
-              {/* Photo */}
-              <div className="relative flex justify-center max-lg:order-2">
-                <div className="absolute pointer-events-none"
-                  style={{
-                    width: '80%', height: '80%', top: '10%', left: '10%',
-                    background: 'radial-gradient(ellipse, rgba(255,168,60,0.12) 0%, transparent 70%)',
-                    filter: 'blur(40px)',
-                  }} />
-                <div className="relative rounded-[28px] overflow-hidden"
-                  style={{
-                    boxShadow: '0 40px 100px rgba(0,0,0,0.5), 0 0 80px rgba(255,168,60,0.08)',
-                    maxWidth: 440,
-                  }}>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src="/images/info-kiosk.png"
-                    alt="Информационный терминал Menu-Rest"
-                    style={{ width: '100%', height: 'auto', display: 'block' }}
-                  />
-                  <div className="absolute inset-x-0 bottom-0 h-[100px] pointer-events-none"
-                    style={{ background: 'linear-gradient(to top, rgba(6,6,10,0.7), transparent)' }} />
-                  <div className="absolute bottom-4 left-4">
-                    <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[11px] font-bold"
-                      style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(12px)', color: '#FFA83C', border: '1px solid rgba(255,168,60,0.25)' }}>
-                      <span className="w-1.5 h-1.5 rounded-full" style={{ background: '#FFA83C' }} />
-                      Информационный терминал
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* 3 products */}
-              <div className="flex flex-col gap-4 max-sm:gap-3 max-lg:order-1">
-                {[
-                  {
-                    title: 'Электронное меню',
-                    desc: 'QR-код на столе — гость сканирует и видит меню с фото и ценами. Обновляется мгновенно, работает на 8 языках.',
-                    tags: ['Без бумаги', 'Мгновенные обновления', '8 языков'],
-                    color: '#FFA83C',
-                  },
-                  {
-                    title: 'Приложение «Кухня»',
-                    desc: 'Заказы мгновенно на экране повара. Принял, готовит, отдал — гость видит статус в реальном времени.',
-                    tags: ['Без задержек', 'Статус заказа', 'Планшет / ТВ'],
-                    color: 'var(--accent)',
-                  },
-                  {
-                    title: 'Информационный терминал',
-                    desc: 'Сенсорный киоск в зале. Гости листают меню, фильтруют по аллергенам, делают предзаказ без ожидания.',
-                    tags: ['Сенсорный экран', 'Предзаказ', 'от 4 900 ₽/мес'],
-                    color: 'var(--teal)',
-                  },
-                ].map((p) => (
-                  <div key={p.title}
-                    className="rounded-[18px] max-sm:rounded-[14px] p-6 max-sm:p-4 border transition-all duration-300"
-                    style={{ background: 'var(--card)', borderColor: 'var(--card-border)' }}
-                    onMouseEnter={(e) => {
-                      const el = e.currentTarget as HTMLElement;
-                      el.style.borderColor = p.color;
-                      el.style.transform = 'translateX(4px)';
-                    }}
-                    onMouseLeave={(e) => {
-                      const el = e.currentTarget as HTMLElement;
-                      el.style.borderColor = 'var(--card-border)';
-                      el.style.transform = 'none';
-                    }}>
-                    <h3 className="text-[15px] font-bold text-[var(--text)] mb-1.5">{p.title}</h3>
-                    <p className="text-[13px] text-[var(--text3)] leading-relaxed mb-3">{p.desc}</p>
-                    <div className="flex gap-2 flex-wrap">
-                      {p.tags.map((tag) => (
-                        <span key={tag} className="px-2.5 py-1 rounded-full text-[10px] font-semibold"
-                          style={{ background: `color-mix(in srgb, ${p.color} 10%, transparent)`, color: p.color, border: `1px solid color-mix(in srgb, ${p.color} 15%, transparent)` }}>
-                          {tag}
-                        </span>
-                      ))}
+            {/* Technologies price list */}
+            <div className="grid grid-cols-2 gap-5 max-sm:grid-cols-1 max-sm:gap-3 mb-12">
+              {[
+                { icon: '📱', title: 'Электронное меню', desc: 'QR-код → меню с фото на телефоне гостя. 8 языков, мгновенные обновления.', price: '1 500 ₽/мес', color: '#FFA83C', tags: ['QR-код', '8 языков', 'Стоп-лист'] },
+                { icon: '👨‍🍳', title: 'Приложение «Кухня»', desc: 'Заказы на экране повара в реальном времени. Таймеры, статусы, звуковые оповещения.', price: '2 900 ₽/мес', color: 'var(--accent)', tags: ['Реальное время', 'Таймеры', 'Планшет/ТВ'] },
+                { icon: '🖥', title: 'Информационный терминал', desc: 'Сенсорный киоск в зале. Гости листают меню, фильтруют по аллергенам, оформляют заказ.', price: 'от 4 900 ₽/мес', color: 'var(--teal)', tags: ['Сенсорный', 'Предзаказ', 'Аренда'] },
+                { icon: '👔', title: 'Приложение официанта', desc: 'Карта зала, управление столами, приём заказов, предчек — всё в смартфоне.', price: '1 900 ₽/мес', color: '#C4A1FF', tags: ['Карта зала', 'Push', 'PIN-вход'] },
+                { icon: '📸', title: 'AI-фотосет меню', desc: 'Профессиональные фото блюд, сгенерированные нейросетью по описанию.', price: '2 500 ₽', color: '#FF6B9D', tags: ['Разово', 'AI', 'Для меню'] },
+                { icon: '🎬', title: 'Генерация промо-видео', desc: 'Короткие видео для соцсетей, сторис и рекламы — по вашим фото и концепции.', price: 'от 4 900 ₽', color: '#BAFF39', tags: ['Разово', 'Для рекламы'] },
+              ].map((t) => (
+                <Card key={t.title} color={t.color}>
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <span className="text-[24px]">{t.icon}</span>
+                      <h3 className="text-[15px] font-bold text-[var(--text)]">{t.title}</h3>
                     </div>
+                    <span className="text-[13px] font-bold whitespace-nowrap" style={{ color: t.color }}>{t.price}</span>
                   </div>
-                ))}
-              </div>
+                  <p className="text-[13px] text-[var(--text3)] leading-relaxed mb-3">{t.desc}</p>
+                  <div className="flex gap-2 flex-wrap">
+                    {t.tags.map((tag) => <Tag key={tag} label={tag} color={t.color} />)}
+                  </div>
+                </Card>
+              ))}
             </div>
 
-            {/* ── Продвижение и подборки ── */}
-            <h3 className="font-serif text-[24px] font-bold text-[var(--text)] text-center mb-8">
-              Продвижение и подборки
-            </h3>
+            {/* Promotion & collections */}
+            <h3 className="font-serif text-[24px] font-bold text-[var(--text)] text-center mb-8">Продвижение и подборки</h3>
 
             <div className="grid grid-cols-2 gap-5 max-sm:grid-cols-1 max-sm:gap-3 mb-10">
-              {/* Продвижение */}
               <div className="rounded-[20px] border overflow-hidden"
                 style={{ borderColor: 'var(--card-border)', background: 'var(--card)' }}>
                 <div className="px-6 py-3.5 border-b flex items-center gap-2.5"
@@ -448,7 +489,6 @@ export default function ForBusinessPage() {
                 </div>
               </div>
 
-              {/* Подборки */}
               <div className="rounded-[20px] border overflow-hidden"
                 style={{ borderColor: 'var(--card-border)', background: 'var(--card)' }}>
                 <div className="px-6 py-3.5 border-b flex items-center gap-2.5"
@@ -472,52 +512,12 @@ export default function ForBusinessPage() {
               </div>
             </div>
 
-            {/* ── Технологии прайс ── */}
-            <h3 className="font-serif text-[24px] font-bold text-[var(--text)] text-center mb-8">
-              Технологии
-            </h3>
-
-            <div className="max-w-[600px] mx-auto rounded-[20px] border overflow-hidden mb-8"
-              style={{ borderColor: 'var(--card-border)', background: 'var(--card)' }}>
-              <div className="px-6 py-3.5 border-b flex items-center gap-2.5"
-                style={{ borderColor: 'var(--card-border)', background: 'rgba(57,255,209,0.04)' }}>
-                <span className="text-[18px]">⚡</span>
-                <h4 className="text-[15px] font-bold text-[var(--text)]">Цифровые решения</h4>
-              </div>
-              <div className="p-5 space-y-3.5">
-                {[
-                  { name: 'Информационный терминал', note: 'аренда', price: 'от 4 900 ₽/мес' },
-                  { name: 'Приложение «Кухня»', note: 'подписка', price: '2 900 ₽/мес' },
-                  { name: 'Электронное меню', note: 'подписка', price: '1 500 ₽/мес' },
-                  { name: 'AI-фотосет меню', note: 'разово', price: '2 500 ₽' },
-                  { name: 'Генерация видео', note: 'разово', price: 'от 4 900 ₽' },
-                  { name: 'Интеграция с кассой', note: 'разово', price: 'от 30 000 ₽' },
-                ].map((i) => (
-                  <div key={i.name} className="flex items-center justify-between text-[13px]">
-                    <div>
-                      <span className="text-[var(--text2)] font-medium">{i.name}</span>
-                      <span className="text-[var(--text4)] ml-2 text-[11px]">{i.note}</span>
-                    </div>
-                    <span className="font-bold text-[var(--text)] whitespace-nowrap">{i.price}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
             <div className="text-center">
               <a href="mailto:business@menu-rest.ru"
                 className="inline-flex items-center gap-2 px-7 py-3 rounded-full text-[13px] font-bold no-underline transition-all duration-300"
                 style={{ color: '#FFA83C', background: 'rgba(255,168,60,0.08)', border: '1px solid rgba(255,168,60,0.2)' }}
-                onMouseEnter={(e) => {
-                  const el = e.currentTarget as HTMLElement;
-                  el.style.background = 'rgba(255,168,60,0.15)';
-                  el.style.transform = 'translateY(-2px)';
-                }}
-                onMouseLeave={(e) => {
-                  const el = e.currentTarget as HTMLElement;
-                  el.style.background = 'rgba(255,168,60,0.08)';
-                  el.style.transform = 'none';
-                }}>
+                onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,168,60,0.15)'; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,168,60,0.08)'; }}>
                 Обсудить внедрение
                 <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
                   <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -526,6 +526,133 @@ export default function ForBusinessPage() {
             </div>
           </div>
         )}
+
+        {/* ═══ TAB 4: Интеграции ═══ */}
+        {tab === 'integrations' && (
+          <div>
+            <div className="text-center mb-10">
+              <h2 className="font-serif font-black text-[var(--text)] mb-3 max-sm:text-[26px]"
+                style={{ fontSize: 'clamp(26px, 3.5vw, 38px)' }}>
+                Подключаем к вашей{' '}
+                <span style={{ color: '#3b82f6' }}>инфраструктуре</span>
+              </h2>
+              <p className="text-[15px] text-[var(--text3)] max-w-[520px] mx-auto leading-relaxed">
+                Интеграции с кассами, CRM, картами и мессенджерами — без потери данных и двойного ввода.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 max-sm:grid-cols-1 max-sm:gap-3 mb-10">
+              {[
+                { icon: '🖥', title: 'iiko', desc: 'Синхронизация меню, заказов и остатков с POS-системой iiko.', price: 'от 30 000 ₽', color: '#3b82f6' },
+                { icon: '💻', title: 'R-Keeper', desc: 'Интеграция с R-Keeper: меню, стоп-лист, выгрузка заказов.', price: 'от 30 000 ₽', color: '#3b82f6' },
+                { icon: '📊', title: 'Poster', desc: 'Подключение к Poster POS. Автоматическая синхронизация.', price: 'от 20 000 ₽', color: '#3b82f6' },
+                { icon: '📇', title: 'CRM (Bitrix24, amoCRM)', desc: 'Бронирования и лиды прямиком в вашу CRM-систему.', price: 'от 25 000 ₽', color: '#3b82f6' },
+                { icon: '📧', title: 'Email и SMS рассылки', desc: 'Автоматические напоминания, подтверждения, спецпредложения.', price: 'от 15 000 ₽', color: '#3b82f6' },
+                { icon: '🗺', title: '2GIS / Яндекс Карты', desc: 'Синхронизация данных с картами: часы, фото, отзывы.', price: 'от 10 000 ₽', color: '#3b82f6' },
+                { icon: '🤖', title: 'Telegram-бот', desc: 'Бот для бронирования, заказов и уведомлений прямо в Telegram.', price: 'от 35 000 ₽', color: '#3b82f6' },
+                { icon: '📅', title: 'Виджет бронирования', desc: 'Встраиваемый виджет для вашего сайта. Бронирования без перехода.', price: 'от 5 000 ₽', color: '#3b82f6' },
+              ].map((f) => (
+                <Card key={f.title} color={f.color} className="flex gap-4 max-sm:gap-3">
+                  <span className="text-[24px] flex-shrink-0">{f.icon}</span>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <h3 className="text-[15px] font-bold text-[var(--text)]">{f.title}</h3>
+                      <span className="text-[12px] font-bold whitespace-nowrap" style={{ color: f.color }}>{f.price}</span>
+                    </div>
+                    <p className="text-[13px] text-[var(--text3)] leading-relaxed">{f.desc}</p>
+                  </div>
+                </Card>
+              ))}
+            </div>
+
+            <div className="text-center">
+              <a href="mailto:business@menu-rest.ru"
+                className="inline-flex items-center gap-2 px-7 py-3 rounded-full text-[13px] font-bold no-underline transition-all duration-300"
+                style={{ color: '#3b82f6', background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.2)' }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = 'rgba(59,130,246,0.15)'; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = 'rgba(59,130,246,0.08)'; }}>
+                Обсудить интеграцию
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                  <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </a>
+            </div>
+          </div>
+        )}
+
+        {/* ═══ TAB 5: Консалтинг ═══ */}
+        {tab === 'consulting' && (
+          <div>
+            <div className="text-center mb-10">
+              <h2 className="font-serif font-black text-[var(--text)] mb-3 max-sm:text-[26px]"
+                style={{ fontSize: 'clamp(26px, 3.5vw, 38px)' }}>
+                Экспертиза для{' '}
+                <span style={{ color: '#8b5cf6' }}>вашего роста</span>
+              </h2>
+              <p className="text-[15px] text-[var(--text3)] max-w-[520px] mx-auto leading-relaxed">
+                Аналитика рынка, аудит цен, маркетинговая стратегия — от специалистов ресторанной индустрии.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 max-sm:grid-cols-1 max-sm:gap-3 mb-10">
+              {[
+                { icon: '📊', title: 'Ресторанный ценовой индекс', desc: 'Ежемесячный отчёт: средние цены, тренды, позиционирование относительно конкурентов.', price: '14 900 ₽/мес', type: 'подписка' },
+                { icon: '🔎', title: 'Анализ конкурентов', desc: 'Детальный разбор конкурентного окружения: цены, меню, отзывы, трафик.', price: '49 900 ₽', type: 'разово' },
+                { icon: '💰', title: 'Аудит ценообразования', desc: 'Проверка ваших цен: фуд-кост, маржинальность, оптимальные точки.', price: '39 900 ₽', type: 'разово' },
+                { icon: '🚀', title: 'Стратегия открытия', desc: 'Полное сопровождение запуска: локация, концепция, меню, ценообразование.', price: '89 900 ₽', type: 'проект' },
+                { icon: '📈', title: 'Маркетинговая стратегия', desc: 'Полугодовой план продвижения: каналы, бюджеты, KPI, контент-план.', price: '149 900 ₽', type: '6 мес' },
+                { icon: '👨‍🏫', title: 'Менторство управляющего', desc: 'Индивидуальная работа с управляющим: операционка, финансы, команда.', price: '199 900 ₽', type: '2 мес' },
+                { icon: '📰', title: 'PR и медиа-пакет', desc: 'Публикации в СМИ, обзоры блогеров, организация мероприятий.', price: '79 900 ₽', type: 'квартал' },
+              ].map((f) => (
+                <Card key={f.title} color="#8b5cf6" className="flex gap-4 max-sm:gap-3">
+                  <span className="text-[24px] flex-shrink-0">{f.icon}</span>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between mb-1.5 gap-2">
+                      <h3 className="text-[15px] font-bold text-[var(--text)]">{f.title}</h3>
+                      <div className="text-right flex-shrink-0">
+                        <div className="text-[12px] font-bold" style={{ color: '#8b5cf6' }}>{f.price}</div>
+                        <div className="text-[10px] text-[var(--text4)]">{f.type}</div>
+                      </div>
+                    </div>
+                    <p className="text-[13px] text-[var(--text3)] leading-relaxed">{f.desc}</p>
+                  </div>
+                </Card>
+              ))}
+            </div>
+
+            <div className="text-center">
+              <a href="mailto:business@menu-rest.ru"
+                className="inline-flex items-center gap-2 px-7 py-3 rounded-full text-[13px] font-bold no-underline transition-all duration-300"
+                style={{ color: '#8b5cf6', background: 'rgba(139,92,246,0.08)', border: '1px solid rgba(139,92,246,0.2)' }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = 'rgba(139,92,246,0.15)'; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = 'rgba(139,92,246,0.08)'; }}>
+                Заказать консультацию
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                  <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </a>
+            </div>
+          </div>
+        )}
+      </section>
+
+      {/* ── КОНТАКТЫ ── */}
+      <section className="max-w-[1100px] mx-auto px-10 max-md:px-4 max-sm:px-3 pb-8">
+        <div className="rounded-[20px] p-8 max-sm:p-5 flex items-center justify-between gap-8 max-sm:flex-col max-sm:text-center"
+          style={{ background: 'var(--card)', border: '1px solid var(--card-border)' }}>
+          <div>
+            <h3 className="text-[18px] font-bold text-[var(--text)] mb-1">Остались вопросы?</h3>
+            <p className="text-[13px] text-[var(--text3)]">Свяжитесь с нами — поможем подобрать решение под ваш ресторан</p>
+          </div>
+          <div className="flex items-center gap-6 max-sm:flex-col max-sm:gap-3">
+            <a href="tel:+78005555335" className="text-[15px] font-bold text-[var(--text)] no-underline hover:text-[var(--accent)] transition-colors">
+              8 800 555-53-35
+            </a>
+            <a href="mailto:business@menu-rest.ru" className="text-[15px] font-bold no-underline transition-colors" style={{ color: 'var(--accent)' }}>
+              business@menu-rest.ru
+            </a>
+          </div>
+        </div>
       </section>
 
       {/* ── ФИНАЛЬНЫЙ CTA ── */}
@@ -546,27 +673,15 @@ export default function ForBusinessPage() {
               <Link href="/restaurants"
                 className="px-7 py-3.5 rounded-full text-[14px] font-bold no-underline transition-all duration-300"
                 style={{ background: 'white', color: 'var(--accent)' }}
-                onMouseEnter={(e) => {
-                  const el = e.currentTarget as HTMLElement;
-                  el.style.transform = 'translateY(-2px)';
-                  el.style.boxShadow = '0 8px 30px rgba(0,0,0,0.2)';
-                }}
-                onMouseLeave={(e) => {
-                  const el = e.currentTarget as HTMLElement;
-                  el.style.transform = 'none';
-                  el.style.boxShadow = 'none';
-                }}>
+                onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px)'; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.transform = 'none'; }}>
                 Добавить бесплатно
               </Link>
               <a href="mailto:business@menu-rest.ru"
                 className="px-7 py-3.5 rounded-full text-[14px] font-bold no-underline transition-all duration-300"
                 style={{ background: 'rgba(255,255,255,0.15)', color: 'white', border: '1px solid rgba(255,255,255,0.3)' }}
-                onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.25)';
-                }}
-                onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.15)';
-                }}>
+                onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.25)'; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.15)'; }}>
                 Связаться с нами
               </a>
             </div>
