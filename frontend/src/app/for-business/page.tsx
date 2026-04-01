@@ -119,21 +119,6 @@ export default function ForBusinessPage() {
           </p>
         </div>
 
-        {/* Pipeline showcase image */}
-        <div className="relative mb-10 flex justify-center">
-          <div className="absolute pointer-events-none"
-            style={{ width: '90%', height: '80%', top: '10%', left: '5%', background: 'radial-gradient(ellipse, rgba(232,73,29,0.08) 0%, transparent 70%)', filter: 'blur(50px)' }} />
-          <div className="relative rounded-[24px] overflow-hidden"
-            style={{ boxShadow: '0 30px 80px rgba(0,0,0,0.4), 0 0 60px rgba(232,73,29,0.06)', maxWidth: 900 }}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/images/order-pipeline.png"
-              alt="Цепочка заказа: QR-меню → Приложение официанта → Экран кухни"
-              style={{ width: '100%', height: 'auto', display: 'block' }}
-            />
-          </div>
-        </div>
-
         {/* Pipeline: 3 cards with arrows */}
         <div className="grid grid-cols-3 gap-0 max-lg:grid-cols-1 max-lg:gap-4 mb-10 items-stretch">
           {/* Step 1: QR / Electronic menu */}
