@@ -43,4 +43,10 @@ export class RestaurantDish {
 
   @Column({ name: 'menu_category_id', type: 'int', nullable: true })
   menuCategoryId: number | null;
+
+  @Column({ name: 'prep_time_min', type: 'int', nullable: true })
+  prepTimeMin: number | null;
+
+  @Column({ type: 'varchar', length: 30, nullable: true })
+  station: string | null;
 }

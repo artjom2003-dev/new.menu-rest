@@ -12,7 +12,10 @@ async function bootstrap() {
 
   const configService = app.get(ConfigService);
   const port = configService.get<number>('BACKEND_PORT', 3001);
-  const corsOrigins = configService.get<string>('CORS_ORIGINS', 'http://localhost:3000').split(',');
+  const corsOrigins = configService.get<string>(
+    'CORS_ORIGINS',
+    'http://localhost:3000,http://localhost:5174,http://localhost:5180,http://localhost:5181,http://localhost:5182',
+  ).split(',');
 
   // Security
   app.use(helmet());
