@@ -14,6 +14,7 @@ const nextConfig = {
       { protocol: 'http', hostname: 'localhost', port: '3900' },
       { protocol: 'http', hostname: 'garage', port: '3900' },
       { protocol: 'https', hostname: '*.menu-rest.com' },
+      { protocol: 'https', hostname: 'menu-rest.com' },
       // External photo sources
       { protocol: 'https', hostname: 'img.restoclub.ru' },
       { protocol: 'https', hostname: 'i2.photo.2gis.com' },
