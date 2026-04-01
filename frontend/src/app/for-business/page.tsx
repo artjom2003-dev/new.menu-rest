@@ -354,6 +354,80 @@ export default function ForBusinessPage() {
               ))}
             </div>
 
+            {/* ── Pipeline: QR → Waiter → Kitchen ── */}
+            <div className="rounded-[24px] p-8 max-sm:p-5 mb-10 relative overflow-hidden"
+              style={{ background: 'linear-gradient(135deg, rgba(186,255,57,0.03), rgba(57,255,209,0.03))', border: '1px solid rgba(186,255,57,0.1)' }}>
+              <div className="absolute rounded-full pointer-events-none" style={{ width: 300, height: 300, top: -100, right: -80, background: 'rgba(186,255,57,0.04)', filter: 'blur(60px)' }} />
+              <div className="text-center mb-6 relative z-10">
+                <h3 className="font-serif font-black text-[var(--text)] mb-2 max-sm:text-[20px]"
+                  style={{ fontSize: 'clamp(20px, 3vw, 28px)' }}>
+                  От QR-кода до кухни —{' '}
+                  <span style={{ background: 'linear-gradient(135deg, #BAFF39, var(--teal))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                    без единого звонка
+                  </span>
+                </h3>
+                <p className="text-[13px] text-[var(--text3)] max-w-[480px] mx-auto">
+                  Три приложения работают как единая система. Заказ проходит весь путь за секунды.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-3 gap-4 max-lg:grid-cols-1 max-lg:gap-3 relative z-10">
+                {[
+                  {
+                    step: '1', color: '#BAFF39', title: 'Электронное меню',
+                    desc: 'Гость сканирует QR-код и заказывает с телефона — без ожидания официанта.',
+                    tags: ['QR-код', '8 языков', 'Без бумаги'],
+                  },
+                  {
+                    step: '2', color: 'var(--accent)', title: 'Приложение официанта',
+                    desc: 'Заказ мгновенно на экране. Карта зала, статусы столов, предчек — в одном приложении.',
+                    tags: ['Push', 'Карта зала', 'PIN-вход'],
+                  },
+                  {
+                    step: '3', color: 'var(--teal)', title: 'Экран кухни (KDS)',
+                    desc: 'Повар видит заказ в ту же секунду. Таймеры, звук, кнопка «Готово» — ничего не теряется.',
+                    tags: ['Реальное время', 'Таймеры', 'Планшет/ТВ'],
+                  },
+                ].map((s, i) => (
+                  <div key={s.step} className="relative">
+                    <div className="rounded-[16px] p-5 max-sm:p-4 border h-full transition-all duration-300"
+                      style={{ background: 'var(--card)', borderColor: 'var(--card-border)' }}
+                      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = s.color; }}
+                      onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--card-border)'; }}>
+                      <div className="flex items-center gap-2.5 mb-3">
+                        <span className="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-black"
+                          style={{ background: `color-mix(in srgb, ${s.color} 12%, transparent)`, color: s.color }}>{s.step}</span>
+                        <h4 className="text-[14px] font-bold text-[var(--text)]">{s.title}</h4>
+                      </div>
+                      <p className="text-[12px] text-[var(--text3)] leading-relaxed mb-3">{s.desc}</p>
+                      <div className="flex gap-1.5 flex-wrap">
+                        {s.tags.map((t) => <Tag key={t} label={t} color={s.color} />)}
+                      </div>
+                    </div>
+                    {i < 2 && (
+                      <div className="absolute top-1/2 -right-3 w-6 h-6 flex items-center justify-center z-10 max-lg:hidden">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke={s.color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex items-center justify-center gap-8 mt-6 flex-wrap max-sm:gap-4 relative z-10">
+                {[
+                  { value: '0 сек', label: 'от заказа до кухни', color: '#BAFF39' },
+                  { value: '−40%', label: 'ошибок', color: 'var(--accent)' },
+                  { value: '−25%', label: 'время подачи', color: 'var(--teal)' },
+                  { value: '×2', label: 'оборот столов', color: '#FFD700' },
+                ].map((s) => (
+                  <div key={s.label} className="text-center">
+                    <div className="text-[20px] max-sm:text-[16px] font-black" style={{ color: s.color }}>{s.value}</div>
+                    <div className="text-[10px] text-[var(--text3)]">{s.label}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
             {/* Price + 50% promo */}
             <div className="relative overflow-hidden rounded-[28px] p-[2px]"
               style={{
