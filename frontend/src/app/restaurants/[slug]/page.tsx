@@ -75,12 +75,12 @@ export default async function RestaurantPage({ params }: { params: { slug: strin
   const rawMenu = await getMenu(restaurant.id);
   const posts = await getPosts(restaurant.id);
 
-  // Adapt API shape: { category, dishes: [{ dish: {...}, price }] }
-  // into MenuSection shape: { id, name, dishes: [{ id, name, price, ... }] }
+  // Adapt API shape: supports both old { category, dishes: [{ dish, price }] }
+  // and new { section_title, items: [{ id, name, price }] }
   const menu = (rawMenu || []).map((cat: Record<string, unknown>, i: number) => ({
     id: i,
-    name: (cat.name || cat.category || 'Без категории') as string,
-    dishes: ((cat.dishes || []) as Array<Record<string, unknown>>).map((item) => {
+    name: (cat.section_title || cat.name || cat.category || 'Без категории') as string,
+    dishes: ((cat.items || cat.dishes || []) as Array<Record<string, unknown>>).map((item) => {
       const dish = (item.dish || {}) as Record<string, unknown>;
       return {
         id: dish.id || item.id || 0,
@@ -92,9 +92,9 @@ export default async function RestaurantPage({ params }: { params: { slug: strin
         protein: dish.protein ? Number(dish.protein) : undefined,
         fat: dish.fat ? Number(dish.fat) : undefined,
         carbs: dish.carbs ? Number(dish.carbs) : undefined,
-        weightGrams: dish.weightGrams ? Number(dish.weightGrams) : undefined,
+        weightGrams: dish.weightGrams ? Number(dish.weightGrams) : (item.weight ? Number(item.weight) : undefined),
         volumeMl: dish.volumeMl ? Number(dish.volumeMl) : undefined,
-        imageUrl: dish.imageUrl,
+        imageUrl: dish.imageUrl || item.photoUrl,
         isHealthyChoice: dish.isHealthyChoice || false,
         allergens: (dish.allergens as Array<{ slug: string; icon: string; name: string }>) || [],
       };
