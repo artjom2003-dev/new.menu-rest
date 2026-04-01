@@ -7,6 +7,7 @@ import { useAuthStore } from '@/stores/auth.store';
 import { useBudgetStore } from '@/stores/budget.store';
 import { AddRestaurantModal } from './AddRestaurantModal';
 import { BookingForm } from './BookingForm';
+import { StartChatButton } from '@/components/chat/StartChatButton';
 
 interface Restaurant {
   id?: number;
@@ -352,6 +353,12 @@ export function RestaurantInfoCard({ restaurant }: { restaurant: Restaurant }) {
                 📅 {t('book')}
               </button>
             </div>
+
+            {restaurant.ownerId && (
+              <div className="mt-3 flex justify-center">
+                <StartChatButton userId={restaurant.ownerId} userName={restaurant.name} />
+              </div>
+            )}
 
             {bookingError && (
               <div className="mt-3 px-4 py-3 rounded-xl text-[12px] text-[var(--text3)] leading-relaxed"
