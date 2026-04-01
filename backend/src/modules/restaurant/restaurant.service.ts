@@ -299,6 +299,47 @@ export class RestaurantService implements OnModuleInit {
     return saved;
   }
 
+  async getMenu(restaurantId: number) {
+    const { RestaurantDish } = await import('@database/entities/restaurant-dish.entity');
+    const rdRepo = this.restaurantRepo.manager.getRepository(RestaurantDish);
+    const dishes = await rdRepo.find({
+      where: { restaurantId, isAvailable: true },
+      relations: ['dish'],
+      order: { categoryName: 'ASC', sortOrder: 'ASC' },
+    });
+    // Group by category
+    const categories: Record<string, any[]> = {};
+    for (const rd of dishes) {
+      const cat = rd.categoryName || 'Без категории';
+      if (!categories[cat]) categories[cat] = [];
+      categories[cat].push({
+        id: rd.id,
+        dishId: rd.dishId,
+        name: rd.dish?.name || `Dish #${rd.dishId}`,
+        description: rd.dish?.description || null,
+        price: rd.price,
+        weight: rd.dish?.weightGrams || null,
+        photoUrl: rd.dish?.imageUrl || null,
+        station: rd.station,
+        prepTimeMin: rd.prepTimeMin,
+      });
+    }
+    return Object.entries(categories).map(([name, items]) => ({
+      section_title: name,
+      items,
+    }));
+  }
+
+  async getPosts(restaurantId: number) {
+    const { Article } = await import('@database/entities/article.entity');
+    const articleRepo = this.restaurantRepo.manager.getRepository(Article);
+    return articleRepo.find({
+      where: { restaurants: { id: restaurantId }, status: 'published' },
+      order: { publishedAt: 'DESC' },
+      take: 10,
+    });
+  }
+
   async remove(id: number): Promise<void> {
     const restaurant = await this.findById(id);
     await this.restaurantRepo.remove(restaurant);

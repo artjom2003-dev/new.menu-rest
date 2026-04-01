@@ -59,6 +59,18 @@ export class RestaurantController {
     return this.service.remove(id);
   }
 
+  @Get(':id/menu')
+  @ApiOperation({ summary: 'Меню ресторана (публичное)' })
+  getMenu(@Param('id', ParseIntPipe) id: number) {
+    return this.service.getMenu(id);
+  }
+
+  @Get(':id/posts')
+  @ApiOperation({ summary: 'Новости и акции ресторана (публичное)' })
+  getPosts(@Param('id', ParseIntPipe) id: number) {
+    return this.service.getPosts(id);
+  }
+
   // ─── Photos ──────────────────────────────────────────
   @Post(':id/photos')
   @UseGuards(JwtAuthGuard)

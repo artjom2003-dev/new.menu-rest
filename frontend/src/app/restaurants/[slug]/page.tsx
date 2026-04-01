@@ -7,6 +7,7 @@ import { ReviewSection } from '@/components/restaurant/ReviewSection';
 import { RestaurantActions } from '@/components/restaurant/RestaurantActions';
 import { BudgetRestaurantContext } from '@/components/budget/BudgetRestaurantContext';
 import { WishlistUsersSection } from '@/components/restaurant/WishlistUsersSection';
+import { RestaurantPosts } from '@/components/restaurant/RestaurantPosts';
 
 const API_BASE = process.env.BACKEND_URL || 'http://localhost:3001';
 
@@ -25,6 +26,17 @@ async function getMenu(restaurantId: number) {
   try {
     const res = await fetch(
       `${API_BASE}/api/restaurants/${restaurantId}/menu`,
+      { cache: 'no-store' }
+    );
+    if (!res.ok) return [];
+    return res.json();
+  } catch { return []; }
+}
+
+async function getPosts(restaurantId: number) {
+  try {
+    const res = await fetch(
+      `${API_BASE}/api/restaurants/${restaurantId}/posts`,
       { cache: 'no-store' }
     );
     if (!res.ok) return [];
@@ -61,6 +73,7 @@ export default async function RestaurantPage({ params }: { params: { slug: strin
   if (!restaurant) notFound();
 
   const rawMenu = await getMenu(restaurant.id);
+  const posts = await getPosts(restaurant.id);
 
   // Adapt API shape: { category, dishes: [{ dish: {...}, price }] }
   // into MenuSection shape: { id, name, dishes: [{ id, name, price, ... }] }
@@ -96,6 +109,7 @@ export default async function RestaurantPage({ params }: { params: { slug: strin
         <RestaurantInfoCard restaurant={restaurant} />
         <WishlistUsersSection restaurantId={restaurant.id} />
         <MenuSection categories={menu} isVerified={!!restaurant.isVerified} phone={restaurant.phone} />
+        <RestaurantPosts posts={posts} />
         <ReviewSection restaurantId={restaurant.id} />
       </div>
     </div>
