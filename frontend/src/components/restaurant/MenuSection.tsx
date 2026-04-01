@@ -7,11 +7,15 @@ interface Dish {
   id: number;
   name: string;
   description?: string;
+  composition?: string;
   price: number;
   calories?: number;
   protein?: number;
   fat?: number;
   carbs?: number;
+  weightGrams?: number;
+  volumeMl?: number;
+  imageUrl?: string;
   isHealthyChoice?: boolean;
   allergens?: Array<{ slug: string; icon: string; name: string }>;
 }
