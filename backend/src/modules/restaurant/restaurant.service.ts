@@ -300,28 +300,29 @@ export class RestaurantService implements OnModuleInit {
   }
 
   async getMenu(restaurantId: number) {
-    const { RestaurantDish } = await import('@database/entities/restaurant-dish.entity');
-    const rdRepo = this.restaurantRepo.manager.getRepository(RestaurantDish);
-    const dishes = await rdRepo.find({
-      where: { restaurantId, isAvailable: true },
-      relations: ['dish'],
-      order: { categoryName: 'ASC', sortOrder: 'ASC' },
-    });
-    // Group by category
+    const rows = await this.restaurantRepo.manager.query(`
+      SELECT rd.id, rd.dish_id AS "dishId", rd.price, rd.category_name, rd.station, rd.prep_time_min,
+             d.name, d.description, d.weight_grams AS "weightGrams", d.image_url AS "imageUrl"
+      FROM restaurant_dishes rd
+      JOIN dishes d ON d.id = rd.dish_id
+      WHERE rd.restaurant_id = $1 AND rd.is_available = true
+      ORDER BY rd.category_name ASC, rd.sort_order ASC
+    `, [restaurantId]);
+
     const categories: Record<string, any[]> = {};
-    for (const rd of dishes) {
-      const cat = rd.categoryName || 'Без категории';
+    for (const row of rows) {
+      const cat = row.category_name || 'Без категории';
       if (!categories[cat]) categories[cat] = [];
       categories[cat].push({
-        id: rd.id,
-        dishId: rd.dishId,
-        name: rd.dish?.name || `Dish #${rd.dishId}`,
-        description: rd.dish?.description || null,
-        price: rd.price,
-        weight: rd.dish?.weightGrams || null,
-        photoUrl: rd.dish?.imageUrl || null,
-        station: rd.station,
-        prepTimeMin: rd.prepTimeMin,
+        id: row.id,
+        dishId: row.dishId,
+        name: row.name,
+        description: row.description || null,
+        price: row.price,
+        weight: row.weightGrams || null,
+        photoUrl: row.imageUrl || null,
+        station: row.station || null,
+        prepTimeMin: row.prep_time_min || null,
       });
     }
     return Object.entries(categories).map(([name, items]) => ({
