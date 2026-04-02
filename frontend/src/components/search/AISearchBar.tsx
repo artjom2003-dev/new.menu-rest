@@ -381,16 +381,13 @@ export function AISearchBar() {
               style={{ background: 'var(--accent-glow)', color: 'var(--accent)', border: '1px solid var(--accent)' }}>
               ?
             </span>
-            <span className="absolute left-1/2 -translate-x-1/2 bottom-8 w-[320px] max-sm:w-[260px] max-sm:-translate-x-3/4 p-4 rounded-2xl text-[12px] font-normal leading-relaxed text-left opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 pointer-events-none group-hover:pointer-events-auto"
-              style={{ background: 'var(--bg2)', border: '1px solid var(--card-border)', boxShadow: '0 -8px 40px rgba(0,0,0,0.4)', color: 'var(--text2)', zIndex: 9999 }}>
-              <span className="font-bold text-[var(--accent)] block mb-1.5">Что умеет Menu-Rest.AI?</span>
-              <span className="block mb-2 text-[var(--text3)]">
-                Просто опишите что хотите — AI разберётся в остальном.
-              </span>
-              <span className="space-y-1 block">
-                <span className="flex items-start gap-1.5"><span style={{ color: 'var(--teal)' }}>✦</span> Понимает любой запрос: от «где поесть рядом» до сложных предпочтений</span>
-                <span className="flex items-start gap-1.5"><span style={{ color: 'var(--teal)' }}>✦</span> Знает меню, цены и особенности 123 000+ заведений</span>
-                <span className="flex items-start gap-1.5"><span style={{ color: 'var(--teal)' }}>✦</span> Подстраивается под вас — уточняйте, и результат станет точнее</span>
+            <span className="absolute left-1/2 -translate-x-1/2 max-sm:-translate-x-[85%] bottom-7 w-[260px] max-sm:w-[220px] p-3 max-sm:p-2.5 rounded-xl text-[11px] max-sm:text-[10px] font-normal leading-relaxed text-left opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 pointer-events-none group-hover:pointer-events-auto"
+              style={{ background: 'var(--bg2)', border: '1px solid var(--card-border)', boxShadow: '0 -6px 30px rgba(0,0,0,0.4)', color: 'var(--text2)', zIndex: 9999 }}>
+              <span className="font-bold text-[var(--accent)] block mb-1 text-[11px] max-sm:text-[10px]">Что умеет AI?</span>
+              <span className="space-y-0.5 block text-[var(--text3)]">
+                <span className="flex items-start gap-1"><span style={{ color: 'var(--teal)' }}>✦</span> Понимает любой запрос — от простого до сложного</span>
+                <span className="flex items-start gap-1"><span style={{ color: 'var(--teal)' }}>✦</span> Знает 123 000+ заведений: меню, цены, особенности</span>
+                <span className="flex items-start gap-1"><span style={{ color: 'var(--teal)' }}>✦</span> Уточняйте — результат станет точнее</span>
               </span>
             </span>
           </span>
