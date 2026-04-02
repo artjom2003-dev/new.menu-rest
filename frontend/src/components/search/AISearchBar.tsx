@@ -381,8 +381,8 @@ export function AISearchBar() {
               style={{ background: 'var(--accent-glow)', color: 'var(--accent)', border: '1px solid var(--accent)' }}>
               ?
             </span>
-            <span className="absolute left-1/2 -translate-x-1/2 top-7 w-[320px] max-sm:w-[260px] max-sm:-translate-x-3/4 p-4 rounded-2xl text-[12px] font-normal leading-relaxed text-left opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 pointer-events-none group-hover:pointer-events-auto"
-              style={{ background: 'var(--bg2)', border: '1px solid var(--card-border)', boxShadow: '0 12px 40px rgba(0,0,0,0.3)', color: 'var(--text2)' }}>
+            <span className="absolute left-1/2 -translate-x-1/2 bottom-8 w-[320px] max-sm:w-[260px] max-sm:-translate-x-3/4 p-4 rounded-2xl text-[12px] font-normal leading-relaxed text-left opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 pointer-events-none group-hover:pointer-events-auto"
+              style={{ background: 'var(--bg2)', border: '1px solid var(--card-border)', boxShadow: '0 -8px 40px rgba(0,0,0,0.4)', color: 'var(--text2)', zIndex: 9999 }}>
               <span className="font-bold text-[var(--accent)] block mb-1.5">Что умеет Menu-Rest.AI?</span>
               <span className="block mb-2 text-[var(--text3)]">
                 Просто опишите что хотите — AI разберётся в остальном.
