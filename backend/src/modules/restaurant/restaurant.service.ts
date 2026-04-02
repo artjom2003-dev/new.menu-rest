@@ -331,6 +331,13 @@ export class RestaurantService implements OnModuleInit {
     }));
   }
 
+  async getEMenuSettings(restaurantId: number) {
+    const rows = await this.restaurantRepo.manager.query(
+      'SELECT emenu_settings FROM restaurants WHERE id = $1', [restaurantId],
+    );
+    return rows[0]?.emenu_settings || {};
+  }
+
   async getPosts(restaurantId: number) {
     const { Article } = await import('@database/entities/article.entity');
     const articleRepo = this.restaurantRepo.manager.getRepository(Article);

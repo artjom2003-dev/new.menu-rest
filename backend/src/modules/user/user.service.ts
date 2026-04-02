@@ -220,6 +220,27 @@ export class UserService {
     await this.articleRepo.remove(article);
   }
 
+  // ─── Owner: E-Menu Settings ────────────────────────
+
+  async getEMenuSettings(userId: number) {
+    const restaurant = await this.restaurantRepo.findOneBy({ ownerId: userId });
+    if (!restaurant) throw new NotFoundException('У вас нет привязанного ресторана');
+    const rows = await this.restaurantRepo.manager.query(
+      'SELECT emenu_settings FROM restaurants WHERE id = $1', [restaurant.id],
+    );
+    return rows[0]?.emenu_settings || {};
+  }
+
+  async updateEMenuSettings(userId: number, settings: Record<string, unknown>) {
+    const restaurant = await this.restaurantRepo.findOneBy({ ownerId: userId });
+    if (!restaurant) throw new NotFoundException('У вас нет привязанного ресторана');
+    await this.restaurantRepo.manager.query(
+      'UPDATE restaurants SET emenu_settings = $1 WHERE id = $2',
+      [JSON.stringify(settings), restaurant.id],
+    );
+    return settings;
+  }
+
   // ─── Owner: Listings (jobs + suppliers) ───────────────
 
   async getMyListings(userId: number): Promise<Listing[]> {

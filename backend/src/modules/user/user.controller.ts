@@ -114,6 +114,23 @@ export class UserController {
     return this.service.deleteMyRestaurantPost(req.user.id, postId);
   }
 
+  // ─── Owner: E-Menu Settings ──────────────────────────
+
+  @Get('restaurant/emenu-settings')
+  @ApiOperation({ summary: 'Настройки электронного меню' })
+  getEMenuSettings(@Request() req: { user: { id: number } }) {
+    return this.service.getEMenuSettings(req.user.id);
+  }
+
+  @Put('restaurant/emenu-settings')
+  @ApiOperation({ summary: 'Сохранить настройки электронного меню' })
+  updateEMenuSettings(
+    @Request() req: { user: { id: number } },
+    @Body(new ValidationPipe({ whitelist: false, forbidNonWhitelisted: false })) dto: Record<string, unknown>,
+  ) {
+    return this.service.updateEMenuSettings(req.user.id, dto);
+  }
+
   // ─── Owner: Listings ──────────────────────────────────
 
   @Get('restaurant/listings')

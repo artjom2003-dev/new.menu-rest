@@ -5,12 +5,14 @@ import { PiBowlFoodLight } from 'react-icons/pi'
 import LogoEmblem from '../../assets/img/logo-emblem.png'
 import { useTouchScrollOnRef } from '../../hooks/useTouchScroll'
 
-const STATIC_SLIDES = [
+const DEFAULT_SLIDES = [
     { title: 'Освежающие напитки', subtitle: 'Коктейли, чай, кофе, лимонады', theme: 'slideOcean', target: 'Напитки' },
     { title: 'Свежая выпечка', subtitle: 'Десерты, торты, круассаны', theme: 'slideChocolate', target: 'Десерты' },
 ];
 
-const Index = ({fullMenu, request = [], handleGetRequest, steps, setSteps, isActive, onOpenBL, blData, onOpenDetail}) => {
+const SLIDE_THEMES = ['slideOcean', 'slideChocolate', 'slideCurtain', 'slideSunset', 'slideForest'];
+
+const Index = ({fullMenu, request = [], handleGetRequest, steps, setSteps, isActive, onOpenBL, blData, onOpenDetail, emenuSettings}) => {
     const [data, setData] = useState([])
     const [activeCategory, setActiveCategory] = useState(null)
     const sectionRefs = useRef({})
@@ -32,10 +34,20 @@ const Index = ({fullMenu, request = [], handleGetRequest, steps, setSteps, isAct
         categories: bl.categories || [],
     })) : [];
 
-    const SLIDES = [
-        { title: 'Бизнес-ланч', subtitle: 'с 12:00 до 15:00', theme: 'slideCurtain', target: 'Бизнес-ланч' },
-        ...STATIC_SLIDES,
-    ];
+    // Use banners from emenu settings if available, otherwise defaults
+    const bannerData = emenuSettings?.banners?.length > 0
+        ? emenuSettings.banners.map((b, i) => ({
+            title: b.title || `Баннер ${i + 1}`,
+            subtitle: b.subtitle || '',
+            theme: SLIDE_THEMES[i % SLIDE_THEMES.length],
+            target: b.title || '',
+            imageUrl: b.imageUrl || null,
+        }))
+        : [
+            { title: 'Бизнес-ланч', subtitle: 'с 12:00 до 15:00', theme: 'slideCurtain', target: 'Бизнес-ланч' },
+            ...DEFAULT_SLIDES,
+        ];
+    const SLIDES = bannerData;
 
     // — Looping slider logic —
     // Extended track: [clone-last, slide0, slide1, slide2, clone-first]
@@ -267,12 +279,16 @@ const Index = ({fullMenu, request = [], handleGetRequest, steps, setSteps, isAct
                         {extSlides.map((slide, i) => (
                             <div
                                 key={i}
-                                className={`${styles.slide} ${styles[slide.theme]} ${i === extIdx ? styles.slideActive : ''}`}
-                                style={{ width: `${(SLIDE_W / TRACK_W) * 100}%` }}
+                                className={`${styles.slide} ${styles[slide.theme] || styles.slideOcean} ${i === extIdx ? styles.slideActive : ''}`}
+                                style={{
+                                    width: `${(SLIDE_W / TRACK_W) * 100}%`,
+                                    ...(slide.imageUrl ? { backgroundImage: `url(${slide.imageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' } : {}),
+                                }}
                                 onClick={() => scrollToSection(slide.target)}
                             >
-                                <img src={LogoEmblem} className={styles.bannerLogo} alt="Кафе Манго" />
-                                <div className={styles.bannerText}>
+                                {slide.imageUrl && <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.35)', borderRadius: 'inherit' }} />}
+                                {!slide.imageUrl && <img src={LogoEmblem} className={styles.bannerLogo} alt="" />}
+                                <div className={styles.bannerText} style={{ position: 'relative', zIndex: 1 }}>
                                     <span className={styles.bannerTitle}>{slide.title}</span>
                                     <span className={styles.bannerTime}>{slide.subtitle}</span>
                                 </div>

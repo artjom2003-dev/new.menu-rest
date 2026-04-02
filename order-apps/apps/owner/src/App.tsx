@@ -12,6 +12,8 @@ import { ReviewsPage } from './pages/ReviewsPage';
 import { VacanciesPage } from './pages/VacanciesPage';
 import { MessagesPage } from './pages/MessagesPage';
 import { ServicesPage } from './pages/ServicesPage';
+import { EMenuPage } from './pages/EMenuPage';
+import { OrderChainPage } from './pages/OrderChainPage';
 import { TestPage } from './pages/TestPage';
 
 export default function App() {
@@ -31,6 +33,9 @@ export default function App() {
         <Route path="/messages" element={<MessagesPage />} />
         <Route path="/vacancies" element={<VacanciesPage />} />
         <Route path="/services" element={<ServicesPage />} />
+        <Route path="/emenu" element={<EMenuPage />} />
+        <Route path="/order-chain" element={<OrderChainPage />} />
+        <Route path="/order-chain/:tab" element={<OrderChainPage />} />
         <Route path="/test" element={<TestPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

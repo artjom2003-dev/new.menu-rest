@@ -57,6 +57,7 @@ const Index = () => {
             if (isDark) document.documentElement.setAttribute('data-theme', 'dark');
             return isDark;
         })
+    const [emenuSettings, setEmenuSettings] = useState(null)
     const menuScrollRef = useTouchScroll({ direction: 'vertical' })
 
     const toggleTheme = useCallback(() => {
@@ -136,6 +137,28 @@ const Index = () => {
 
     useEffect(() => {
         getMenuList();
+        // Fetch e-menu settings from backend
+        fetch(`${API_BASE}/restaurants/${RESTAURANT_ID}/emenu-settings?_t=${Date.now()}`)
+            .then(res => res.json())
+            .then(data => {
+                setEmenuSettings(data);
+                // Apply theme
+                if (data.theme === 'dark') {
+                    document.documentElement.setAttribute('data-theme', 'dark');
+                    setDarkMode(true);
+                } else if (data.theme === 'light') {
+                    document.documentElement.setAttribute('data-theme', 'light');
+                    setDarkMode(false);
+                }
+                // Apply colors
+                if (data.primaryColor) {
+                    document.documentElement.style.setProperty('--primary-color', data.primaryColor);
+                }
+                if (data.accentColor) {
+                    document.documentElement.style.setProperty('--accent-color', data.accentColor);
+                }
+            })
+            .catch(() => {});
     }, [])
 
     useEffect(() => {
@@ -366,6 +389,7 @@ const Index = () => {
                                 blData={blList}
                                 onOpenBL={(idx) => setBlModalOpen(idx ?? 0)}
                                 onOpenDetail={handleOpenDetail}
+                                emenuSettings={emenuSettings}
                             />
                         )}
 

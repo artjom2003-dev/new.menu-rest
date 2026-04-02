@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { ownerApi } from '../lib/api';
+import { TechCardModal } from './TechCardModal';
 
 interface Dish {
   id: number;
@@ -60,8 +61,8 @@ export function MenuPage() {
   const [showCategoryForm, setShowCategoryForm] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
 
-  // Collapse/expand categories
-  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  // Collapse/expand categories — all collapsed by default
+  const [collapsed, setCollapsed] = useState<Set<string> | null>(null);
 
   // Category rename
   const [editingCategory, setEditingCategory] = useState<string | null>(null);
@@ -71,6 +72,13 @@ export function MenuPage() {
   // Photo upload refs
   const fileInputRefs = useRef<Record<number, HTMLInputElement | null>>({});
   const [uploadingPhoto, setUploadingPhoto] = useState<number | null>(null);
+
+  // Tech card
+  const [techCardDish, setTechCardDish] = useState<Dish | null>(null);
+  const [savedTechCards, setSavedTechCards] = useState<Record<number, any>>(() => {
+    try { return JSON.parse(localStorage.getItem('tech-cards') || '{}'); } catch { return {}; }
+  });
+  const techFileInputRefs = useRef<Record<number, HTMLInputElement | null>>({});
 
   const showToast = (message: string, type: 'success' | 'error') => setToast({ message, type });
 
@@ -90,6 +98,10 @@ export function MenuPage() {
         grouped.push({ category, dishes });
       }
       setCategories(grouped);
+      // Collapse all categories by default on first load
+      if (collapsed === null) {
+        setCollapsed(new Set(grouped.map(c => c.category)));
+      }
     } catch (err) { console.error('[loadMenu] error:', err); } finally { setLoading(false); }
   }, []);
 
@@ -105,7 +117,7 @@ export function MenuPage() {
 
   const toggleCollapse = (category: string) => {
     setCollapsed(prev => {
-      const next = new Set(prev);
+      const next = new Set(prev || []);
       if (next.has(category)) {
         next.delete(category);
       } else {
@@ -138,7 +150,7 @@ export function MenuPage() {
       showToast(`Категория переименована в "${newName}"`, 'success');
       // Update collapsed set if the old name was collapsed
       setCollapsed(prev => {
-        if (prev.has(editingCategory!)) {
+        if (prev?.has(editingCategory!)) {
           const next = new Set(prev);
           next.delete(editingCategory!);
           next.add(newName);
@@ -458,7 +470,7 @@ export function MenuPage() {
       ) : (
         <div className="space-y-8">
           {filtered.map(cat => {
-            const isCollapsed = collapsed.has(cat.category);
+            const isCollapsed = collapsed?.has(cat.category) ?? true;
             const isRenaming = editingCategory === cat.category;
 
             return (
@@ -575,13 +587,47 @@ export function MenuPage() {
                         {/* Price */}
                         <span className="text-sm font-bold text-primary whitespace-nowrap">{dish.price} ₽</span>
 
-                        {/* Actions: edit + delete only */}
-                        <div className="flex items-center gap-1.5 flex-shrink-0">
+                        {/* Actions */}
+                        <div className="flex items-center gap-1 flex-shrink-0">
+                          {/* Tech card: create/edit */}
+                          <button onMouseDown={() => setTechCardDish(dish)}
+                            title={savedTechCards[dish.id] ? 'Редактировать техкарту' : 'Создать техкарту'}
+                            className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs transition ${
+                              savedTechCards[dish.id]
+                                ? 'bg-green-500/10 text-green-400 hover:bg-green-500/20'
+                                : 'bg-surface-3 text-text-muted hover:text-amber-400 hover:bg-amber-400/10'
+                            }`}>
+                            📋
+                          </button>
+                          {/* Tech card: upload file */}
+                          <button onMouseDown={() => techFileInputRefs.current[dish.id]?.click()}
+                            title="Загрузить техкарту (PDF/фото)"
+                            className="w-8 h-8 rounded-lg bg-surface-3 text-text-muted flex items-center justify-center text-xs hover:text-blue-400 hover:bg-blue-400/10 transition">
+                            📎
+                          </button>
+                          <input
+                            ref={el => { techFileInputRefs.current[dish.id] = el; }}
+                            type="file"
+                            accept=".pdf,.jpg,.jpeg,.png"
+                            className="hidden"
+                            onChange={e => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                showToast(`Техкарта "${file.name}" загружена для ${dish.dish.name}`, 'success');
+                                // TODO: upload to server
+                              }
+                              e.target.value = '';
+                            }}
+                          />
+                          {/* Edit dish */}
                           <button onMouseDown={() => openEdit(dish)}
+                            title="Редактировать блюдо"
                             className="w-8 h-8 rounded-lg bg-surface-3 text-text-muted flex items-center justify-center text-xs hover:text-primary hover:bg-primary/10 transition">
                             ✏️
                           </button>
+                          {/* Delete dish */}
                           <button onMouseDown={() => handleDelete(dish.id, dish.dish.name)}
+                            title="Удалить блюдо"
                             className="w-8 h-8 rounded-lg bg-surface-3 text-text-muted flex items-center justify-center text-xs hover:text-red-400 hover:bg-red-500/10 transition">
                             🗑
                           </button>
@@ -594,6 +640,21 @@ export function MenuPage() {
             );
           })}
         </div>
+      )}
+      {/* Tech Card Modal */}
+      {techCardDish && (
+        <TechCardModal
+          dishName={techCardDish.dish.name}
+          existingCard={savedTechCards[techCardDish.id]}
+          onClose={() => setTechCardDish(null)}
+          onSave={(data) => {
+            const updated = { ...savedTechCards, [techCardDish.id]: data };
+            setSavedTechCards(updated);
+            localStorage.setItem('tech-cards', JSON.stringify(updated));
+            showToast('Техкарта сохранена', 'success');
+            setTechCardDish(null);
+          }}
+        />
       )}
     </div>
   );

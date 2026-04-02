@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import { useRestaurantStore } from '../stores/restaurantStore';
@@ -15,6 +15,80 @@ const NAV_ITEMS = [
   { path: '/vacancies', icon: '\u{1F465}', label: '\u0412\u0430\u043A\u0430\u043D\u0441\u0438\u0438' },
   { path: '/services', icon: '\u{1F6E0}\uFE0F', label: '\u0423\u0441\u043B\u0443\u0433\u0438' },
 ];
+
+const ORDER_CHAIN_ITEMS = [
+  { path: '/order-chain/emenu', icon: '\u{1F4F1}', label: '\u042D\u043B\u0435\u043A\u0442\u0440\u043E\u043D\u043D\u043E\u0435 \u043C\u0435\u043D\u044E' },
+  { path: '/order-chain/waiter', icon: '\u{1F454}', label: '\u041F\u0440\u0438\u043B\u043E\u0436\u0435\u043D\u0438\u0435 \u043E\u0444\u0438\u0446\u0438\u0430\u043D\u0442\u0430' },
+  { path: '/order-chain/kitchen', icon: '\u{1F468}\u200D\u{1F373}', label: '\u042D\u043A\u0440\u0430\u043D \u043A\u0443\u0445\u043D\u0438' },
+];
+
+function NavSidebar({ location }: { location: { pathname: string } }) {
+  const chainActive = location.pathname.startsWith('/order-chain');
+  const [chainOpen, setChainOpen] = useState(chainActive);
+
+  useEffect(() => {
+    if (chainActive) setChainOpen(true);
+  }, [chainActive]);
+
+  return (
+    <nav className="flex-1 py-3 px-3 space-y-0.5 overflow-y-auto">
+      {NAV_ITEMS.map((item) => {
+        const active = item.path === '/' ? location.pathname === '/' : location.pathname.startsWith(item.path);
+        return (
+          <Link
+            key={item.path}
+            to={item.path}
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium no-underline transition-all ${
+              active
+                ? 'bg-primary/10 text-primary'
+                : 'text-text-secondary hover:bg-surface-3 hover:text-text-primary'
+            }`}
+          >
+            <span className="text-base">{item.icon}</span>
+            {item.label}
+          </Link>
+        );
+      })}
+
+      {/* Order Chain — expandable */}
+      <button
+        onClick={() => setChainOpen(!chainOpen)}
+        className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-[13px] font-medium transition-all ${
+          chainActive
+            ? 'bg-primary/10 text-primary'
+            : 'text-text-secondary hover:bg-surface-3 hover:text-text-primary'
+        }`}
+      >
+        <span className="flex items-center gap-3">
+          <span className="text-base">{'\u{1F517}'}</span>
+          Цепочка заказа
+        </span>
+        <span className={`text-[10px] transition-transform ${chainOpen ? 'rotate-90' : ''}`}>&#9654;</span>
+      </button>
+      {chainOpen && (
+        <div className="ml-5 space-y-0.5">
+          {ORDER_CHAIN_ITEMS.map((item) => {
+            const active = location.pathname === item.path;
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-[12px] font-medium no-underline transition-all ${
+                  active
+                    ? 'bg-primary/10 text-primary'
+                    : 'text-text-muted hover:bg-surface-3 hover:text-text-primary'
+                }`}
+              >
+                <span className="text-sm">{item.icon}</span>
+                {item.label}
+              </Link>
+            );
+          })}
+        </div>
+      )}
+    </nav>
+  );
+}
 
 export function Layout() {
   const { user, isLoggedIn, logout } = useAuthStore();
@@ -79,25 +153,7 @@ export function Layout() {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 py-3 px-3 space-y-0.5 overflow-y-auto">
-          {NAV_ITEMS.map((item) => {
-            const active = item.path === '/' ? location.pathname === '/' : location.pathname.startsWith(item.path);
-            return (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium no-underline transition-all ${
-                  active
-                    ? 'bg-primary/10 text-primary'
-                    : 'text-text-secondary hover:bg-surface-3 hover:text-text-primary'
-                }`}
-              >
-                <span className="text-base">{item.icon}</span>
-                {item.label}
-              </Link>
-            );
-          })}
-        </nav>
+        <NavSidebar location={location} />
 
         {/* Support */}
         <div className="px-5 py-3 border-t border-border">

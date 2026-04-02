@@ -65,6 +65,12 @@ export class RestaurantController {
     return this.service.getMenu(id);
   }
 
+  @Get(':id/emenu-settings')
+  @ApiOperation({ summary: 'Настройки электронного меню (публичное)' })
+  getEMenuSettings(@Param('id', ParseIntPipe) id: number) {
+    return this.service.getEMenuSettings(id);
+  }
+
   @Get(':id/posts')
   @ApiOperation({ summary: 'Новости и акции ресторана (публичное)' })
   getPosts(@Param('id', ParseIntPipe) id: number) {

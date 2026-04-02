@@ -91,6 +91,11 @@ export const referenceApi = {
   getCuisines: () => api.get('/cuisines'),
 };
 
+export const emenuApi = {
+  getSettings: () => api.get('/users/me/restaurant/emenu-settings'),
+  saveSettings: (data: Record<string, unknown>) => api.put('/users/me/restaurant/emenu-settings', data),
+};
+
 export const reviewApi = {
   getByRestaurant: (restaurantId: number) => api.get(`/reviews/restaurant/${restaurantId}`),
 };
