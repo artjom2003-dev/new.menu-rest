@@ -385,15 +385,12 @@ export function AISearchBar() {
               style={{ background: 'var(--bg2)', border: '1px solid var(--card-border)', boxShadow: '0 12px 40px rgba(0,0,0,0.3)', color: 'var(--text2)' }}>
               <span className="font-bold text-[var(--accent)] block mb-1.5">Что умеет Menu-Rest.AI?</span>
               <span className="block mb-2 text-[var(--text3)]">
-                AI обучен на данных 123 000+ ресторанов в 221 городе. Понимает естественный язык на русском и ещё 7 языках.
+                Просто опишите что хотите — AI разберётся в остальном.
               </span>
               <span className="space-y-1 block">
-                <span className="flex items-start gap-1.5"><span style={{ color: 'var(--teal)' }}>✦</span> Подбирает рестораны по описанию: кухня, атмосфера, повод</span>
-                <span className="flex items-start gap-1.5"><span style={{ color: 'var(--teal)' }}>✦</span> Учитывает аллергены и диетические ограничения</span>
-                <span className="flex items-start gap-1.5"><span style={{ color: 'var(--teal)' }}>✦</span> Фильтрует по бюджету и среднему чеку</span>
-                <span className="flex items-start gap-1.5"><span style={{ color: 'var(--teal)' }}>✦</span> Находит ближайшие к вам заведения по геолокации</span>
-                <span className="flex items-start gap-1.5"><span style={{ color: 'var(--teal)' }}>✦</span> Ищет конкретные блюда в меню ресторанов</span>
-                <span className="flex items-start gap-1.5"><span style={{ color: 'var(--teal)' }}>✦</span> Ведёт диалог — уточняйте и AI подстроит результат</span>
+                <span className="flex items-start gap-1.5"><span style={{ color: 'var(--teal)' }}>✦</span> Понимает любой запрос: от «где поесть рядом» до сложных предпочтений</span>
+                <span className="flex items-start gap-1.5"><span style={{ color: 'var(--teal)' }}>✦</span> Знает меню, цены и особенности 123 000+ заведений</span>
+                <span className="flex items-start gap-1.5"><span style={{ color: 'var(--teal)' }}>✦</span> Подстраивается под вас — уточняйте, и результат станет точнее</span>
               </span>
             </span>
           </span>
