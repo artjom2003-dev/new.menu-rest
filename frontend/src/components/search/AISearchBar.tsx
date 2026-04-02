@@ -375,6 +375,28 @@ export function AISearchBar() {
         <div className="inline-flex items-center gap-1.5 text-[13px] max-sm:text-[11px] font-semibold text-[var(--accent)] mb-2.5 flex-wrap">
           <span className="animate-pulse-dot">🔍</span>
           {t('aiLabel')} <span className="font-bold">{t('aiName')}</span> {t('aiDesc')}
+          {/* AI info tooltip */}
+          <span className="relative group cursor-help ml-1">
+            <span className="w-[18px] h-[18px] rounded-full inline-flex items-center justify-center text-[10px] font-bold transition-all"
+              style={{ background: 'var(--accent-glow)', color: 'var(--accent)', border: '1px solid var(--accent)' }}>
+              ?
+            </span>
+            <span className="absolute left-1/2 -translate-x-1/2 top-7 w-[320px] max-sm:w-[260px] max-sm:-translate-x-3/4 p-4 rounded-2xl text-[12px] font-normal leading-relaxed text-left opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 pointer-events-none group-hover:pointer-events-auto"
+              style={{ background: 'var(--bg2)', border: '1px solid var(--card-border)', boxShadow: '0 12px 40px rgba(0,0,0,0.3)', color: 'var(--text2)' }}>
+              <span className="font-bold text-[var(--accent)] block mb-1.5">Что умеет Menu-Rest.AI?</span>
+              <span className="block mb-2 text-[var(--text3)]">
+                AI обучен на данных 123 000+ ресторанов в 221 городе. Понимает естественный язык на русском и ещё 7 языках.
+              </span>
+              <span className="space-y-1 block">
+                <span className="flex items-start gap-1.5"><span style={{ color: 'var(--teal)' }}>✦</span> Подбирает рестораны по описанию: кухня, атмосфера, повод</span>
+                <span className="flex items-start gap-1.5"><span style={{ color: 'var(--teal)' }}>✦</span> Учитывает аллергены и диетические ограничения</span>
+                <span className="flex items-start gap-1.5"><span style={{ color: 'var(--teal)' }}>✦</span> Фильтрует по бюджету и среднему чеку</span>
+                <span className="flex items-start gap-1.5"><span style={{ color: 'var(--teal)' }}>✦</span> Находит ближайшие к вам заведения по геолокации</span>
+                <span className="flex items-start gap-1.5"><span style={{ color: 'var(--teal)' }}>✦</span> Ищет конкретные блюда в меню ресторанов</span>
+                <span className="flex items-start gap-1.5"><span style={{ color: 'var(--teal)' }}>✦</span> Ведёт диалог — уточняйте и AI подстроит результат</span>
+              </span>
+            </span>
+          </span>
         </div>
       )}
 
