@@ -1,4 +1,4 @@
-import { Controller, Get, Put, Patch, Post, Delete, Body, Param, UseGuards, Request, ParseIntPipe, NotFoundException, ForbiddenException, UseInterceptors, UploadedFile, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Put, Patch, Post, Delete, Body, Param, UseGuards, Request, ParseIntPipe, NotFoundException, ForbiddenException, UseInterceptors, UploadedFile, HttpCode, HttpStatus, ValidationPipe } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '@common/guards/jwt-auth.guard';
@@ -84,7 +84,7 @@ export class UserController {
   @ApiOperation({ summary: 'Обновить карточку своего ресторана' })
   updateMyRestaurant(
     @Request() req: { user: { id: number } },
-    @Body() dto: Record<string, unknown>,
+    @Body(new ValidationPipe({ whitelist: false, forbidNonWhitelisted: false })) dto: Record<string, unknown>,
   ) {
     return this.service.updateMyRestaurant(req.user.id, dto);
   }
@@ -174,7 +174,7 @@ export class UserController {
   @ApiOperation({ summary: 'Добавить блюдо в меню' })
   createMyDish(
     @Request() req: { user: { id: number } },
-    @Body() dto: { name: string; description?: string; composition?: string; categoryName?: string; price?: number; weightGrams?: number; volumeMl?: number; calories?: number; protein?: number; fat?: number; carbs?: number },
+    @Body(new ValidationPipe({ whitelist: false, forbidNonWhitelisted: false })) dto: { name: string; description?: string; composition?: string; categoryName?: string; price?: number; weightGrams?: number; volumeMl?: number; calories?: number; protein?: number; fat?: number; carbs?: number },
   ) {
     return this.service.createMyDish(req.user.id, dto);
   }
@@ -184,7 +184,7 @@ export class UserController {
   updateMyDish(
     @Request() req: { user: { id: number } },
     @Param('id', ParseIntPipe) id: number,
-    @Body() dto: Record<string, unknown>,
+    @Body(new ValidationPipe({ whitelist: false, forbidNonWhitelisted: false })) dto: Record<string, unknown>,
   ) {
     return this.service.updateMyDish(req.user.id, id, dto as never);
   }

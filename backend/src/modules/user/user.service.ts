@@ -317,13 +317,48 @@ export class UserService {
     const restaurant = await this.restaurantRepo.findOneBy({ ownerId: userId });
     if (!restaurant) throw new NotFoundException('У вас нет привязанного ресторана');
 
-    const items = await this.restaurantDishRepo.find({
-      where: { restaurantId: restaurant.id },
-      relations: ['dish', 'dish.allergens'],
-      order: { categoryName: 'ASC', sortOrder: 'ASC' },
-    });
+    // Raw query to bypass TypeORM entity cache
+    const rows = await this.restaurantDishRepo.manager.query(`
+      SELECT rd.id, rd.dish_id AS "dishId", rd.restaurant_id AS "restaurantId",
+             rd.price, rd.category_name AS "categoryName", rd.is_available AS "isAvailable",
+             rd.sort_order AS "sortOrder", rd.station, rd.prep_time_min AS "prepTimeMin",
+             rd.menu_category_id AS "menuCategoryId",
+             d.id AS "dish_id", d.name AS "dish_name", d.description AS "dish_description",
+             d.composition AS "dish_composition", d.weight_grams AS "dish_weightGrams",
+             d.volume_ml AS "dish_volumeMl", d.calories AS "dish_calories",
+             d.protein AS "dish_protein", d.fat AS "dish_fat", d.carbs AS "dish_carbs",
+             d.image_url AS "dish_imageUrl"
+      FROM restaurant_dishes rd
+      JOIN dishes d ON d.id = rd.dish_id
+      WHERE rd.restaurant_id = $1
+      ORDER BY rd.category_name ASC, rd.sort_order ASC
+    `, [restaurant.id]);
 
-    return items;
+    return rows.map((r: any) => ({
+      id: r.id,
+      dishId: r.dishId,
+      restaurantId: r.restaurantId,
+      price: r.price,
+      categoryName: r.categoryName,
+      isAvailable: r.isAvailable,
+      sortOrder: r.sortOrder,
+      station: r.station,
+      prepTimeMin: r.prepTimeMin,
+      menuCategoryId: r.menuCategoryId,
+      dish: {
+        id: r.dish_id,
+        name: r.dish_name,
+        description: r.dish_description,
+        composition: r.dish_composition,
+        weightGrams: r.dish_weightGrams,
+        volumeMl: r.dish_volumeMl,
+        calories: r.dish_calories,
+        protein: r.dish_protein,
+        fat: r.dish_fat,
+        carbs: r.dish_carbs,
+        imageUrl: r.dish_imageUrl,
+      },
+    }));
   }
 
   async createMyDish(
@@ -362,29 +397,74 @@ export class UserService {
     userId: number,
     entryId: number,
     dto: { name?: string; description?: string; composition?: string; categoryName?: string; price?: number; weightGrams?: number; volumeMl?: number; calories?: number; protein?: number; fat?: number; carbs?: number; isAvailable?: boolean },
-  ): Promise<RestaurantDish> {
+  ) {
     const restaurant = await this.restaurantRepo.findOneBy({ ownerId: userId });
     if (!restaurant) throw new NotFoundException('У вас нет привязанного ресторана');
 
-    const entry = await this.restaurantDishRepo.findOne({ where: { id: entryId, restaurantId: restaurant.id }, relations: ['dish'] });
-    if (!entry) throw new NotFoundException('Позиция меню не найдена');
+    // Get entry via raw query to avoid cache
+    const entries = await this.restaurantDishRepo.manager.query(
+      'SELECT id, dish_id FROM restaurant_dishes WHERE id = $1 AND restaurant_id = $2',
+      [entryId, restaurant.id],
+    );
+    if (!entries.length) throw new NotFoundException('Позиция меню не найдена');
+    const dishId = entries[0].dish_id;
 
-    // Update dish fields
-    const dishUpdate: Record<string, unknown> = {};
-    for (const key of ['name', 'description', 'composition', 'weightGrams', 'volumeMl', 'calories', 'protein', 'fat', 'carbs'] as const) {
-      if (dto[key] !== undefined) dishUpdate[key] = dto[key];
+    // Update dish table via raw SQL
+    const dishFields: string[] = [];
+    const dishValues: unknown[] = [];
+    let idx = 1;
+    const fieldMap: Record<string, string> = {
+      name: 'name', description: 'description', composition: 'composition',
+      weightGrams: 'weight_grams', volumeMl: 'volume_ml',
+      calories: 'calories', protein: 'protein', fat: 'fat', carbs: 'carbs',
+    };
+    for (const [key, col] of Object.entries(fieldMap)) {
+      if ((dto as any)[key] !== undefined) {
+        dishFields.push(`${col} = $${idx++}`);
+        dishValues.push((dto as any)[key]);
+      }
     }
-    if (Object.keys(dishUpdate).length > 0) {
-      await this.dishRepo.update(entry.dishId, dishUpdate);
+    if (dishFields.length > 0) {
+      dishValues.push(dishId);
+      await this.restaurantDishRepo.manager.query(
+        `UPDATE dishes SET ${dishFields.join(', ')} WHERE id = $${idx}`,
+        dishValues,
+      );
     }
 
-    // Update entry fields
-    if (dto.categoryName !== undefined) entry.categoryName = dto.categoryName;
-    if (dto.price !== undefined) entry.price = dto.price;
-    if (dto.isAvailable !== undefined) entry.isAvailable = dto.isAvailable;
-    await this.restaurantDishRepo.save(entry);
+    // Update restaurant_dishes table via raw SQL
+    const entryFields: string[] = [];
+    const entryValues: unknown[] = [];
+    let idx2 = 1;
+    if (dto.categoryName !== undefined) { entryFields.push(`category_name = $${idx2++}`); entryValues.push(dto.categoryName); }
+    if (dto.price !== undefined) { entryFields.push(`price = $${idx2++}`); entryValues.push(dto.price); }
+    if (dto.isAvailable !== undefined) { entryFields.push(`is_available = $${idx2++}`); entryValues.push(dto.isAvailable); }
+    if (entryFields.length > 0) {
+      entryValues.push(entryId);
+      await this.restaurantDishRepo.manager.query(
+        `UPDATE restaurant_dishes SET ${entryFields.join(', ')} WHERE id = $${idx2}`,
+        entryValues,
+      );
+    }
 
-    return this.restaurantDishRepo.findOne({ where: { id: entryId }, relations: ['dish'] }) as Promise<RestaurantDish>;
+    // Return fresh data via raw query
+    const rows = await this.restaurantDishRepo.manager.query(`
+      SELECT rd.id, rd.dish_id AS "dishId", rd.restaurant_id AS "restaurantId",
+             rd.price, rd.category_name AS "categoryName", rd.is_available AS "isAvailable",
+             rd.sort_order AS "sortOrder", rd.station, rd.prep_time_min AS "prepTimeMin",
+             d.id AS "d_id", d.name AS "d_name", d.description AS "d_description",
+             d.composition AS "d_composition", d.weight_grams AS "d_weightGrams",
+             d.image_url AS "d_imageUrl"
+      FROM restaurant_dishes rd JOIN dishes d ON d.id = rd.dish_id
+      WHERE rd.id = $1
+    `, [entryId]);
+    const r = rows[0];
+    return {
+      id: r.id, dishId: r.dishId, restaurantId: r.restaurantId,
+      price: r.price, categoryName: r.categoryName, isAvailable: r.isAvailable,
+      sortOrder: r.sortOrder, station: r.station, prepTimeMin: r.prepTimeMin,
+      dish: { id: r.d_id, name: r.d_name, description: r.d_description, composition: r.d_composition, weightGrams: r.d_weightGrams, imageUrl: r.d_imageUrl },
+    };
   }
 
   async uploadDishPhoto(userId: number, entryId: number, file: Express.Multer.File) {
