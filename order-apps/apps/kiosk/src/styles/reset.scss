@@ -1,0 +1,78 @@
+@import-normalize;
+
+@font-face {
+    font-family: 'Steclo';
+    src: url('../assets/fonts/PEPPERTYPE-STECLO-EXTRALIGHT.OTF') format('truetype');
+    font-style: normal;
+    font-weight: 400;
+}
+
+@font-face {
+    font-family: 'France';
+    src: url('../assets/fonts/ADVENTUR_0.TTF') format('truetype');
+    font-style: normal;
+    font-weight: 700;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  font-family: 'Roboto', 'Inter', 'Segoe UI', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+}
+
+/* ===== Adaptive keyboard theme ===== */
+.hg-theme-default {
+  background: var(--color-surface-container-high, #ECE6F0) !important;
+  border-radius: var(--radius-md, 24px) !important;
+  padding: 8px !important;
+}
+
+.hg-theme-default .hg-button {
+  background: var(--color-card, #FFFFFF) !important;
+  color: var(--color-text, #1E1E1E) !important;
+  border-bottom: 1px solid var(--color-outline, rgba(0,0,0,0.06)) !important;
+  border-radius: var(--radius-sm, 12px) !important;
+  box-shadow: var(--shadow-sm) !important;
+}
+
+.hg-theme-default .hg-button:active {
+  background: var(--color-surface-container-highest, #E6E0E9) !important;
+}
+
+.hg-theme-default .hg-button.hg-narrow {
+  max-width: 80px !important;
+  background: var(--color-surface-container, #F3EDF7) !important;
+}
+
+/* Enable smooth touch scrolling on all scrollable containers */
+.touchScroll,
+[style*="overflow: auto"],
+[style*="overflow-y: auto"],
+[style*="overflow: scroll"],
+[style*="overflow-y: scroll"] {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+}

@@ -1,0 +1,12 @@
+{
+  "name": "menurest-order-apps",
+  "private": true,
+  "scripts": {
+    "dev:guest": "pnpm --filter @menurest/order-guest dev",
+    "dev:waiter": "pnpm --filter @menurest/order-waiter dev",
+    "dev:kds": "pnpm --filter @menurest/order-kds dev",
+    "dev:all": "pnpm -r dev",
+    "build": "pnpm -r build",
+    "types:check": "pnpm -r typecheck"
+  }
+}

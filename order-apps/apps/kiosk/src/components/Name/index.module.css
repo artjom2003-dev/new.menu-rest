@@ -1,0 +1,122 @@
+.name {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--color-overlay, rgba(0, 0, 0, 0.6));
+    backdrop-filter: blur(12px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    z-index: 101;
+}
+
+.nameBlock {
+    width: 100%;
+    max-width: 750px;
+    margin: 1rem;
+    background-color: var(--color-surface-container-highest, #E6E0E9);
+    border-radius: var(--radius-xl, 42px);
+    font-family: 'Roboto', sans-serif;
+    font-size: 36px;
+    text-align: center;
+    padding: 2rem 2rem;
+    box-shadow: var(--shadow-lg);
+}
+
+.nameTitle {
+    display: block;
+    text-align: center;
+    font-size: 36px;
+    font-weight: 500;
+    margin-bottom: 1.5rem;
+    color: var(--color-text, #1E1E1E);
+    font-family: 'Roboto', sans-serif;
+    line-height: 48px;
+}
+
+.nameInput {
+    padding: 0.75rem 1rem;
+    display: block;
+    width: 100%;
+    font-size: 36px;
+    border: 3px solid var(--color-outline, #79747E);
+    border-radius: var(--radius-md, 18px);
+    resize: none;
+    background: var(--color-surface, #FEF7FF);
+    font-family: 'Roboto', sans-serif;
+    transition: border-color 0.2s;
+    color: var(--color-text, #1E1E1E);
+}
+
+.nameInput:focus {
+    border-color: var(--color-primary, #ff5c28);
+    outline: none;
+}
+
+.nameButtons {
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
+    margin-top: 1.5rem;
+}
+
+.nameButton {
+    cursor: pointer;
+    font-size: 21px;
+    font-weight: 500;
+    width: 240px;
+    border-radius: var(--radius-full, 150px);
+    border: 3px solid #FFFFFF;
+    padding: 15px 36px;
+    background: var(--color-primary, #ff5c28);
+    color: #fff;
+    transition: all 0.2s ease;
+    font-family: 'Roboto', sans-serif;
+    letter-spacing: 0.2px;
+    line-height: 30px;
+    text-align: center;
+}
+
+.nameButton:active {
+    transform: scale(0.97);
+    background: var(--color-primary-dark, #e8501e);
+}
+
+.backBtn {
+    cursor: pointer;
+    font-size: 21px;
+    font-weight: 500;
+    width: 240px;
+    border-radius: var(--radius-full, 150px);
+    border: 3px solid var(--color-outline, #79747E);
+    padding: 15px 36px;
+    background: transparent;
+    color: var(--color-text, #1E1E1E);
+    transition: all 0.2s ease;
+    font-family: 'Roboto', sans-serif;
+    letter-spacing: 0.2px;
+    line-height: 30px;
+    text-align: center;
+}
+
+.backBtn:active {
+    transform: scale(0.97);
+    background: rgba(0, 0, 0, 0.05);
+}
+
+.keyboard {
+    font-size: 27px;
+    margin-top: 1rem;
+}
+
+@media screen and (max-width: 720px) {
+    .nameBlock { padding: 1.5rem 1rem; max-width: 100%; margin: 0.5rem; }
+    .nameTitle { font-size: 30px; margin-bottom: 1rem; }
+    .nameInput { font-size: 30px; padding: 0.6rem 0.75rem; }
+    .keyboard { font-size: 27px; }
+    .nameButton, .backBtn { width: 180px; font-size: 19.5px; padding: 12px 24px; }
+}

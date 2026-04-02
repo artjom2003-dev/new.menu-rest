@@ -1,0 +1,27 @@
+.clock {
+    background: var(--color-surface-container-highest, #E6E0E9);
+    font-size: 2rem;
+    margin: 0;
+    padding: 0.5rem 2rem;
+    user-select: none;
+}
+
+.date {
+    width: 100%;
+    text-align: center;
+    color: var(--color-text, #1E1E1E);
+    font-size: 36px;
+    font-family: 'Roboto', sans-serif;
+    font-weight: 500;
+    letter-spacing: 0.2px;
+    line-height: 48px;
+}
+
+@media only screen and (max-width: 1534.5px) {
+    .date { font-size: 30px; }
+    .clock { padding: 0.4rem 1rem; }
+}
+
+@media only screen and (max-width: 900px) {
+    .date { font-size: 24px; }
+}

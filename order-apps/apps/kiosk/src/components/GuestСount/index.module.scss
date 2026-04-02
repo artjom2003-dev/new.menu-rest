@@ -1,0 +1,40 @@
+.wrapper {
+    margin-top: 4rem;
+}
+
+.menuTitle {
+    text-align: center;
+    font-size: 96px;
+    font-family: 'Steclo';
+    margin-bottom: 1rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.count_wrapper {
+    display: flex;  
+    align-items: center;
+    justify-content: center;
+    width: fit-content;
+    margin: 6rem auto 0;
+    font-size: 135px;
+    cursor: pointer;
+    user-select: none;
+    background-color: #105e8e;
+    height: 450px;
+    width: 750px;
+    border-radius: 1rem;
+}
+
+.count {
+    font-weight: 600;
+    font-family: 'Steclo';
+    font-size: 225px;
+    margin: 0 3rem;
+}
+
+.count_minus, .count_plus, .count {  
+    color: #fff;
+}

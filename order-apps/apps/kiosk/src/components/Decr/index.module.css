@@ -1,0 +1,103 @@
+.wrapper_bg {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    position: absolute;
+    background-color: var(--color-overlay, rgba(0, 0, 0, 0.6));
+    backdrop-filter: blur(12px);
+    z-index: 100;
+}
+
+.wrapper {
+    width: 100%;
+    margin: 1rem;
+    max-width: 1350px;
+    background-color: var(--color-surface-container-highest, #E6E0E9);
+    border-radius: var(--radius-xl, 42px);
+    font-family: 'Roboto', sans-serif;
+    font-size: 36px;
+    text-align: center;
+    padding: 2.5rem 2rem;
+    box-shadow: var(--shadow-lg);
+}
+
+.title {
+    display: block;
+    text-align: center;
+    font-size: 36px;
+    font-weight: 500;
+    margin-bottom: 1.5rem;
+    color: var(--color-text, #1E1E1E);
+    font-family: 'Roboto', sans-serif;
+    line-height: 48px;
+}
+
+.text {
+    padding: 0.75rem 1rem;
+    display: block;
+    width: 100%;
+    height: 240px;
+    font-size: 30px;
+    border: 3px solid var(--color-outline, #79747E);
+    border-radius: var(--radius-md, 18px);
+    resize: none;
+    background: var(--color-surface, #FEF7FF);
+    font-family: 'Roboto', sans-serif;
+    transition: border-color 0.2s;
+    color: var(--color-text, #1E1E1E);
+}
+
+.buttons {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    width: 100%;
+    margin-top: 1.5rem;
+}
+
+.ok {
+    cursor: pointer;
+    font-size: 21px;
+    font-weight: 500;
+    width: 240px;
+    border-radius: var(--radius-full, 150px);
+    border: 3px solid #FFFFFF;
+    padding: 15px 36px;
+    background: var(--color-primary, #ff5c28);
+    color: #fff;
+    transition: all 0.2s ease;
+    font-family: 'Roboto', sans-serif;
+    letter-spacing: 0.2px;
+    line-height: 30px;
+}
+
+.ok:active {
+    transform: scale(0.97);
+    background: var(--color-primary-dark, #e8501e);
+}
+
+.keyboard {
+    font-size: 33px;
+    margin-top: 1rem;
+}
+
+.keyboard :global(.hg-narrow) {
+    max-width: 90px;
+}
+
+@media screen and (max-width: 1534.5px) {
+    .title { font-size: 30px; line-height: 42px; }
+    .text { height: 180px; font-size: 27px; }
+}
+
+@media screen and (max-width: 720px) {
+    .wrapper { padding: 1.5rem 1rem; margin: 0.5rem; }
+    .title { font-size: 27px; margin-bottom: 1rem; }
+    .text { font-size: 24px; height: 120px; }
+    .keyboard { font-size: 27px; }
+    .ok { width: 180px; font-size: 19.5px; }
+}

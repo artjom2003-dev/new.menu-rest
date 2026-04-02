@@ -1,0 +1,304 @@
+.overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--color-overlay, rgba(0, 0, 0, 0.6));
+    backdrop-filter: blur(12px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 101;
+}
+
+.modal {
+    position: relative;
+    width: 100%;
+    max-width: calc(3 * (100vw - 14rem - 240px) / 5 + 5.5rem + 18px);
+    max-height: 85vh;
+    margin: 1rem;
+    background-color: var(--color-surface-container-highest, #E6E0E9);
+    border-radius: var(--radius-xl, 42px);
+    font-family: 'Roboto', sans-serif;
+    padding: 2rem;
+    box-shadow: var(--shadow-lg);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.closeBtn {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    z-index: 2;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: rgba(128, 128, 128, 0.15);
+    color: var(--color-text, #1E1E1E);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 33px;
+    cursor: pointer;
+    transition: background 0.15s ease;
+
+    &:active {
+        background: rgba(128, 128, 128, 0.3);
+    }
+}
+
+.modalTitle {
+    text-align: center;
+    font-size: 36px;
+    font-weight: 500;
+    margin-bottom: 1.5rem;
+    color: var(--color-text, #1E1E1E);
+    line-height: 48px;
+}
+
+.blTabs {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 3px;
+}
+
+.blTab {
+    padding: 12px 30px;
+    border-radius: var(--radius-full, 150px);
+    background: var(--color-surface-container-high, #ECE6F0);
+    color: var(--color-text, #1E1E1E);
+    font-family: 'Roboto', sans-serif;
+    font-size: 21px;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+    user-select: none;
+}
+
+.blTabActive {
+    background: var(--color-primary, #ff5c28);
+    color: #fff;
+    box-shadow: 0 3px 12px rgba(255, 92, 40, 0.35);
+}
+
+.modalContent {
+    overflow-y: auto;
+    overflow-x: hidden;
+    flex: 1;
+    padding-right: 6px;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    touch-action: pan-y;
+}
+
+.modalContent::-webkit-scrollbar { width: 9px; }
+.modalContent::-webkit-scrollbar-thumb { background-color: rgba(255, 92, 40, 0.4); border-radius: 4.5px; }
+
+.menu_wrapper {
+    margin-bottom: 1.5rem;
+}
+
+.menu_category {
+    font-family: 'Roboto', sans-serif;
+    font-weight: 500;
+    font-size: 27px;
+    color: var(--color-text, #1E1E1E);
+    margin-bottom: 0.75rem;
+    line-height: 36px;
+}
+
+.menu_row_wrapper {
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+    justify-content: flex-start;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.menuBlock {
+    position: relative;
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-position: center;
+    width: calc((100vw - 14rem - 240px) / 5);
+    min-width: 180px;
+    background-color: var(--color-surface-container-high, #ECE6F0);
+    border-radius: var(--radius-md, 24px);
+    overflow: hidden;
+    border: none;
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    flex-direction: column;
+    flex: none;
+}
+
+.menuBlockImage {
+    position: relative;
+    width: 100%;
+    height: 225px;
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-position: center;
+}
+
+.foodicon {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 96px;
+    color: #fff;
+    user-select: none;
+    opacity: 0.5;
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+.menu_text {
+    position: absolute;
+    z-index: 1;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    color: var(--color-text-on-image, #EBFFEE);
+    background: linear-gradient(transparent, rgba(0, 0, 0, 0.7));
+    text-align: center;
+    padding: 1.5rem 0.75rem 0.75rem;
+    border-radius: 0 0 var(--radius-md, 18px) var(--radius-md, 18px);
+}
+
+.menu_title {
+    font-size: 21px;
+    font-family: 'Roboto', sans-serif;
+    font-weight: 600;
+    user-select: none;
+    letter-spacing: 0.2px;
+    line-height: 30px;
+}
+
+.menu_description {
+    font-size: 18px;
+    font-family: 'Roboto', sans-serif;
+    font-weight: 400;
+    user-select: none;
+    opacity: 0.85;
+    margin-top: 3px;
+}
+
+/* Static buttons under each card */
+.itemButtons {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 9px 0;
+    background: var(--color-surface-container-highest, #E6E0E9);
+}
+
+.count_minus, .count_plus {
+    user-select: none;
+    cursor: pointer;
+    font-size: 24px;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-primary, #ff5c28);
+    border: none;
+    border-radius: 50%;
+    color: #fff;
+    box-shadow: 0 3px 9px rgba(255, 92, 40, 0.3);
+    transition: all var(--transition-fast, 0.15s ease);
+}
+
+.count_minus:active, .count_plus:active { background: var(--color-primary-dark, #e8501e); }
+
+.count_disabled {
+    opacity: 0.35;
+    pointer-events: none;
+    cursor: default;
+}
+
+.count {
+    user-select: none;
+    font-weight: 700;
+    font-size: 30px;
+    font-family: 'Inter', sans-serif;
+    min-width: 36px;
+    text-align: center;
+    color: var(--color-text, #1E1E1E);
+}
+
+/* Footer: price + button */
+.modalButtons {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 1.5rem;
+}
+
+.totalPrice {
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 39px;
+    color: var(--color-text, #1E1E1E);
+    white-space: nowrap;
+}
+
+.closeButton {
+    cursor: pointer;
+    font-size: 21px;
+    font-weight: 500;
+    width: 240px;
+    border-radius: var(--radius-full, 150px);
+    border: none;
+    padding: 15px 36px;
+    background: var(--color-primary, #ff5c28);
+    box-shadow: 0 6px 24px rgba(255, 92, 40, 0.35);
+    color: #fff;
+    transition: all 0.2s ease;
+    font-family: 'Roboto', sans-serif;
+    letter-spacing: 0.2px;
+    line-height: 30px;
+    text-align: center;
+    text-transform: uppercase;
+}
+
+.closeButton:active {
+    transform: scale(0.97);
+    background: var(--color-primary-dark, #e8501e);
+}
+
+@media screen and (max-width: 1050px) {
+    .modal { padding: 1.5rem 1rem; max-height: 90vh; }
+    .modalTitle { font-size: 30px; }
+    .menu_row_wrapper { flex-direction: row; flex-wrap: wrap; justify-content: center; }
+    .menuBlock { min-width: auto; width: calc((100% - 0.75rem) / 2); flex: none; }
+}
+
+@media screen and (max-width: 720px) {
+    .modal { max-width: 100vw; padding: 1.25rem 0.75rem; margin: 0; border-radius: 0; max-height: 100vh; }
+    .modalTitle { font-size: 27px; margin-bottom: 1rem; }
+    .menu_row_wrapper { gap: 0.5rem; }
+    .menuBlock { width: calc((100% - 0.5rem) / 2); }
+    .menuBlockImage { height: 150px; }
+    .menu_title { font-size: 18px; line-height: 24px; }
+    .menu_description { font-size: 15px; }
+    .menu_text { padding: 1rem 0.5rem 0.5rem; }
+    .closeButton { width: 195px; font-size: 19.5px; }
+    .totalPrice { font-size: 33px; }
+    .count_minus, .count_plus { width: 39px; height: 39px; font-size: 18px; }
+    .count { font-size: 24px; }
+    .itemButtons { padding: 6px 0; gap: 0.3rem; }
+}

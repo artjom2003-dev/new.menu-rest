@@ -1,0 +1,115 @@
+.wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    height: 100%;
+}
+
+.menuTitle {
+    text-align: center;
+    font-size: 36px;
+    font-family: 'Roboto', sans-serif;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 44px;
+}
+
+.menuTitle span {
+    margin: 0.5rem;
+    color: var(--color-text-on-dark, #EBFFEE);
+    text-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+
+.tables {
+    position: relative;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    width: 1414px;
+    height: 795px;
+    zoom: .75;
+    margin: auto;
+    background-repeat: no-repeat;
+    background-image: url(../../assets/img/entry.png);
+}
+
+.table {
+    width: 200px;
+    height: 200px;
+    background-color: #fff;
+    border-radius: 1rem;
+    padding: 1rem;
+    margin: 1rem;
+    user-select: none;
+    cursor: pointer;
+}
+
+.name {
+    font-size: 24px;
+    font-family: 'Roboto', sans-serif;
+    font-weight: 500;
+    margin-bottom: 1rem;
+    text-align: center;
+    color: var(--color-text, #1E1E1E);
+}
+
+.seats {
+    font-size: 16px;
+    font-family: 'Roboto', sans-serif;
+    text-align: center;
+    color: var(--color-text-light, #49454F);
+}
+
+/* Takeaway — "Я возьму заказ с собой" */
+.number_99 { width: 209px; height: 209px; position: absolute; left: 167px; top: 354px; border-radius: 2rem; cursor: pointer; transition: all 0.25s ease; }
+
+/* Row 1: Bench tables (1, 2) with cushions + side chairs; single (3) with chair */
+.number_1 { width: 303px; height: 220px; position: absolute; left: 466px; top: 53px; cursor: pointer; transition: all 0.25s ease; border-radius: 1rem; }
+.number_2 { width: 305px; height: 221px; position: absolute; left: 787px; top: 51px; cursor: pointer; transition: all 0.25s ease; border-radius: 1rem; }
+.number_3 { width: 104px; height: 164px; position: absolute; left: 1141px; top: 109px; cursor: pointer; transition: all 0.25s ease; border-radius: 1rem; }
+
+/* Row 2: Duo tables (4, 5, 6) — table + side chairs */
+.number_4 { width: 224px; height: 98px; position: absolute; left: 440px; top: 306px; cursor: pointer; transition: all 0.25s ease; border-radius: 1rem; }
+.number_5 { width: 225px; height: 98px; position: absolute; left: 671px; top: 306px; cursor: pointer; transition: all 0.25s ease; border-radius: 1rem; }
+.number_6 { width: 225px; height: 98px; position: absolute; left: 899px; top: 306px; cursor: pointer; transition: all 0.25s ease; border-radius: 1rem; }
+
+/* Row 3: Duo tables (7, 8, 9) — table + side chairs */
+.number_7 { width: 161px; height: 99px; position: absolute; left: 440px; top: 404px; cursor: pointer; transition: all 0.25s ease; border-radius: 1rem; }
+.number_8 { width: 225px; height: 99px; position: absolute; left: 671px; top: 404px; cursor: pointer; transition: all 0.25s ease; border-radius: 1rem; }
+.number_9 { width: 225px; height: 99px; position: absolute; left: 899px; top: 404px; cursor: pointer; transition: all 0.25s ease; border-radius: 1rem; }
+
+/* Row 4: Quad tables (10, 11, 12) — table + 4 chairs around */
+.number_10 { width: 224px; height: 194px; position: absolute; left: 440px; top: 516px; cursor: pointer; transition: all 0.25s ease; border-radius: 1rem; }
+.number_11 { width: 221px; height: 198px; position: absolute; left: 664px; top: 515px; cursor: pointer; transition: all 0.25s ease; border-radius: 1rem; }
+.number_12 { width: 222px; height: 197px; position: absolute; left: 903px; top: 515px; cursor: pointer; transition: all 0.25s ease; border-radius: 1rem; }
+
+.active {
+    border-radius: 1rem;
+    border: 4px solid var(--color-danger, #E12626);
+    background-color: rgba(225, 38, 38, 0.25);
+    opacity: 1;
+    transition: all 0.25s ease;
+    box-shadow: 0 0 20px rgba(225, 38, 38, 0.3);
+}
+
+@media screen and (max-width: 1275px) { .tables { zoom: calc(.8); } }
+@media screen and (max-width: 1133px) { .tables { zoom: calc(.7); } }
+@media screen and (max-width: 978px) {
+    .tables { zoom: calc(.6); }
+    .menuTitle { flex-direction: column; }
+    .wrapper { margin-bottom: 1rem; }
+}
+@media screen and (max-width: 848px) { .tables { zoom: calc(.5); } }
+@media screen and (max-width: 710px) { .tables { zoom: calc(.4); } }
+@media screen and (max-width: 572px) { .tables { zoom: calc(.25); } }
+
+@media screen and (max-width: 480px) {
+    .menuTitle { font-size: 24px; line-height: 32px; }
+    .menuTitle span { margin: 0.25rem; }
+    .tables { zoom: 0.25; }
+}

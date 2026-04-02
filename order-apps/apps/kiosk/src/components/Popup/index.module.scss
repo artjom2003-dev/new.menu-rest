@@ -1,0 +1,181 @@
+.request_bg {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 100;
+    background-color: var(--color-overlay, rgba(0, 0, 0, 0.6));
+    backdrop-filter: blur(12px);
+}
+
+.request_popup {
+    position: relative;
+    width: 90%;
+    max-width: 1350px;
+    max-height: 85vh;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-direction: column;
+    color: var(--color-text, #1E1E1E);
+    z-index: 100;
+    background: var(--color-surface-container-highest, #E6E0E9);
+    padding: 3rem;
+    border-radius: var(--radius-xl, 42px);
+    box-shadow: var(--shadow-lg);
+}
+
+.requestTitle {
+    font-size: 54px;
+    font-family: 'Roboto', sans-serif;
+    font-weight: 500;
+    text-align: center;
+    line-height: 66px;
+    color: var(--color-text, #1E1E1E);
+}
+
+.requestList {
+    width: 80%;
+    text-align: right;
+    overflow-y: auto;
+    margin: 2rem 0;
+    padding: 1.5rem;
+    background: var(--color-surface-container-low, #F7F2FA);
+    border-radius: var(--radius-lg, 24px);
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    touch-action: pan-y;
+}
+
+.requestItem {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    margin: .5rem 0;
+    width: 100%;
+    font-family: 'Roboto', sans-serif;
+    font-weight: 500;
+    font-size: 36px;
+    text-align: right;
+    padding: .5rem 1rem;
+    border-bottom: 1.5px solid var(--color-outline, #79747E);
+    color: var(--color-text, #1E1E1E);
+    line-height: 48px;
+}
+
+.requestItem:last-child {
+    border-bottom: none;
+}
+
+.price {
+    margin-top: 1.5rem;
+    font-size: 60px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    text-align: right;
+    padding-right: 1rem;
+    color: var(--color-text, #1E1E1E);
+    letter-spacing: -0.02em;
+}
+
+.endText {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    gap: 1rem;
+}
+
+.cancel {
+    cursor: pointer;
+    font-size: 21px;
+    font-weight: 500;
+    font-family: 'Roboto', sans-serif;
+    text-align: center;
+    padding: 15px 36px;
+    text-transform: uppercase;
+    background: var(--color-inactive-light, #AFAFAF);
+    border: 1.5px solid #FFFFFF;
+    border-radius: var(--radius-full, 150px);
+    color: #fff;
+    user-select: none;
+    transition: all 0.2s ease;
+    letter-spacing: 0.2px;
+    line-height: 30px;
+}
+
+.cancel:active {
+    background: var(--color-inactive, #868686);
+}
+
+.off {
+    font-size: 36px;
+    font-family: 'Roboto', sans-serif;
+    font-weight: 500;
+    text-align: center;
+    user-select: none;
+    flex: 1;
+    color: var(--color-text, #1E1E1E);
+    line-height: 48px;
+}
+
+.ok {
+    user-select: none;
+    cursor: pointer;
+    font-size: 21px;
+    font-family: 'Roboto', sans-serif;
+    font-weight: 500;
+    text-align: center;
+    text-transform: uppercase;
+    padding: 15px 48px;
+    background: var(--color-primary, #ff5c28);
+    border: 3px solid #FFFFFF;
+    border-radius: var(--radius-full, 150px);
+    color: #fff;
+    position: relative;
+    transition: all 0.2s ease;
+    letter-spacing: 0.2px;
+    line-height: 30px;
+}
+
+.ok:active {
+    transform: scale(0.97);
+    background: var(--color-primary-dark, #e8501e);
+}
+
+.mint {
+    position: absolute;
+    right: 1rem;
+    bottom: 2rem;
+    z-index: -1;
+    opacity: 0.15;
+}
+
+@media screen and (max-width: 1200px) {
+    .mint { display: none; }
+    .request_popup { padding: 1.5rem; width: 95%; }
+    .requestTitle { font-size: 36px; line-height: 48px; }
+    .cancel { font-size: 19.5px; padding: 12px 24px; }
+    .off { font-size: 24px; margin: 1rem 0; }
+    .ok { font-size: 19.5px; padding: 12px 36px; }
+    .endText { flex-direction: column; width: 100%; }
+    .price { font-size: 42px; }
+    .requestItem { font-size: 27px; }
+    .requestList { width: 100%; }
+}
+
+@media screen and (max-width: 720px) {
+    .request_popup { padding: 1.25rem; width: 100%; border-radius: var(--radius-lg, 24px); }
+    .requestTitle { font-size: 30px; line-height: 42px; }
+    .requestItem { font-size: 21px; padding: 0.4rem 0.5rem; line-height: 36px; }
+    .requestList { padding: 1rem; margin: 1rem 0; }
+    .price { font-size: 36px; }
+    .cancel, .ok { font-size: 18px; padding: 12px 24px; }
+}

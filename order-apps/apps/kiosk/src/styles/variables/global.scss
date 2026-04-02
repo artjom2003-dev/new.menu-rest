@@ -1,0 +1,87 @@
+:root {
+    --font-family-main: 'Roboto', 'Segoe UI', sans-serif;
+    --font-family-body: 'Inter', 'Segoe UI', sans-serif;
+    --font-family-accent: 'Roboto', sans-serif;
+
+    /* Primary — orange from menu-rest.com */
+    --color-primary: #ff5c28;
+    --color-primary-dark: #e8501e;
+    --color-primary-light: #ffe0d6;
+    --color-on-primary: #FFFFFF;
+
+    /* Surfaces — warm peach tones from menu-rest.com */
+    --color-surface: #f7e6d5;
+    --color-surface-container: #f2dbc8;
+    --color-surface-container-low: #f7e6d5;
+    --color-surface-container-high: #eddccc;
+    --color-surface-container-highest: #e8d4c0;
+
+    /* Semantic */
+    --color-accent: #ff5c28;
+    --color-accent-light: rgba(255, 92, 40, 0.12);
+    --color-danger: #E12626;
+    --color-inactive: #7a7a7a;
+    --color-inactive-light: #aaaaaa;
+
+    /* Text */
+    --color-text: #1a1a1a;
+    --color-text-light: #3d3d3d;
+    --color-text-on-dark: #f5f5f5;
+    --color-text-on-image: #f5f5f5;
+
+    /* Backgrounds — warm peach */
+    --color-bg: #f5d4be;
+    --color-card: hsla(30, 68%, 90%, 0.85);
+    --color-overlay: rgba(0, 0, 0, 0.6);
+    --color-image-overlay: rgba(0, 0, 0, 0.4);
+    --color-text-overlay: rgba(0, 0, 0, 0.3);
+
+    /* Outline */
+    --color-outline: rgba(0, 0, 0, 0.06);
+
+    /* Elevation shadows (M3) */
+    --shadow-sm: 0px 1.5px 4.5px rgba(0, 0, 0, 0.12);
+    --shadow-md: 0px 6px 12px 4.5px rgba(0, 0, 0, 0.1), 0px 1.5px 4.5px rgba(0, 0, 0, 0.2);
+    --shadow-lg: 0px 9px 15px 6px rgba(0, 0, 0, 0.1), 0px 3px 4.5px rgba(0, 0, 0, 0.2);
+
+    /* Border radius (M3) */
+    --radius-sm: 12px;
+    --radius-md: 24px;
+    --radius-lg: 30px;
+    --radius-xl: 42px;
+    --radius-full: 150px;
+
+    /* Font sizes */
+    --font-size-m: 24px;
+    --font-line-m: 36px;
+    --font-size-l: 36px;
+    --font-line-l: 48px;
+
+    /* Transitions */
+    --transition-fast: 0.15s ease;
+    --transition-normal: 0.25s ease;
+    --transition-slow: 0.35s ease;
+}
+
+/* Dark theme */
+[data-theme="dark"] {
+    --color-surface: #1C1B1F;
+    --color-surface-container: #211F26;
+    --color-surface-container-low: #1D1B20;
+    --color-surface-container-high: #2B2930;
+    --color-surface-container-highest: #36343B;
+
+    --color-text: #E6E1E5;
+    --color-text-light: #CAC4D0;
+    --color-text-on-dark: #E6E1E5;
+
+    --color-bg: #1C1B1F;
+    --color-card: #2B2930;
+
+    --color-outline: #938F99;
+    --color-overlay: rgba(0, 0, 0, 0.75);
+
+    --shadow-sm: 0px 1.5px 4.5px rgba(0, 0, 0, 0.4);
+    --shadow-md: 0px 6px 12px 4.5px rgba(0, 0, 0, 0.3), 0px 1.5px 4.5px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0px 9px 15px 6px rgba(0, 0, 0, 0.3), 0px 3px 4.5px rgba(0, 0, 0, 0.4);
+}
