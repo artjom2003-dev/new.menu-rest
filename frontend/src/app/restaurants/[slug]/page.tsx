@@ -53,17 +53,21 @@ export async function generateMetadata(
   const city = restaurant.city?.name || '';
   const cuisine = restaurant.cuisines?.map((c: { name: string }) => c.name).join(', ') || '';
 
+  const coverPhoto = restaurant.photos?.find((p: { isCover: boolean; url: string }) => p.isCover);
+  const firstPhoto = restaurant.photos?.[0];
+  const ogImage = coverPhoto?.url || firstPhoto?.url;
+  const ratingText = restaurant.rating > 0 ? ` Рейтинг ${restaurant.rating}.` : '';
+  const billText = restaurant.averageBill ? ` Средний чек ${restaurant.averageBill} ₽.` : '';
+
   return {
     title: `${restaurant.name} — меню, отзывы, бронирование`,
     description:
       restaurant.description ||
-      `${restaurant.name} — ${cuisine} в ${city}. Рейтинг ${restaurant.rating}, средний чек ${restaurant.averageBill} ₽.`,
+      `${restaurant.name} — ${cuisine} в ${city}.${ratingText}${billText}`,
     openGraph: {
       title: restaurant.name,
-      description: restaurant.description,
-      images: restaurant.photos?.find((p: { is_cover: boolean; url: string }) => p.is_cover)?.url
-        ? [restaurant.photos.find((p: { is_cover: boolean; url: string }) => p.is_cover).url]
-        : [],
+      description: restaurant.description || `${restaurant.name} — ${cuisine} в ${city}`,
+      images: ogImage ? [ogImage] : [],
     },
   };
 }

@@ -152,7 +152,7 @@ export function AuthModal({ open, onClose }: AuthModalProps) {
       style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(10px)' }}
       onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div
-        className="border rounded-[22px] p-9 max-w-[420px] w-full relative"
+        className="border rounded-[22px] p-9 max-sm:p-5 max-w-[420px] w-full relative"
         style={{ background: 'var(--bg2)', borderColor: 'var(--card-border)' }}>
 
         <button
@@ -242,27 +242,20 @@ export function AuthModal({ open, onClose }: AuthModalProps) {
           </p>
         )}
 
-        {/* Divider + Social — только логин и регистрация */}
+        {/* Social OAuth — uncomment when VK/Telegram OAuth is implemented on backend
         {(mode === 'login' || mode === 'register') && (
           <>
             <div className="relative text-center text-[11px] text-[var(--text3)] my-3.5">
               <span className="relative z-10 px-2" style={{ background: 'var(--bg2)' }}>{t('or')}</span>
               <div className="absolute inset-y-1/2 left-0 right-0 h-px" style={{ background: 'var(--card-border)' }} />
             </div>
-
             <div className="flex flex-col gap-2">
-              <button
-                onClick={() => { window.location.href = `${process.env.NEXT_PUBLIC_API_URL || '/api'}/auth/vk`; }}
+              <button onClick={() => { window.location.href = `${process.env.NEXT_PUBLIC_API_URL || '/api'}/auth/vk`; }}
                 className="w-full flex items-center justify-center gap-2 py-3 rounded-full text-[13px] font-semibold border cursor-pointer transition-all"
                 style={{ background: 'var(--glass)', color: 'var(--text2)', borderColor: 'var(--glass-border)' }}>
                 {t('loginVk')}
               </button>
-              <button
-                onClick={() => {
-                  const botName = 'menurest_bot';
-                  const redirectUrl = encodeURIComponent(window.location.origin + '/login?provider=telegram');
-                  window.location.href = `https://oauth.telegram.org/auth?bot_id=${botName}&origin=${window.location.origin}&embed=0&request_access=write&return_to=${redirectUrl}`;
-                }}
+              <button onClick={() => { window.location.href = `${process.env.NEXT_PUBLIC_API_URL || '/api'}/auth/telegram`; }}
                 className="w-full flex items-center justify-center gap-2 py-3 rounded-full text-[13px] font-semibold border cursor-pointer transition-all"
                 style={{ background: 'var(--glass)', color: 'var(--text2)', borderColor: 'var(--glass-border)' }}>
                 {t('loginTelegram')}
@@ -270,6 +263,7 @@ export function AuthModal({ open, onClose }: AuthModalProps) {
             </div>
           </>
         )}
+        */}
 
         {/* Переключение login/register */}
         {(mode === 'login' || mode === 'register') && (

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, lazy, Suspense } from 'react';
 import Image from 'next/image';
 import { useTranslations, useLocale } from 'next-intl';
 import { useAuthStore } from '@/stores/auth.store';
@@ -9,14 +9,18 @@ import { AddRestaurantModal } from './AddRestaurantModal';
 import { BookingForm } from './BookingForm';
 import { StartChatButton } from '@/components/chat/StartChatButton';
 
+const RestaurantMap = lazy(() => import('./RestaurantMap').then(m => ({ default: m.RestaurantMap })));
+
 interface Restaurant {
   id?: number;
-  ownerId?: number | null;
+  hasOwner?: boolean;
   name: string;
   description?: string;
   shortDescription?: string;
   longDescription?: string;
   address?: string;
+  lat?: number | null;
+  lng?: number | null;
   metroStation?: string;
   phone?: string;
   website?: string;
@@ -128,10 +132,10 @@ function PhotoSlider({ photos, name, cuisines }: {
       {total > 1 && (
         <>
           <button onClick={() => go(-1)}
-            className="absolute left-3 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full flex items-center justify-center text-white text-[16px] opacity-0 group-hover/photo:opacity-100 transition-opacity duration-200"
+            className="absolute left-3 top-1/2 -translate-y-1/2 z-10 w-9 h-9 max-sm:w-10 max-sm:h-10 rounded-full flex items-center justify-center text-white text-[16px] max-sm:text-[20px] opacity-0 group-hover/photo:opacity-100 max-sm:opacity-70 transition-opacity duration-200"
             style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(6px)' }}>‹</button>
           <button onClick={() => go(1)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full flex items-center justify-center text-white text-[16px] opacity-0 group-hover/photo:opacity-100 transition-opacity duration-200"
+            className="absolute right-3 top-1/2 -translate-y-1/2 z-10 w-9 h-9 max-sm:w-10 max-sm:h-10 rounded-full flex items-center justify-center text-white text-[16px] max-sm:text-[20px] opacity-0 group-hover/photo:opacity-100 max-sm:opacity-70 transition-opacity duration-200"
             style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(6px)' }}>›</button>
         </>
       )}
@@ -152,12 +156,46 @@ function PhotoSlider({ photos, name, cuisines }: {
   );
 }
 
+const DAY_NAMES = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+
 function getTodayHours(workingHours?: Restaurant['workingHours'], closedLabel?: string) {
   if (!workingHours?.length) return null;
   const today = (new Date().getDay() + 6) % 7;
   const wh = workingHours.find((h) => h.dayOfWeek === today);
   if (!wh || wh.isClosed) return closedLabel || 'Closed';
   return `${wh.openTime?.slice(0, 5)} – ${wh.closeTime?.slice(0, 5)}`;
+}
+
+function WeekSchedule({ workingHours, closedLabel }: { workingHours: Restaurant['workingHours']; closedLabel: string }) {
+  const [open, setOpen] = useState(false);
+  const today = (new Date().getDay() + 6) % 7;
+  const todayText = getTodayHours(workingHours, closedLabel);
+
+  if (!workingHours?.length) return null;
+
+  return (
+    <div>
+      <button onClick={() => setOpen(!open)}
+        className="flex items-center gap-1 text-[12px] font-semibold text-[var(--text)] cursor-pointer bg-transparent border-none p-0 font-sans">
+        {todayText || closedLabel}
+        <span className="text-[10px] text-[var(--text3)] ml-1">{open ? '▲' : '▼'}</span>
+      </button>
+      {open && (
+        <div className="mt-1.5 flex flex-col gap-0.5">
+          {DAY_NAMES.map((day, i) => {
+            const wh = workingHours.find(h => h.dayOfWeek === i);
+            const isToday = i === today;
+            return (
+              <div key={i} className="flex justify-between text-[11px] gap-3" style={{ color: isToday ? 'var(--accent)' : 'var(--text3)' }}>
+                <span className="font-medium">{day}</span>
+                <span>{wh?.isClosed ? closedLabel : wh ? `${wh.openTime?.slice(0, 5)} – ${wh.closeTime?.slice(0, 5)}` : '—'}</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
 }
 
 /* ─── Feature chips — compact inline ─── */
@@ -251,14 +289,14 @@ export function RestaurantInfoCard({ restaurant }: { restaurant: Restaurant }) {
   const [claimOpen, setClaimOpen] = useState(false);
   const [bookingOpen, setBookingOpen] = useState(false);
   const [bookingError, setBookingError] = useState(false);
-  const hasBooking = !!restaurant.ownerId; // Only restaurants with owner support bookings
+  const hasBooking = !!restaurant.hasOwner; // Only restaurants with owner support bookings
   const t = useTranslations('restaurant');
   const locale = useLocale();
   const tr = restaurant.translations;
   const displayName = (locale !== 'ru' && tr?.name?.[locale]) || restaurant.name;
   const displayDesc = (locale !== 'ru' && tr?.description?.[locale]) || restaurant.description || restaurant.longDescription || restaurant.shortDescription;
   const isOwnerAccount = user?.role === 'owner' || user?.role === 'admin';
-  const isMyRestaurant = isOwnerAccount && restaurant.ownerId && user.id === restaurant.ownerId;
+  const isMyRestaurant = isOwnerAccount && restaurant.hasOwner;
 
   const location = restaurant.locations?.[0];
   const addressLine = restaurant.address || location?.address;
@@ -268,17 +306,19 @@ export function RestaurantInfoCard({ restaurant }: { restaurant: Restaurant }) {
   const fullAddress = [addressLine, districtName, cityName].filter(Boolean).join(', ');
   const todayHours = getTodayHours(restaurant.workingHours, t('closed'));
 
-  const metaItems = [
+  const metaItems: Array<{ icon: string; label: string; value?: string; node?: React.ReactNode }> = [
     { icon: '📍', label: t('address'), value: fullAddress || undefined },
     ...(metroStation ? [{ icon: '🚇', label: 'Метро', value: metroStation }] : []),
-    { icon: '🕐', label: t('schedule'), value: todayHours || t('callToCheck') },
+    { icon: '🕐', label: t('schedule'), node: restaurant.workingHours?.length
+      ? <WeekSchedule workingHours={restaurant.workingHours} closedLabel={t('closed')} />
+      : undefined, value: !restaurant.workingHours?.length ? t('callToCheck') : undefined },
     {
       icon: '💰', label: t('avgBill'),
       value: restaurant.averageBill
         ? `~${restaurant.averageBill.toLocaleString('ru-RU')} ₽`
         : t('notSpecified'),
     },
-  ].filter((item) => item.value);
+  ].filter((item) => item.value || item.node);
 
   return (
     <div className="border rounded-[24px] p-6 max-sm:p-4 mb-9 flex gap-7 max-lg:flex-col"
@@ -313,12 +353,12 @@ export function RestaurantInfoCard({ restaurant }: { restaurant: Restaurant }) {
           <div className="grid grid-cols-2 gap-2 max-sm:grid-cols-1">
             {metaItems.map((item) => (
               <div key={item.label}
-                className="flex items-center gap-2.5 p-2.5 rounded-[12px] border"
+                className={`flex gap-2.5 p-2.5 rounded-[12px] border ${item.node ? 'items-start' : 'items-center'}`}
                 style={{ background: 'var(--bg3)', borderColor: 'var(--card-border)' }}>
                 <span className="text-[16px]">{item.icon}</span>
                 <div className="min-w-0">
                   <div className="text-[10px] uppercase tracking-[0.08em] text-[var(--text3)]">{item.label}</div>
-                  <div className="text-[12px] font-semibold text-[var(--text)] truncate">{item.value}</div>
+                  <div className="text-[12px] font-semibold text-[var(--text)]">{item.node || <span className="truncate block">{item.value}</span>}</div>
                 </div>
               </div>
             ))}
@@ -327,6 +367,15 @@ export function RestaurantInfoCard({ restaurant }: { restaurant: Restaurant }) {
 
           {/* Feature tags — inline */}
           <FeatureChips features={restaurant.features} />
+
+          {/* Map */}
+          {restaurant.lat && restaurant.lng && (
+            <div className="mt-3">
+              <Suspense fallback={<div className="w-full rounded-[12px] border animate-pulse" style={{ height: 160, background: 'var(--bg3)', borderColor: 'var(--card-border)' }} />}>
+                <RestaurantMap lat={restaurant.lat} lng={restaurant.lng} name={displayName} address={fullAddress} />
+              </Suspense>
+            </div>
+          )}
         </div>
 
         {/* Actions — different for owner vs guest */}
@@ -340,23 +389,23 @@ export function RestaurantInfoCard({ restaurant }: { restaurant: Restaurant }) {
           </div>
         ) : !isOwnerAccount ? (
           <>
-            <div className="flex gap-2.5 mt-5">
+            <div className="flex gap-2.5 mt-5 max-[400px]:flex-col">
               <button onClick={openCalc}
-                className="flex-1 flex items-center justify-center gap-2 px-5 py-3 rounded-full text-[13px] font-semibold border transition-all"
+                className="flex-1 flex items-center justify-center gap-2 px-5 py-3 max-sm:py-3.5 rounded-full text-[13px] font-semibold border transition-all"
                 style={{ background: 'var(--glass)', color: 'var(--text2)', borderColor: 'var(--glass-border)', backdropFilter: 'blur(8px)' }}>
                 🍽️ {t('budgetCalc')}
               </button>
               <button
                 onClick={() => hasBooking ? setBookingOpen(true) : setBookingError(true)}
-                className="flex-1 flex items-center justify-center gap-2 px-5 py-3 rounded-full text-[13px] font-semibold text-white transition-all"
+                className="flex-1 flex items-center justify-center gap-2 px-5 py-3 max-sm:py-3.5 rounded-full text-[13px] font-semibold text-white transition-all"
                 style={{ background: 'var(--accent)', boxShadow: '0 0 20px var(--accent-glow)' }}>
                 📅 {t('book')}
               </button>
             </div>
 
-            {restaurant.ownerId && (
+            {restaurant.hasOwner && restaurant.id && (
               <div className="mt-3 flex justify-center">
-                <StartChatButton userId={restaurant.ownerId} userName={restaurant.name} />
+                <StartChatButton restaurantId={restaurant.id} userName={restaurant.name} />
               </div>
             )}
 
@@ -375,6 +424,7 @@ export function RestaurantInfoCard({ restaurant }: { restaurant: Restaurant }) {
           <BookingForm
             restaurantId={restaurant.id}
             restaurantName={displayName}
+            workingHours={restaurant.workingHours}
             open={bookingOpen}
             onClose={() => setBookingOpen(false)}
           />
@@ -382,7 +432,7 @@ export function RestaurantInfoCard({ restaurant }: { restaurant: Restaurant }) {
 
         {/* Owner claim */}
         {!isOwnerAccount && (
-          <div className="mt-4 px-4 py-3 rounded-2xl border flex items-center justify-between gap-3"
+          <div className="mt-4 px-4 py-3 rounded-2xl border flex items-center justify-between gap-3 max-sm:flex-col max-sm:items-start"
             style={{ background: 'var(--card)', borderColor: 'var(--card-border)' }}>
             <p className="text-[12px] text-[var(--text3)] leading-relaxed">{t('claimTitle')}</p>
             <button onClick={() => setClaimOpen(true)}

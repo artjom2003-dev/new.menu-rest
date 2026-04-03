@@ -104,10 +104,11 @@ function FavoriteButton({ restaurantId }: { restaurantId?: number }) {
 
   return (
     <button
+      aria-label={isFav ? 'Убрать из избранного' : 'В избранное'}
       onClick={handleClick}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      className="absolute top-3.5 right-3.5 z-10 w-9 h-9 rounded-full flex items-center justify-center text-[15px] transition-all duration-300"
+      className="absolute top-3.5 right-3.5 max-sm:top-2 max-sm:right-2 z-10 w-9 h-9 max-sm:w-7 max-sm:h-7 rounded-full flex items-center justify-center text-[15px] max-sm:text-[12px] transition-all duration-300"
       style={{
         background: isFav ? 'rgba(255,60,60,0.7)' : hovered ? 'rgba(255,80,120,0.45)' : 'rgba(0,0,0,0.4)',
         backdropFilter: 'blur(8px)',
@@ -138,10 +139,11 @@ function WishlistButton({ restaurantId }: { restaurantId?: number }) {
 
   return (
     <button
+      aria-label={isInWishlist ? 'Убрать из списка' : 'Хочу сходить'}
       onClick={handleClick}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      className="absolute top-3.5 right-14 z-10 w-9 h-9 rounded-full flex items-center justify-center text-[15px] transition-all duration-300"
+      className="absolute top-3.5 right-14 max-sm:top-2 max-sm:right-10 z-10 w-9 h-9 max-sm:w-7 max-sm:h-7 rounded-full flex items-center justify-center text-[15px] max-sm:text-[12px] transition-all duration-300"
       title="Хочу сходить"
       style={{
         background: isInWishlist ? 'rgba(20,184,166,0.7)' : hovered ? 'rgba(20,184,166,0.45)' : 'rgba(0,0,0,0.4)',
@@ -198,7 +200,7 @@ export function RestaurantCard({ restaurant }: { restaurant: Restaurant }) {
           (e.currentTarget as HTMLElement).style.borderColor = 'var(--card-border)';
         }}>
         {/* Image */}
-        <div className="h-[160px] relative bg-[var(--bg3)] flex-shrink-0">
+        <div className="h-[160px] max-sm:h-[120px] relative bg-[var(--bg3)] flex-shrink-0">
           {showImage ? (
             <Image src={cover} alt={displayName} fill sizes="(max-width: 768px) 50vw, 400px" unoptimized className="object-cover" onError={() => setImgError(true)} />
           ) : (
@@ -208,15 +210,15 @@ export function RestaurantCard({ restaurant }: { restaurant: Restaurant }) {
             style={{ background: 'linear-gradient(to top, var(--card-fade) 0%, transparent 60%)' }} />
 
           {/* Badges */}
-          <div className="absolute top-3.5 left-3.5 z-10 flex gap-1.5">
+          <div className="absolute top-3.5 left-3.5 max-sm:top-2 max-sm:left-2 z-10 flex gap-1.5 max-sm:gap-1">
             {isHealthy && (
-              <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold text-[var(--lime)]"
+              <span className="px-2.5 py-1 max-sm:px-1.5 max-sm:py-0.5 rounded-full text-[11px] max-sm:text-[9px] font-semibold text-[var(--lime)]"
                 style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.08)' }}>
                 🌿 {t('healthy')}
               </span>
             )}
             {hasAllergenInfo && (
-              <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold text-[var(--teal)]"
+              <span className="px-2.5 py-1 max-sm:px-1.5 max-sm:py-0.5 rounded-full text-[11px] max-sm:text-[9px] font-semibold text-[var(--teal)]"
                 style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.08)' }}>
                 🛡️ {t('allergens')}
               </span>
@@ -243,13 +245,13 @@ export function RestaurantCard({ restaurant }: { restaurant: Restaurant }) {
         </div>
 
         {/* Body */}
-        <div className="px-3.5 pt-2.5 pb-3 relative z-[2] flex-1 flex flex-col">
-          <h3 className="text-[14px] font-semibold text-[var(--text)] leading-tight truncate">{displayName}</h3>
+        <div className="px-3.5 max-sm:px-2.5 pt-2.5 max-sm:pt-2 pb-3 max-sm:pb-2 relative z-[2] flex-1 flex flex-col">
+          <h3 className="text-[14px] max-sm:text-[12px] font-semibold text-[var(--text)] leading-tight truncate">{displayName}</h3>
           {locationLine && (
             <p className="text-[12px] text-[var(--text3)] mt-1 truncate">{locationLine}</p>
           )}
           {displayDesc && (
-            <p className="text-[11px] text-[var(--text3)] mt-1.5 leading-[1.5] line-clamp-2 opacity-70">
+            <p className="text-[11px] text-[var(--text3)] mt-1.5 leading-[1.5] line-clamp-2 opacity-70 max-sm:hidden">
               {displayDesc}
             </p>
           )}
@@ -268,9 +270,9 @@ export function RestaurantCard({ restaurant }: { restaurant: Restaurant }) {
               )}
             </div>
           )}
-          <div className="flex items-center justify-between mt-auto pt-2">
-            <span className="text-[11px] text-[var(--text3)] truncate">{cuisineLabel}</span>
-            <span className="text-[11px] text-[var(--text3)] flex-shrink-0 ml-2">
+          <div className="flex items-center justify-between mt-auto pt-2 max-sm:pt-1">
+            <span className="text-[11px] max-sm:text-[10px] text-[var(--text3)] truncate">{cuisineLabel}</span>
+            <span className="text-[11px] max-sm:text-[10px] text-[var(--text3)] flex-shrink-0 ml-2">
               {restaurant.averageBill
                 ? `~${restaurant.averageBill.toLocaleString('ru-RU')} ₽`
                 : PRICE_LABELS[restaurant.priceLevel || 2]}

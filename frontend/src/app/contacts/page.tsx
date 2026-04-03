@@ -2,7 +2,7 @@ import { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'Контакты — MenuRest',
-  description: 'Свяжитесь с командой MenuRest — email, телефон, социальные сети.',
+  description: 'Свяжитесь с командой MenuRest — email, социальные сети.',
 };
 
 export default function ContactsPage() {
@@ -20,23 +20,16 @@ export default function ContactsPage() {
         </div>
 
         <div className="border rounded-2xl p-6" style={{ borderColor: 'var(--card-border)', background: 'var(--card)' }}>
-          <h3 className="text-[14px] font-bold text-[var(--text)] mb-2">Телефон</h3>
-          <a href="tel:+74951234567" className="text-[15px] text-[var(--accent)]">
-            +7 (495) 123-45-67
+          <h3 className="text-[14px] font-bold text-[var(--text)] mb-2">Для ресторанов</h3>
+          <a href="mailto:business@menu-rest.ru" className="text-[15px] text-[var(--accent)]">
+            business@menu-rest.ru
           </a>
         </div>
 
-        <div className="border rounded-2xl p-6" style={{ borderColor: 'var(--card-border)', background: 'var(--card)' }}>
-          <h3 className="text-[14px] font-bold text-[var(--text)] mb-2">Адрес</h3>
+        <div className="border rounded-2xl p-6 sm:col-span-2" style={{ borderColor: 'var(--card-border)', background: 'var(--card)' }}>
+          <h3 className="text-[14px] font-bold text-[var(--text)] mb-2">Режим работы поддержки</h3>
           <p className="text-[15px] text-[var(--text2)]">
-            Москва, ул. Примерная, д. 1
-          </p>
-        </div>
-
-        <div className="border rounded-2xl p-6" style={{ borderColor: 'var(--card-border)', background: 'var(--card)' }}>
-          <h3 className="text-[14px] font-bold text-[var(--text)] mb-2">Режим работы</h3>
-          <p className="text-[15px] text-[var(--text2)]">
-            Пн–Пт: 10:00–19:00
+            Пн–Пт: 10:00–19:00 (МСК)
           </p>
         </div>
       </div>

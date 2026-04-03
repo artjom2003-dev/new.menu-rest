@@ -10,7 +10,7 @@ export function Footer() {
     {
       title: t('service'),
       links: [
-        { href: '/', label: t('restaurants') },
+        { href: '/restaurants', label: t('restaurants') },
         { href: '/blog', label: t('blog') },
         { href: '/loyalty', label: t('loyaltyProgram') },
         { href: '/about', label: t('about') },
@@ -50,28 +50,20 @@ export function Footer() {
             <p className="text-[12px] text-[var(--text3)] leading-[1.7] mb-5">
               {t('tagline')}
             </p>
+            {/* Social links — uncomment when real URLs are available
             <div className="flex gap-2">
               {[
-                { label: 'VK', href: '#' },
-                { label: 'TG', href: '#' },
+                { label: 'VK', href: 'https://vk.com/menurest' },
+                { label: 'TG', href: 'https://t.me/menurest' },
               ].map((s) => (
-                <a
-                  key={s.label}
-                  href={s.href}
+                <a key={s.label} href={s.href} target="_blank" rel="noopener noreferrer"
                   className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold border transition-all no-underline"
-                  style={{ background: 'var(--card)', borderColor: 'var(--card-border)', color: 'var(--text3)' }}
-                  onMouseEnter={(e) => {
-                    (e.currentTarget as HTMLElement).style.borderColor = 'var(--accent)';
-                    (e.currentTarget as HTMLElement).style.color = 'var(--accent)';
-                  }}
-                  onMouseLeave={(e) => {
-                    (e.currentTarget as HTMLElement).style.borderColor = '';
-                    (e.currentTarget as HTMLElement).style.color = '';
-                  }}>
+                  style={{ background: 'var(--card)', borderColor: 'var(--card-border)', color: 'var(--text3)' }}>
                   {s.label}
                 </a>
               ))}
             </div>
+            */}
           </div>
 
           {/* Nav columns */}
@@ -81,8 +73,8 @@ export function Footer() {
                 {col.title}
               </h4>
               <ul className="flex flex-col gap-2.5 list-none p-0 m-0">
-                {col.links.map((link) => (
-                  <li key={link.href}>
+                {col.links.map((link, idx) => (
+                  <li key={`${link.href}-${idx}`}>
                     <Link
                       href={link.href}
                       className="text-[13px] text-[var(--text3)] no-underline transition-colors duration-200 hover:text-[var(--text)]">

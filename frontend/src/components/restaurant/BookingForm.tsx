@@ -6,14 +6,35 @@ import { bookingApi } from '@/lib/api';
 import { AuthModal } from '@/components/auth/AuthModal';
 import { useTranslations } from 'next-intl';
 
+interface WorkingHour {
+  dayOfWeek: number;
+  openTime: string;
+  closeTime: string;
+  isClosed: boolean;
+}
+
 interface BookingFormProps {
   restaurantId: number;
   restaurantName: string;
+  workingHours?: WorkingHour[];
   open: boolean;
   onClose: () => void;
 }
 
-export function BookingForm({ restaurantId, restaurantName, open, onClose }: BookingFormProps) {
+function isWithinWorkingHours(date: string, time: string, wh?: WorkingHour[]): string | null {
+  if (!wh?.length || !date || !time) return null;
+  const d = new Date(date);
+  const dayOfWeek = (d.getDay() + 6) % 7; // Monday=0
+  const entry = wh.find(h => h.dayOfWeek === dayOfWeek);
+  if (!entry || entry.isClosed) return 'closed';
+  const t = time.replace(':', '');
+  const open = entry.openTime?.slice(0, 5).replace(':', '') || '0000';
+  const close = entry.closeTime?.slice(0, 5).replace(':', '') || '2359';
+  if (t < open || t > close) return 'outside';
+  return null;
+}
+
+export function BookingForm({ restaurantId, restaurantName, workingHours, open, onClose }: BookingFormProps) {
   const t = useTranslations('booking');
   const { isLoggedIn, user } = useAuthStore();
   const [loading, setLoading] = useState(false);
@@ -35,9 +56,22 @@ export function BookingForm({ restaurantId, restaurantName, open, onClose }: Boo
     return <AuthModal open={true} onClose={onClose} />;
   }
 
+  const hoursCheck = isWithinWorkingHours(form.bookingDate, form.bookingTime, workingHours);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    const check = isWithinWorkingHours(form.bookingDate, form.bookingTime, workingHours);
+    if (check === 'closed') {
+      setError(t('dayClosed'));
+      return;
+    }
+    if (check === 'outside') {
+      setError(t('outsideHours'));
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -65,7 +99,7 @@ export function BookingForm({ restaurantId, restaurantName, open, onClose }: Boo
         style={{ background: 'var(--bg2)', borderColor: 'var(--card-border)' }}>
 
         <button onClick={onClose}
-          className="absolute top-3.5 right-3.5 w-[30px] h-[30px] rounded-full flex items-center justify-center text-[14px] text-[var(--text3)] cursor-pointer border"
+          className="absolute top-3.5 right-3.5 w-9 h-9 rounded-full flex items-center justify-center text-[14px] text-[var(--text3)] cursor-pointer border"
           style={{ background: 'var(--card)', borderColor: 'var(--card-border)' }}>✕</button>
 
         {success ? (
@@ -87,27 +121,33 @@ export function BookingForm({ restaurantId, restaurantName, open, onClose }: Boo
             <p className="text-[13px] text-[var(--text3)] mb-6">{restaurantName}</p>
 
             <form onSubmit={handleSubmit} className="space-y-3.5">
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-3 max-[380px]:grid-cols-1">
                 <div>
-                  <label className="text-[11px] font-semibold text-[var(--text2)] block mb-1.5">{t('labelDate')}</label>
-                  <input type="date" required value={form.bookingDate}
+                  <label htmlFor="booking-date" className="text-[11px] font-semibold text-[var(--text2)] block mb-1.5">{t('labelDate')}</label>
+                  <input id="booking-date" type="date" required value={form.bookingDate}
                     onChange={e => setForm({ ...form, bookingDate: e.target.value })}
                     min={new Date().toISOString().split('T')[0]}
                     className="w-full px-4 py-3 rounded-[10px] text-[14px] text-[var(--text)] outline-none border"
                     style={{ background: 'var(--bg3)', borderColor: 'var(--card-border)' }} />
                 </div>
                 <div>
-                  <label className="text-[11px] font-semibold text-[var(--text2)] block mb-1.5">{t('labelTime')}</label>
-                  <input type="time" required value={form.bookingTime}
+                  <label htmlFor="booking-time" className="text-[11px] font-semibold text-[var(--text2)] block mb-1.5">{t('labelTime')}</label>
+                  <input id="booking-time" type="time" required value={form.bookingTime}
                     onChange={e => setForm({ ...form, bookingTime: e.target.value })}
                     className="w-full px-4 py-3 rounded-[10px] text-[14px] text-[var(--text)] outline-none border"
                     style={{ background: 'var(--bg3)', borderColor: 'var(--card-border)' }} />
                 </div>
               </div>
 
+              {hoursCheck && (
+                <p className="text-[11px] text-amber-400">
+                  {hoursCheck === 'closed' ? t('dayClosed') : t('outsideHours')}
+                </p>
+              )}
+
               <div>
                 <label className="text-[11px] font-semibold text-[var(--text2)] block mb-1.5">{t('labelGuests')}</label>
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-wrap">
                   {[1, 2, 3, 4, 5, 6, 8, 10].map(n => (
                     <button key={n} type="button" onClick={() => setForm({ ...form, guestsCount: n })}
                       className="w-10 h-10 rounded-full text-[13px] font-semibold border cursor-pointer transition-all"
@@ -123,25 +163,26 @@ export function BookingForm({ restaurantId, restaurantName, open, onClose }: Boo
               </div>
 
               <div>
-                <label className="text-[11px] font-semibold text-[var(--text2)] block mb-1.5">{t('labelName')}</label>
-                <input required value={form.contactName}
+                <label htmlFor="booking-name" className="text-[11px] font-semibold text-[var(--text2)] block mb-1.5">{t('labelName')}</label>
+                <input id="booking-name" required value={form.contactName}
                   onChange={e => setForm({ ...form, contactName: e.target.value })}
                   className="w-full px-4 py-3 rounded-[10px] text-[14px] text-[var(--text)] outline-none border"
                   style={{ background: 'var(--bg3)', borderColor: 'var(--card-border)' }} />
               </div>
 
               <div>
-                <label className="text-[11px] font-semibold text-[var(--text2)] block mb-1.5">{t('labelPhone')}</label>
-                <input type="tel" required value={form.contactPhone}
-                  onChange={e => setForm({ ...form, contactPhone: e.target.value })}
+                <label htmlFor="booking-phone" className="text-[11px] font-semibold text-[var(--text2)] block mb-1.5">{t('labelPhone')}</label>
+                <input id="booking-phone" type="tel" required value={form.contactPhone}
+                  onChange={e => setForm({ ...form, contactPhone: e.target.value.replace(/[^0-9+\-() ]/g, '') })}
+                  pattern="[\+]?[0-9\-\(\) ]{10,18}"
                   placeholder={t('placeholderPhone')}
                   className="w-full px-4 py-3 rounded-[10px] text-[14px] text-[var(--text)] outline-none border"
                   style={{ background: 'var(--bg3)', borderColor: 'var(--card-border)' }} />
               </div>
 
               <div>
-                <label className="text-[11px] font-semibold text-[var(--text2)] block mb-1.5">{t('labelWishes')}</label>
-                <textarea value={form.comment}
+                <label htmlFor="booking-wishes" className="text-[11px] font-semibold text-[var(--text2)] block mb-1.5">{t('labelWishes')}</label>
+                <textarea id="booking-wishes" value={form.comment}
                   onChange={e => setForm({ ...form, comment: e.target.value })}
                   rows={2} placeholder={t('placeholderWishes')}
                   className="w-full px-4 py-3 rounded-[10px] text-[14px] text-[var(--text)] outline-none border resize-none"

@@ -525,20 +525,34 @@ function RestaurantsPageInner() {
               ← Назад
             </button>
           )}
-          {Array.from({ length: Math.min(meta.pages, 7) }, (_, i) => {
-            const p = i + 1;
-            return (
-              <button key={p} onClick={() => goToPage(p)}
-                className="w-10 h-10 rounded-full text-[13px] font-semibold border cursor-pointer transition-all"
-                style={{
-                  background: p === page ? 'var(--accent)' : 'var(--glass)',
-                  color: p === page ? '#fff' : 'var(--text2)',
-                  borderColor: p === page ? 'var(--accent)' : 'var(--glass-border)',
-                }}>
-                {p}
-              </button>
+          {(() => {
+            const total = meta.pages;
+            const pages: (number | '...')[] = [];
+            if (total <= 7) {
+              for (let i = 1; i <= total; i++) pages.push(i);
+            } else {
+              pages.push(1);
+              if (page > 3) pages.push('...');
+              for (let i = Math.max(2, page - 1); i <= Math.min(total - 1, page + 1); i++) pages.push(i);
+              if (page < total - 2) pages.push('...');
+              pages.push(total);
+            }
+            return pages.map((p, idx) =>
+              p === '...' ? (
+                <span key={`dots-${idx}`} className="w-10 h-10 flex items-center justify-center text-[var(--text3)]">…</span>
+              ) : (
+                <button key={p} onClick={() => goToPage(p)}
+                  className="w-10 h-10 rounded-full text-[13px] font-semibold border cursor-pointer transition-all"
+                  style={{
+                    background: p === page ? 'var(--accent)' : 'var(--glass)',
+                    color: p === page ? '#fff' : 'var(--text2)',
+                    borderColor: p === page ? 'var(--accent)' : 'var(--glass-border)',
+                  }}>
+                  {p}
+                </button>
+              )
             );
-          })}
+          })()}
           {page < meta.pages && (
             <button onClick={() => goToPage(page + 1)} className="px-4 py-2 rounded-full text-[13px] font-semibold border cursor-pointer"
               style={{ background: 'var(--glass)', color: 'var(--text2)', borderColor: 'var(--glass-border)' }}>

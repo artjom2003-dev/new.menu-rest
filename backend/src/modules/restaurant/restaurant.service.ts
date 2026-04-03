@@ -137,7 +137,7 @@ export class RestaurantService implements OnModuleInit {
       }
 
       const items = entities.map(e => ({
-        ...e,
+        ...this.sanitize(e),
         distanceKm: distanceMap.get(e.id) ?? undefined,
       }));
 
@@ -234,7 +234,7 @@ export class RestaurantService implements OnModuleInit {
     }
 
     const result = {
-      items: rawItems,
+      items: rawItems.map(r => this.sanitize(r)),
       meta: { total, page, limit, pages: Math.ceil(total / limit) },
     };
 
@@ -254,7 +254,7 @@ export class RestaurantService implements OnModuleInit {
       throw new NotFoundException(`Ресторан "${slug}" не найден`);
     }
 
-    return restaurant;
+    return this.sanitize(restaurant, true);
   }
 
   async findById(id: number): Promise<Restaurant> {
@@ -419,6 +419,26 @@ export class RestaurantService implements OnModuleInit {
     await this.photoRepo.update({ restaurantId, isCover: true }, { isCover: false });
     photo.isCover = true;
     return this.photoRepo.save(photo);
+  }
+
+  /** Strip internal fields from public API responses */
+  private sanitize(r: Restaurant, detail = false) {
+    const { ownerId, legacyId, external2gisId, status, createdAt, updatedAt, ...rest } = r as any;
+    const safe: any = { ...rest, hasOwner: !!ownerId };
+    if (!detail) {
+      delete safe.email;
+    }
+    if (safe.cuisines) {
+      safe.cuisines = safe.cuisines.map(({ legacyId: _, ...c }: any) => c);
+    }
+    if (safe.city) {
+      const { legacyId: _, ...c } = safe.city;
+      safe.city = c;
+    }
+    if (safe.photos) {
+      safe.photos = safe.photos.map(({ legacyId: _, ...p }: any) => p);
+    }
+    return safe;
   }
 
   private async generateUniqueSlug(name: string): Promise<string> {

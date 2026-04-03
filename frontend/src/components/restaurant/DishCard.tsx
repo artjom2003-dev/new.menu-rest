@@ -49,7 +49,8 @@ export function DishCard({ dish }: { dish: Dish }) {
   const userAllergenSlugs = user?.allergenProfile?.map((a) => a.slug) || [];
   const priceRub = dish.price;
   const hasImage = dish.imageUrl && /^https?:\/\//.test(dish.imageUrl) && !imgError;
-  const hasKbzhu = dish.calories || dish.protein || dish.fat || dish.carbs;
+  const isNum = (v: unknown): v is number => typeof v === 'number' && v > 0 && isFinite(v);
+  const hasKbzhu = isNum(dish.calories) || isNum(dish.protein) || isNum(dish.fat) || isNum(dish.carbs);
   const hasDetails = dish.composition || (hasKbzhu && dish.composition);
 
   const handleAdd = () => {
@@ -67,7 +68,7 @@ export function DishCard({ dish }: { dish: Dish }) {
 
   return (
     <div
-      className="flex gap-4 p-[18px] border rounded-[16px] cursor-pointer relative overflow-hidden group transition-all duration-[350ms]"
+      className="flex gap-4 max-sm:gap-3 p-[18px] max-sm:p-3 border rounded-[16px] cursor-pointer relative overflow-hidden group transition-all duration-[350ms]"
       style={{ background: 'var(--bg2)', borderColor: 'var(--card-border)' }}
       onClick={() => hasDetails && setExpanded(!expanded)}
       onMouseEnter={(e) => {
@@ -86,7 +87,7 @@ export function DishCard({ dish }: { dish: Dish }) {
         style={{ background: 'linear-gradient(135deg, var(--accent-glow), transparent)' }} />
 
       {/* Image / Emoji thumb */}
-      <div className="w-[90px] h-[90px] rounded-[12px] flex-shrink-0 relative z-10 overflow-hidden"
+      <div className="w-[90px] h-[90px] max-sm:w-[70px] max-sm:h-[70px] rounded-[12px] flex-shrink-0 relative z-10 overflow-hidden"
         style={{ background: 'var(--bg3)' }}>
         {hasImage ? (
           <Image src={dish.imageUrl!} alt={dish.name} fill sizes="90px" quality={85} className="object-cover"
@@ -108,7 +109,7 @@ export function DishCard({ dish }: { dish: Dish }) {
       {/* Content */}
       <div className="flex-1 relative z-10 min-w-0">
         <div className="flex items-start justify-between gap-2">
-          <div className="text-[14px] font-semibold text-[var(--text)] mb-0.5">{dish.name}</div>
+          <div className="text-[14px] max-sm:text-[13px] font-semibold text-[var(--text)] mb-0.5">{dish.name}</div>
           {(dish.weightGrams || dish.volumeMl) && (
             <span className="text-[10px] text-[var(--text3)] flex-shrink-0 whitespace-nowrap mt-0.5">
               {dish.weightGrams ? `${dish.weightGrams} ${t('gram')}` : `${dish.volumeMl} ${t('ml')}`}
@@ -155,14 +156,14 @@ export function DishCard({ dish }: { dish: Dish }) {
         {/* Footer: Price + KBZHU */}
         <div className="flex items-center justify-between mt-1">
           <div className="text-[16px] font-bold text-[var(--text)]">
-            {priceRub > 0 ? `${priceRub.toLocaleString()} ₽` : ''}
+            {priceRub > 0 ? `${priceRub.toLocaleString()} ₽` : <span className="text-[12px] text-[var(--text3)]">{t('priceOnRequest')}</span>}
           </div>
           {hasKbzhu && (
             <div className="flex gap-2 text-[9px] text-[var(--text3)] font-mono">
-              {dish.calories ? <span><em className="not-italic text-[11px] font-medium text-[var(--text2)]">{dish.calories}</em> {t('kcal')}</span> : null}
-              {dish.protein ? <span><em className="not-italic text-[11px] font-medium text-[var(--text2)]">{Number(dish.protein).toFixed(0)}</em>{t('protein')}</span> : null}
-              {dish.fat ? <span><em className="not-italic text-[11px] font-medium text-[var(--text2)]">{Number(dish.fat).toFixed(0)}</em>{t('fat')}</span> : null}
-              {dish.carbs ? <span><em className="not-italic text-[11px] font-medium text-[var(--text2)]">{Number(dish.carbs).toFixed(0)}</em>{t('carbs')}</span> : null}
+              {isNum(dish.calories) ? <span><em className="not-italic text-[11px] font-medium text-[var(--text2)]">{dish.calories}</em> {t('kcal')}</span> : null}
+              {isNum(dish.protein) ? <span><em className="not-italic text-[11px] font-medium text-[var(--text2)]">{dish.protein.toFixed(0)}</em>{t('protein')}</span> : null}
+              {isNum(dish.fat) ? <span><em className="not-italic text-[11px] font-medium text-[var(--text2)]">{dish.fat.toFixed(0)}</em>{t('fat')}</span> : null}
+              {isNum(dish.carbs) ? <span><em className="not-italic text-[11px] font-medium text-[var(--text2)]">{dish.carbs.toFixed(0)}</em>{t('carbs')}</span> : null}
             </div>
           )}
         </div>
@@ -171,7 +172,7 @@ export function DishCard({ dish }: { dish: Dish }) {
       {/* Add button */}
       <button
         onClick={(e) => { e.stopPropagation(); handleAdd(); }}
-        className="absolute bottom-4 right-4 z-10 w-[34px] h-[34px] rounded-full text-white text-[18px] flex items-center justify-center border-none transition-all duration-200 cursor-pointer"
+        className="absolute bottom-4 right-4 max-sm:bottom-3 max-sm:right-3 z-10 w-[34px] h-[34px] max-sm:w-9 max-sm:h-9 rounded-full text-white text-[18px] flex items-center justify-center border-none transition-all duration-200 cursor-pointer"
         style={{ background: 'var(--accent)', boxShadow: '0 4px 16px var(--accent-glow)' }}
         onMouseEnter={(e) => (e.currentTarget as HTMLElement).style.transform = 'scale(1.15)'}
         onMouseLeave={(e) => (e.currentTarget as HTMLElement).style.transform = ''}>

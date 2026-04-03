@@ -87,7 +87,7 @@ function HeaderCityPicker() {
 
         {open && (
           <div
-            className="absolute top-[calc(100%+8px)] left-0 w-[230px] rounded-2xl border p-2 z-[1100]"
+            className="absolute top-[calc(100%+8px)] left-0 max-sm:left-auto max-sm:right-0 w-[230px] max-sm:w-[min(230px,calc(100vw-32px))] rounded-2xl border p-2 z-[1100]"
             style={{
               background: 'var(--dropdown-bg)',
               borderColor: 'var(--dropdown-border)',
@@ -150,7 +150,7 @@ function HeaderCityPicker() {
 
       {open && (
         <div
-          className="absolute top-[calc(100%+8px)] left-0 w-[260px] rounded-2xl border p-3 z-[1100]"
+          className="absolute top-[calc(100%+8px)] left-0 max-sm:left-auto max-sm:right-0 w-[260px] max-sm:w-[min(260px,calc(100vw-32px))] rounded-2xl border p-3 z-[1100]"
           style={{
             background: 'var(--dropdown-bg)',
             borderColor: 'var(--search-border)',
@@ -310,7 +310,7 @@ export function Header() {
   return (
     <>
       <header
-        className="fixed top-0 left-0 right-0 z-[1000] h-[64px] flex items-center px-10 max-md:px-4 max-sm:px-3 transition-all duration-[400ms]"
+        className="fixed top-0 left-0 right-0 z-[1000] h-[64px] max-sm:h-[56px] flex items-center px-10 max-md:px-4 max-sm:px-3 transition-all duration-[400ms]"
         style={{
           background: scrolled ? 'var(--header-bg-scroll)' : 'var(--header-bg)',
           backdropFilter: 'blur(40px) saturate(1.4)',
@@ -322,6 +322,7 @@ export function Header() {
           <div className="flex items-center gap-3 max-sm:gap-1.5 min-w-0">
             {/* Mobile burger — left side */}
             <button
+              aria-label={mobileMenuOpen ? 'Закрыть меню' : 'Открыть меню'}
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="hidden max-lg:flex items-center justify-center w-9 h-9 max-sm:w-8 max-sm:h-8 rounded-lg border cursor-pointer transition-all flex-shrink-0"
               style={{ background: 'var(--glass)', borderColor: 'var(--glass-border)' }}>
@@ -596,7 +597,7 @@ export function Header() {
         <div className="fixed inset-0 z-[999] hidden max-lg:block" onClick={() => setMobileMenuOpen(false)}>
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
           <div
-            className="absolute top-[64px] left-3 w-[240px] max-sm:w-[220px] p-3 flex flex-col gap-1 rounded-2xl border"
+            className="absolute top-[56px] sm:top-[64px] left-3 right-3 sm:right-auto sm:w-[280px] p-3 flex flex-col gap-1 rounded-2xl border"
             style={{ background: 'var(--dropdown-bg)', borderColor: 'var(--dropdown-border)', boxShadow: 'var(--dropdown-shadow)', backdropFilter: 'blur(24px)' }}
             onClick={(e) => e.stopPropagation()}>
             <div className="px-2 pb-1.5 mb-1 border-b" style={{ borderColor: 'var(--card-border)' }}>
@@ -645,8 +646,9 @@ export function Header() {
 
       {/* Fixed theme toggle — bottom right */}
       <button
+        aria-label={theme === 'dark' ? 'Светлая тема' : 'Тёмная тема'}
         onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-        className="fixed bottom-6 right-6 z-[999] w-11 h-11 rounded-full flex items-center justify-center text-[16px] transition-all duration-300 border cursor-pointer"
+        className="fixed bottom-6 right-6 max-sm:bottom-4 max-sm:right-4 z-[999] w-11 h-11 rounded-full flex items-center justify-center text-[16px] transition-all duration-300 border cursor-pointer"
         style={{
           background: 'var(--bg2)',
           borderColor: 'var(--card-border)',

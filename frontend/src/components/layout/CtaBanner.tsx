@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 
 export function CtaBanner() {
@@ -17,14 +18,16 @@ export function CtaBanner() {
           style={{ top: -80, right: -80, width: 360, height: 360,
             background: 'rgba(255,255,255,0.06)' }} />
         <div className="relative z-10">
-          <h2 className="font-serif text-[36px] max-sm:text-[24px] font-black text-white leading-[1.1]"
-            dangerouslySetInnerHTML={{ __html: t('title').replace('\n', '<br/>') }} />
-          <p className="text-[15px] text-white/75 mt-3 leading-relaxed"
-            dangerouslySetInnerHTML={{ __html: t('desc').replace('\n', '<br/>') }} />
+          <h2 className="font-serif text-[36px] max-sm:text-[24px] font-black text-white leading-[1.1] whitespace-pre-line">
+            {t('title')}
+          </h2>
+          <p className="text-[15px] text-white/75 mt-3 leading-relaxed whitespace-pre-line">
+            {t('desc')}
+          </p>
         </div>
         <div className="relative z-10 flex flex-col items-center gap-2">
-          <button
-            className="px-10 py-4 text-[15px] font-bold rounded-full transition-all duration-300"
+          <Link href="/for-business"
+            className="px-10 py-4 text-[15px] font-bold rounded-full transition-all duration-300 no-underline inline-block"
             style={{ background: 'white', color: 'var(--accent)' }}
             onMouseEnter={(e) => {
               (e.currentTarget as HTMLElement).style.boxShadow = '0 0 40px var(--lime-glow)';
@@ -35,7 +38,7 @@ export function CtaBanner() {
               (e.currentTarget as HTMLElement).style.transform = '';
             }}>
             {t('button')}
-          </button>
+          </Link>
           <span className="text-[12px] text-white/60 font-medium tracking-wide">
             {t('free')}
           </span>

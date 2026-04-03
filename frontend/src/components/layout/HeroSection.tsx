@@ -31,7 +31,7 @@ export function HeroSection() {
 
       <div className="max-w-[1400px] mx-auto w-full relative z-10">
         {/* Title */}
-        <div className="font-serif font-black leading-[0.92] tracking-[-0.04em] text-[var(--text)] mb-7 animate-fade-up"
+        <h1 className="font-serif font-black leading-[0.92] tracking-[-0.04em] text-[var(--text)] mb-7 animate-fade-up"
           style={{ animationDelay: '0.1s' }}>
           <span className="block w-full text-justify max-sm:text-left"
             style={{ fontSize: 'clamp(32px,7.5vw,105px)' }}>
@@ -52,7 +52,7 @@ export function HeroSection() {
             style={{ fontSize: 'clamp(24px,5.5vw,80px)' }}>
             {t('line3')}
           </span>
-        </div>
+        </h1>
 
         {/* Subtitle */}
         <p className="text-[17px] max-sm:text-[14px] text-[var(--text2)] leading-[1.75] mb-9 animate-fade-up"

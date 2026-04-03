@@ -4,20 +4,20 @@ import { useAuthStore } from '@/stores/auth.store';
 import { useChatStore } from '@/stores/chat.store';
 
 interface StartChatButtonProps {
-  userId: number;
+  userId?: number;
+  restaurantId?: number;
   userName: string;
-  from?: string;
 }
 
-export function StartChatButton({ userId, userName }: StartChatButtonProps) {
-  const { isLoggedIn, user } = useAuthStore();
+export function StartChatButton({ userId, restaurantId, userName }: StartChatButtonProps) {
+  const { isLoggedIn } = useAuthStore();
   const openChat = useChatStore(s => s.open);
 
-  if (!isLoggedIn || user?.id === userId) return null;
+  if (!isLoggedIn) return null;
 
   return (
     <button
-      onClick={(e) => { e.preventDefault(); e.stopPropagation(); openChat({ userId }); }}
+      onClick={(e) => { e.preventDefault(); e.stopPropagation(); openChat({ userId, restaurantId }); }}
       title={`Написать ${userName}`}
       style={{
         display: 'inline-flex',

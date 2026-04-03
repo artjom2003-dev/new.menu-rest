@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,700;0,9..144,900;1,9..144,400&family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+/* Fonts loaded via <link> in layout.tsx to avoid render-blocking @import */
 
 @tailwind base;
 @tailwind components;
@@ -108,7 +108,15 @@ html {
   scroll-behavior: smooth;
   scrollbar-width: thin;
   scrollbar-color: var(--accent) var(--bg);
-  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cg transform='rotate(-35 16 16)'%3E%3Cpath d='M13 2v10c0 2 1.5 3.5 3.5 4v13.5c0 .8.7 1.5 1.5 1.5s1.5-.7 1.5-1.5V16c2-.5 3.5-2 3.5-4V2' fill='none' stroke='%23FF5C28' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cline x1='16' y1='2' x2='16' y2='9' stroke='%23FF5C28' stroke-width='1.5' stroke-linecap='round'/%3E%3Cline x1='18' y1='2' x2='18' y2='9' stroke='%23FF5C28' stroke-width='1.5' stroke-linecap='round'/%3E%3Cline x1='20' y1='2' x2='20' y2='9' stroke='%23FF5C28' stroke-width='1.5' stroke-linecap='round'/%3E%3C/g%3E%3C/svg%3E") 2 2, auto;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/* Custom cursor only on devices with fine pointer (mouse) */
+@media (pointer: fine) {
+  html {
+    cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cg transform='rotate(-35 16 16)'%3E%3Cpath d='M13 2v10c0 2 1.5 3.5 3.5 4v13.5c0 .8.7 1.5 1.5 1.5s1.5-.7 1.5-1.5V16c2-.5 3.5-2 3.5-4V2' fill='none' stroke='%23FF5C28' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cline x1='16' y1='2' x2='16' y2='9' stroke='%23FF5C28' stroke-width='1.5' stroke-linecap='round'/%3E%3Cline x1='18' y1='2' x2='18' y2='9' stroke='%23FF5C28' stroke-width='1.5' stroke-linecap='round'/%3E%3Cline x1='20' y1='2' x2='20' y2='9' stroke='%23FF5C28' stroke-width='1.5' stroke-linecap='round'/%3E%3C/g%3E%3C/svg%3E") 2 2, auto;
+  }
 }
 
 body {
@@ -118,6 +126,24 @@ body {
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
+  /* Safe area for notched devices (iPhone X+) */
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
+/* Prevent horizontal overflow globally */
+#__next, main {
+  overflow-x: hidden;
+}
+
+/* Ensure touch targets are comfortable */
+@media (pointer: coarse) {
+  button, a, [role="button"] {
+    min-height: 36px;
+  }
+  input, select, textarea {
+    font-size: 16px; /* prevents iOS zoom on focus */
+  }
 }
 
 /* Ambient background */

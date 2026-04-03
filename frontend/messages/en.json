@@ -155,7 +155,9 @@
     "loginRequired": "Sign in to make a reservation",
     "error": "Booking error",
     "submitting": "Booking...",
-    "submit": "Book a Table"
+    "submit": "Book a Table",
+    "dayClosed": "The restaurant is closed on this day",
+    "outsideHours": "Selected time is outside working hours"
   },
   "review": {
     "title": "Reviews",
@@ -183,7 +185,8 @@
     "kcal": "kcal",
     "protein": "P",
     "fat": "F",
-    "carbs": "C"
+    "carbs": "C",
+    "priceOnRequest": "Price on request"
   },
   "chat": {
     "dialogs": "Chats",

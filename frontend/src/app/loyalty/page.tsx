@@ -100,10 +100,11 @@ function useCountdown(targetDate: Date) {
 
 /* ───────── Weekly Giveaway ───────── */
 function WeeklyGiveaway({ userPoints, t }: { userPoints?: number; t: any }) {
-  // Target: 30 days from now (static per mount)
+  // Target: next Sunday at 20:00 (weekly draw)
   const [target] = useState(() => {
     const d = new Date();
-    d.setDate(d.getDate() + 30);
+    const daysUntilSunday = (7 - d.getDay()) % 7 || 7;
+    d.setDate(d.getDate() + daysUntilSunday);
     d.setHours(20, 0, 0, 0);
     return d;
   });
@@ -446,6 +447,12 @@ export default function LoyaltyPage() {
           .giveaway-timer-sep { font-size: 22px; padding-top: 10px; }
           .giveaway-timer-sub { font-size: 9px; }
           .giveaway-prize-icon { font-size: 36px; margin-top: 14px; }
+        }
+        @media (max-width: 400px) {
+          .giveaway-inner { padding: 16px 12px; }
+          .giveaway-timer-num { width: 38px; height: 44px; font-size: 18px; border-radius: 8px; }
+          .giveaway-timer-sep { font-size: 18px; padding-top: 8px; }
+          .giveaway-title { font-size: 17px; }
         }
 
         /* ── Spend Section ── */
