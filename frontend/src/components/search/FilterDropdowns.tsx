@@ -54,7 +54,7 @@ function MiniDropdown({ icon, label, options, value, onChange, searchable, reset
         <span className={`text-[10px] opacity-50 transition-transform ${open ? 'rotate-180' : ''}`}>▾</span>
       </button>
       {open && (
-        <div className="absolute top-[calc(100%+6px)] left-0 min-w-[240px] max-h-[360px] rounded-2xl p-1.5 z-[100] border flex flex-col"
+        <div className="absolute top-[calc(100%+6px)] left-0 max-sm:left-auto max-sm:right-0 min-w-[240px] max-sm:min-w-[min(240px,calc(100vw-24px))] max-h-[360px] max-sm:max-h-[50vh] rounded-2xl p-1.5 z-[100] border flex flex-col"
           style={{ background: 'var(--bg2)', borderColor: 'var(--card-border)', boxShadow: '0 20px 60px rgba(0,0,0,0.5)' }}>
           {searchable && (
             <div className="px-2 pt-1 pb-2">
@@ -233,7 +233,7 @@ function CuisineSelector({ cuisines, selected, onToggle, cuisineLabel, collapseL
 
       {expanded && (
         <div
-          className="absolute left-0 top-[calc(100%+8px)] z-[100] rounded-2xl border p-5 min-w-[500px] max-w-[700px] animate-fade-up"
+          className="absolute left-0 max-sm:left-auto max-sm:right-0 top-[calc(100%+8px)] z-[100] rounded-2xl border p-5 max-sm:p-3 min-w-[500px] max-sm:min-w-0 max-sm:w-[calc(100vw-24px)] max-w-[700px] animate-fade-up"
           style={{
             background: 'var(--bg2)',
             borderColor: 'var(--card-border)',
@@ -289,7 +289,7 @@ function PriceRangeSelector({ minVal, maxVal, onChange, priceLabels, avgBillLabe
         <span className={`text-[10px] opacity-50 transition-transform ${open ? 'rotate-180' : ''}`}>▾</span>
       </button>
       {open && (
-        <div className="absolute top-[calc(100%+6px)] left-0 min-w-[220px] rounded-2xl p-2 z-[100] border"
+        <div className="absolute top-[calc(100%+6px)] left-0 max-sm:left-auto max-sm:right-0 min-w-[220px] max-sm:min-w-[min(220px,calc(100vw-24px))] rounded-2xl p-2 z-[100] border"
           style={{ background: 'var(--bg2)', borderColor: 'var(--card-border)', boxShadow: '0 20px 60px rgba(0,0,0,0.5)' }}>
           {hasValue && (
             <div onClick={() => { onChange(undefined, undefined); setOpen(false); }}
@@ -688,7 +688,7 @@ function FiltersBarInner() {
     <div className="filters-strip">
     <div className="max-w-[1400px] mx-auto px-10 max-md:px-4 max-sm:px-3 space-y-4">
       {/* Row 1: Dropdowns + Price + active tags */}
-      <div className="flex items-center gap-3 flex-wrap">
+      <div className="flex items-center gap-3 flex-wrap max-sm:flex-nowrap max-sm:overflow-x-auto max-sm:pb-2 max-sm:-mx-3 max-sm:px-3" style={{ scrollbarWidth: 'none' }}>
         <CitySearch options={cities} value={filters.city} onChange={handleCityChange} placeholder={t('cityPlaceholder')} />
         {metroStations.length > 0 && (
           <MiniDropdown icon="🚇" label={t('metro')} options={metroStations} value={selectedMetro} onChange={handleMetroChange} searchable resetLabel={t('reset')} searchPlaceholder={t('searchPlaceholder')} nothingFoundLabel={t('nothingFound')} />

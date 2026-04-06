@@ -228,7 +228,7 @@ export function BudgetCalcPanel() {
 
   return (
     <div
-      className="fixed right-0 top-[64px] bottom-0 w-[380px] max-md:w-full flex flex-col z-[900] transition-transform duration-[450ms]"
+      className="fixed right-0 top-[64px] max-sm:top-[56px] bottom-0 w-[380px] max-md:w-full flex flex-col z-[900] transition-transform duration-[450ms]"
       style={{
         background: 'var(--bg2)',
         borderLeft: '1px solid var(--card-border)',
@@ -249,7 +249,7 @@ export function BudgetCalcPanel() {
         </div>
         <button
           onClick={close}
-          className="w-[30px] h-[30px] rounded-full flex items-center justify-center text-[14px] text-[var(--text3)] cursor-pointer transition-all border"
+          className="w-9 h-9 rounded-full flex items-center justify-center text-[14px] text-[var(--text3)] cursor-pointer transition-all border"
           style={{ background: 'var(--card)', borderColor: 'var(--card-border)' }}
           onMouseEnter={(e) => {
             (e.currentTarget as HTMLElement).style.background = 'rgba(255,70,70,0.1)';
@@ -385,7 +385,7 @@ export function BudgetCalcPanel() {
               </span>
               <button
                 onClick={() => removeItem(i)}
-                className="w-[22px] h-[22px] rounded-full flex items-center justify-center text-[10px] text-[var(--text3)] transition-all cursor-pointer border"
+                className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] text-[var(--text3)] transition-all cursor-pointer border flex-shrink-0"
                 style={{ background: 'transparent', borderColor: 'var(--card-border)' }}
                 onMouseEnter={(e) => {
                   (e.currentTarget as HTMLElement).style.background = 'rgba(255,70,70,0.1)';

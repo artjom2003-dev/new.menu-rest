@@ -377,7 +377,7 @@ function ProfileContent() {
   /* legacy owner block removed — now at /owner/ */
   if (false as boolean) {
     return (
-      <div className="max-w-[1000px] mx-auto px-6 py-12">
+      <div className="max-w-[1000px] mx-auto px-6 max-sm:px-3 py-12 max-sm:py-6">
         {/* Owner Header */}
         {restLoading ? (
           <div className="flex justify-center py-20">
@@ -395,13 +395,13 @@ function ProfileContent() {
         ) : (
           <>
             {/* Restaurant identity header */}
-            <div className="flex items-center gap-6 mb-10">
+            <div className="flex items-center gap-6 max-sm:gap-4 mb-10 max-sm:flex-col max-sm:items-start">
               <div className="w-[80px] h-[80px] rounded-[20px] flex items-center justify-center text-[36px] flex-shrink-0"
                 style={{ background: 'linear-gradient(135deg, var(--accent), #ff8c42)', boxShadow: '0 4px 20px var(--accent-glow)' }}>
                 <span style={{ filter: 'brightness(10)' }}>🍽️</span>
               </div>
               <div className="flex-1 min-w-0">
-                <h1 className="font-serif text-[32px] font-black text-[var(--text)] truncate leading-tight">{myRestaurant.name}</h1>
+                <h1 className="font-serif text-[32px] max-sm:text-[24px] font-black text-[var(--text)] truncate leading-tight">{myRestaurant.name}</h1>
                 <div className="flex items-center gap-4 mt-1.5 text-[13px] text-[var(--text3)]">
                   {myRestaurant.city && <span>📍 {myRestaurant.city.name}{myRestaurant.address ? `, ${myRestaurant.address}` : ''}</span>}
                 </div>
@@ -429,7 +429,7 @@ function ProfileContent() {
             </div>
 
             {/* Stats row */}
-            <div className="grid grid-cols-4 gap-4 mb-8">
+            <div className="grid grid-cols-4 gap-4 max-sm:grid-cols-2 max-sm:gap-3 mb-8">
               {[
                 { label: t('statRating'), value: Number(myRestaurant.rating || 0).toFixed(1), icon: '⭐' },
                 { label: t('statReviews'), value: String(myRestaurant.reviewCount || 0), icon: '💬' },
@@ -475,7 +475,7 @@ function ProfileContent() {
                       <div className="text-[11px] text-[var(--text3)] font-semibold mb-1">{t("description")}</div>
                       <p className="text-[13px] text-[var(--text2)] leading-relaxed">{myRestaurant.description || '—'}</p>
                     </div>
-                    <div className="grid grid-cols-3 gap-3">
+                    <div className="grid grid-cols-3 max-sm:grid-cols-1 gap-3">
                       <div className="p-4 rounded-[12px]" style={{ background: 'var(--bg3)' }}>
                         <div className="text-[11px] text-[var(--text3)] font-semibold mb-1">{t("phone")}</div>
                         <div className="text-[13px] text-[var(--text)]">{myRestaurant.phone || '—'}</div>

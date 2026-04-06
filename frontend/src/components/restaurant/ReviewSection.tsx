@@ -73,7 +73,7 @@ export function ReviewSection({ restaurantId }: ReviewSectionProps) {
   return (
     <div className="mt-12">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="font-serif text-[24px] font-bold text-[var(--text)]">
+        <h2 className="font-serif text-[24px] max-sm:text-[18px] font-bold text-[var(--text)]">
           {t('title')} {reviews.length > 0 && <span className="text-[var(--text3)] font-normal text-[16px]">({reviews.length})</span>}
         </h2>
         {isLoggedIn && !showForm && !success && (
@@ -95,7 +95,7 @@ export function ReviewSection({ restaurantId }: ReviewSectionProps) {
       {/* Review form */}
       {showForm && (
         <form onSubmit={handleSubmit}
-          className="rounded-[20px] border p-6 mb-8"
+          className="rounded-[20px] border p-6 max-sm:p-4 mb-8"
           style={{ background: 'var(--bg2)', borderColor: 'var(--card-border)' }}>
           <h3 className="text-[16px] font-semibold text-[var(--text)] mb-4">{t('yourReview')}</h3>
 
@@ -129,7 +129,7 @@ export function ReviewSection({ restaurantId }: ReviewSectionProps) {
 
           {error && <p className="text-[12px] text-red-400 mb-3">{error}</p>}
 
-          <div className="flex gap-3">
+          <div className="flex gap-3 max-sm:flex-col max-sm:gap-2">
             <button type="submit" disabled={submitting}
               className="px-6 py-3 rounded-full text-[13px] font-semibold text-white border-none cursor-pointer disabled:opacity-60"
               style={{ background: 'var(--accent)' }}>
@@ -188,7 +188,7 @@ export function ReviewSection({ restaurantId }: ReviewSectionProps) {
               </div>
 
               {/* Sub-ratings */}
-              <div className="flex gap-4 mb-3 flex-wrap">
+              <div className="flex gap-4 max-sm:gap-2 mb-3 flex-wrap">
                 {RATING_LABELS.map(({ key, label, icon }) => {
                   const val = review[key as keyof Review] as number | null;
                   if (!val) return null;

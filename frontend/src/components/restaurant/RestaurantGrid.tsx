@@ -106,7 +106,7 @@ export function RestaurantGrid() {
       <div className="max-w-[1400px] mx-auto px-10 max-md:px-4 max-sm:px-3 pb-12 max-sm:pb-8 grid grid-cols-4 gap-4 max-xl:grid-cols-3 max-lg:grid-cols-2 max-sm:grid-cols-2 max-sm:gap-2.5">
         {loading ? (
           Array.from({ length: 8 }).map((_, i) => (
-            <div key={i} className="h-[240px] rounded-[16px] animate-pulse" style={{ background: 'var(--bg3)' }} />
+            <div key={i} className="h-[240px] max-sm:h-[180px] rounded-[16px] animate-pulse" style={{ background: 'var(--bg3)' }} />
           ))
         ) : (
           restaurants.map((r) => (

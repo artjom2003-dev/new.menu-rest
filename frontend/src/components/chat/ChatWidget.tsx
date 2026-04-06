@@ -174,20 +174,22 @@ export function ChatWidget() {
       style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', justifyContent: 'center', alignItems: 'center', background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)' }}
       onClick={e => { if (e.target === e.currentTarget) close(); }}
     >
-      <div style={{ position: 'relative', width: 720, maxWidth: 'calc(100vw - 32px)', animation: 'chatIn 0.2s ease-out' }}>
+      <div style={{ position: 'relative', width: 720, maxWidth: 'calc(100vw - 16px)', animation: 'chatIn 0.2s ease-out' }}>
         {/* Close button — above chat window */}
         <button onClick={(e) => { e.stopPropagation(); close(); }}
+          className="max-sm:!top-2 max-sm:!right-2"
           style={{ position: 'absolute', top: -18, right: -18, width: 36, height: 36, borderRadius: '50%', border: '2px solid var(--card-border)', background: 'var(--bg2)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text3)', fontSize: 15, transition: 'all 0.15s', fontFamily: 'inherit', zIndex: 10, boxShadow: '0 4px 12px rgba(0,0,0,0.3)' }}
           onMouseEnter={e => { e.currentTarget.style.background = '#ef4444'; e.currentTarget.style.color = '#fff'; e.currentTarget.style.borderColor = '#ef4444'; e.currentTarget.style.transform = 'scale(1.15)'; }}
           onMouseLeave={e => { e.currentTarget.style.background = 'var(--bg2)'; e.currentTarget.style.color = 'var(--text3)'; e.currentTarget.style.borderColor = 'var(--card-border)'; e.currentTarget.style.transform = 'none'; }}>
           ✕
         </button>
 
-        <div style={{ width: '100%', height: 'min(560px, calc(100vh - 100px))', display: 'flex', borderRadius: 20, overflow: 'hidden', border: '1px solid var(--card-border)', boxShadow: '0 16px 64px rgba(0,0,0,0.4)' }}>
+        <div style={{ width: '100%', height: 'min(560px, calc(100vh - 60px))', display: 'flex', borderRadius: 20, overflow: 'hidden', border: '1px solid var(--card-border)', boxShadow: '0 16px 64px rgba(0,0,0,0.4)' }}>
         <style>{`@keyframes chatIn { from { opacity: 0; transform: scale(0.95) translateY(10px); } to { opacity: 1; transform: none; } }`}</style>
 
-        {/* Left: Conversations */}
-        <div style={{ width: 240, minWidth: 240, background: 'var(--bg2)', borderRight: '1px solid var(--card-border)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        {/* Left: Conversations — hidden on mobile when viewing messages */}
+        <div style={{ width: 240, minWidth: 240, background: 'var(--bg2)', borderRight: '1px solid var(--card-border)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
+          className={activeId ? 'max-sm:hidden' : ''}>
           <div style={{ padding: '14px 16px 12px', background: 'linear-gradient(135deg, rgba(255,92,40,0.06), rgba(57,255,209,0.03))', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <h2 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 7 }}>
               <span style={{ width: 26, height: 26, borderRadius: 8, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,92,40,0.12)' }}>
