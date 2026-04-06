@@ -1262,6 +1262,13 @@ ${restaurantContext}
       this.logger.log(`[AI-Stream] quality filter skipped: only ${quality.length}/${beforeFilter} quality results, keeping all`);
     }
 
+    // Re-sort: name-matched restaurants always come first
+    if (nameMatchIds.size > 0) {
+      const named = restaurants.filter(r => nameMatchIds.has(r.id));
+      const rest = restaurants.filter(r => !nameMatchIds.has(r.id));
+      restaurants = [...named, ...rest];
+    }
+
     // Send restaurants + params as first SSE event
     yield JSON.stringify({
       type: 'restaurants',
