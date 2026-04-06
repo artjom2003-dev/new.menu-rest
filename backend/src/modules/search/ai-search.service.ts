@@ -1262,9 +1262,15 @@ ${restaurantContext}
       this.logger.log(`[AI-Stream] quality filter skipped: only ${quality.length}/${beforeFilter} quality results, keeping all`);
     }
 
-    // Re-sort: name-matched restaurants always come first
+    // Re-sort: name-matched restaurants always come first, ranked by how many query words match
     if (nameMatchIds.size > 0) {
-      const named = restaurants.filter(r => nameMatchIds.has(r.id));
+      const _stop = new Set(['а','в','на','не','нет','да','где','что','как','это','для','или','по','хочу','есть','нету']);
+      const queryWords = query.toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, '').split(/\s+/).filter(w => w.length > 2 && !_stop.has(w));
+      const nameScore = (r: RestaurantSummary) => {
+        const name = r.name.toLowerCase();
+        return queryWords.filter(w => name.includes(w)).length;
+      };
+      const named = restaurants.filter(r => nameMatchIds.has(r.id)).sort((a, b) => nameScore(b) - nameScore(a));
       const rest = restaurants.filter(r => !nameMatchIds.has(r.id));
       restaurants = [...named, ...rest];
     }
