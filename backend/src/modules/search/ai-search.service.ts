@@ -159,6 +159,12 @@ export class AiSearchService {
     // Step 1: Extract keywords for DB search
     const params = extractKeywords(query);
 
+    // Step 1.5: Direct name search — always find restaurants matching query by name
+    const nameMatches = await this.searchByName(query);
+    if (nameMatches.length > 0) {
+      this.logger.log(`[AI] Name match: ${nameMatches.length} results (${nameMatches.map(r => r.name).join(', ')})`);
+    }
+
     // Step 2: Find relevant restaurants from DB (strict → relaxed → broad)
     this.logger.log(`[AI] Step 2: searching DB for "${query}", params: ${JSON.stringify(params)}`);
     let restaurants = await this.findRelevantRestaurants(query, params);
@@ -174,6 +180,13 @@ export class AiSearchService {
     if (restaurants.length === 0) {
       restaurants = await this.broadTextSearch(query);
       this.logger.log(`[AI] Broad search: ${restaurants.length} results`);
+    }
+
+    // Merge name matches first (deduplicated)
+    if (nameMatches.length > 0) {
+      const existingIds = new Set(restaurants.map(r => r.id));
+      const newMatches = nameMatches.filter(r => !existingIds.has(r.id));
+      restaurants = [...newMatches, ...restaurants];
     }
 
     // Step 3: Generate LLM recommendation (or fallback)
@@ -309,26 +322,13 @@ export class AiSearchService {
       hasFilters = true;
     }
 
-    // Always also match by restaurant name (so "Krang pizza" finds the restaurant, not just generic pizza places)
-    const nameWords = query
-      .toLowerCase()
-      .replace(/[^\p{L}\p{N}\s]/gu, '')
-      .split(/\s+/)
-      .filter(w => w.length > 2);
-
-    if (nameWords.length > 0 && hasFilters) {
-      // Add name match as OR alternative to existing filters:
-      // Wrap existing WHERE into: (existing_filters) OR (name matches ALL query words)
-      const nameConditions = nameWords.map((_, i) => `r.name ILIKE :nm${i}`).join(' AND ');
-      const nameParams: Record<string, string> = {};
-      nameWords.forEach((w, i) => { nameParams[`nm${i}`] = `%${w}%`; });
-      // Use orWhere wrapped in brackets to keep the logic correct
-      qb.orWhere(`(r.status = :nmStatus AND ${nameConditions})`, { nmStatus: 'published', ...nameParams });
-    }
-
     // If no structured filters matched, do a broad text search
     if (!hasFilters) {
-      const words = nameWords.length > 0 ? nameWords : [];
+      const words = query
+        .toLowerCase()
+        .replace(/[^\p{L}\p{N}\s]/gu, '')
+        .split(/\s+/)
+        .filter(w => w.length > 3);
 
       if (words.length > 0) {
         const textConditions = words.map((_, i) =>
@@ -372,12 +372,13 @@ export class AiSearchService {
 
     // Rank in JS: name match first, then quality score
     const queryLower = query.toLowerCase();
+    const queryWords = queryLower.replace(/[^\p{L}\p{N}\s]/gu, '').split(/\s+/).filter(w => w.length > 2);
     const nameMatchScore = (r: Restaurant) => {
       const name = r.name.toLowerCase();
       if (name === queryLower) return -100; // exact match
       if (name.includes(queryLower) || queryLower.includes(name)) return -50; // partial match
       // Check if all query words appear in name
-      const allMatch = nameWords.every(w => name.includes(w));
+      const allMatch = queryWords.length > 0 && queryWords.every(w => name.includes(w));
       if (allMatch) return -30;
       return 0;
     };
@@ -435,6 +436,41 @@ export class AiSearchService {
       }
     }
 
+    return items.map(r => this.mapToSummary(r));
+  }
+
+  /**
+   * Direct name search: find restaurants whose name matches the query.
+   * Returns results with full relations loaded.
+   */
+  private async searchByName(query: string): Promise<RestaurantSummary[]> {
+    const words = query
+      .toLowerCase()
+      .replace(/[^\p{L}\p{N}\s]/gu, '')
+      .split(/\s+/)
+      .filter(w => w.length > 2);
+
+    if (words.length === 0) return [];
+
+    const qb = this.restaurantRepo
+      .createQueryBuilder('r')
+      .leftJoin('r.city', 'city')
+      .addSelect(['city.name', 'city.slug'])
+      .leftJoinAndSelect('r.cuisines', 'cu')
+      .leftJoinAndSelect('r.features', 'f')
+      .leftJoinAndSelect('r.photos', 'p')
+      .leftJoinAndSelect('r.restaurantDishes', 'rd')
+      .leftJoinAndSelect('rd.dish', 'd')
+      .leftJoinAndSelect('r.workingHours', 'wh')
+      .where('r.status = :status', { status: 'published' });
+
+    // ALL query words must appear in name
+    words.forEach((w, i) => {
+      qb.andWhere(`r.name ILIKE :nw${i}`, { [`nw${i}`]: `%${w}%` });
+    });
+
+    qb.take(5);
+    const items = await qb.getMany();
     return items.map(r => this.mapToSummary(r));
   }
 
