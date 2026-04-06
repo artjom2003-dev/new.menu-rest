@@ -309,13 +309,26 @@ export class AiSearchService {
       hasFilters = true;
     }
 
+    // Always also match by restaurant name (so "Krang pizza" finds the restaurant, not just generic pizza places)
+    const nameWords = query
+      .toLowerCase()
+      .replace(/[^\p{L}\p{N}\s]/gu, '')
+      .split(/\s+/)
+      .filter(w => w.length > 2);
+
+    if (nameWords.length > 0 && hasFilters) {
+      // Add name match as OR alternative to existing filters:
+      // Wrap existing WHERE into: (existing_filters) OR (name matches ALL query words)
+      const nameConditions = nameWords.map((_, i) => `r.name ILIKE :nm${i}`).join(' AND ');
+      const nameParams: Record<string, string> = {};
+      nameWords.forEach((w, i) => { nameParams[`nm${i}`] = `%${w}%`; });
+      // Use orWhere wrapped in brackets to keep the logic correct
+      qb.orWhere(`(r.status = :nmStatus AND ${nameConditions})`, { nmStatus: 'published', ...nameParams });
+    }
+
     // If no structured filters matched, do a broad text search
     if (!hasFilters) {
-      const words = query
-        .toLowerCase()
-        .replace(/[^\p{L}\p{N}\s]/gu, '')
-        .split(/\s+/)
-        .filter(w => w.length > 3);
+      const words = nameWords.length > 0 ? nameWords : [];
 
       if (words.length > 0) {
         const textConditions = words.map((_, i) =>
@@ -357,7 +370,17 @@ export class AiSearchService {
       return true;
     });
 
-    // Rank in JS: quality score (description richness + avg bill) + review count
+    // Rank in JS: name match first, then quality score
+    const queryLower = query.toLowerCase();
+    const nameMatchScore = (r: Restaurant) => {
+      const name = r.name.toLowerCase();
+      if (name === queryLower) return -100; // exact match
+      if (name.includes(queryLower) || queryLower.includes(name)) return -50; // partial match
+      // Check if all query words appear in name
+      const allMatch = nameWords.every(w => name.includes(w));
+      if (allMatch) return -30;
+      return 0;
+    };
     const qualityScore = (r: Restaurant) => {
       let score = 0;
       if (!r.description || r.description.length <= 80) score += 2;
@@ -365,10 +388,10 @@ export class AiSearchService {
       return score;
     };
     items.sort((a, b) => {
-      // If searching for a dish, exact menu match first
-      if (params.dish) {
-        // We'll check dish match after loading dishes below
-      }
+      // Name match always wins
+      const na = nameMatchScore(a);
+      const nb = nameMatchScore(b);
+      if (na !== nb) return na - nb;
       const qa = qualityScore(a);
       const qb2 = qualityScore(b);
       if (qa !== qb2) return qa - qb2;
