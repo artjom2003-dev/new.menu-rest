@@ -878,12 +878,19 @@ ${isBroadSocial ? '11. Запрос общий — после основных 2
 
 Описание ресторана — главный источник информации. Опирайся только на то, что в нём написано.`;
 
-    const userMessage = `Запрос: "${query}"
+    // Detect if user is asking about a specific restaurant (first result is a name match)
+    const firstResult = restaurants[0];
+    const queryClean = query.toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, '').trim();
+    const firstNameClean = firstResult?.name?.toLowerCase() || '';
+    const isSpecificRestaurant = firstResult && (
+      firstNameClean.includes(queryClean) ||
+      queryClean.includes(firstNameClean) ||
+      queryClean.split(/\s+/).filter(w => w.length > 2).every(w => firstNameClean.includes(w) || /ресторан|кафе|бар|меню|отзыв/.test(w))
+    );
 
-Рестораны:
-${restaurantContext}
-
-Напиши рекомендацию.`;
+    const userMessage = isSpecificRestaurant
+      ? `Пользователь спрашивает про конкретный ресторан "${firstResult.name}". Расскажи подробно ИМЕННО про этот ресторан: что это за место, какая кухня, что в меню, особенности, адрес. Используй ТОЛЬКО данные из списка ниже.\n\nРестораны:\n${restaurantContext}`
+      : `Запрос: "${query}"\n\nРестораны:\n${restaurantContext}\n\nНапиши рекомендацию.`;
 
     const messages: { role: string; content: string }[] = [
       { role: 'system', content: systemMessage },
