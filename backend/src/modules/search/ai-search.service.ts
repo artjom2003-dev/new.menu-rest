@@ -888,12 +888,21 @@ ${isBroadSocial ? '11. Запрос общий — после основных 2
       queryClean.split(/\s+/).filter(w => w.length > 2).every(w => firstNameClean.includes(w) || /ресторан|кафе|бар|меню|отзыв/.test(w))
     );
 
-    const userMessage = isSpecificRestaurant
-      ? `Пользователь спрашивает про конкретный ресторан "${firstResult.name}". Расскажи подробно ИМЕННО про этот ресторан: что это за место, какая кухня, что в меню, особенности, адрес. Используй ТОЛЬКО данные из списка ниже.\n\nРестораны:\n${restaurantContext}`
-      : `Запрос: "${query}"\n\nРестораны:\n${restaurantContext}\n\nНапиши рекомендацию.`;
+    let finalSystemMessage = systemMessage;
+    let userMessage: string;
+
+    if (isSpecificRestaurant) {
+      // Override system prompt entirely for specific restaurant queries
+      finalSystemMessage = `Ты — MenuRest AI. Пользователь спрашивает про конкретный ресторан "${firstResult.name}".
+Твоя задача — рассказать ТОЛЬКО про этот ресторан. НЕ рекомендуй другие места. НЕ делай списки. НЕ группируй по кухням.
+Пиши на русском, живым языком, 3-5 предложений. Без эмодзи. Упомяни: что за место, кухня, что попробовать из меню, адрес, особенности. Используй ТОЛЬКО факты из данных ниже.`;
+      userMessage = `Данные о ресторане:\n${restaurantContext.split('\n')[0]}`;
+    } else {
+      userMessage = `Запрос: "${query}"\n\nРестораны:\n${restaurantContext}\n\nНапиши рекомендацию.`;
+    }
 
     const messages: { role: string; content: string }[] = [
-      { role: 'system', content: systemMessage },
+      { role: 'system', content: finalSystemMessage },
     ];
     if (context?.length) {
       for (const msg of context.slice(-6)) {
