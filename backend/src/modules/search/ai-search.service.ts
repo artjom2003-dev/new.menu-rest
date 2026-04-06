@@ -355,8 +355,20 @@ export class AiSearchService {
     if (userLat && userLng && wantsNearby) {
       addDistanceSort(true);
     }
-    // Fetch more rows, then rank in JS (TypeORM's .getMany() can't sort by computed columns)
-    qb.take(50);
+
+    // Prioritize restaurants with actual menu data and rich descriptions
+    if (!userLat || !wantsNearby) {
+      qb.addSelect(
+        `(CASE WHEN EXISTS(SELECT 1 FROM restaurant_dishes rd2 WHERE rd2.restaurant_id = r.id) THEN 1 ELSE 0 END)`,
+        'has_menu',
+      );
+      qb.addSelect(`COALESCE(length(r.description), 0)`, 'desc_length');
+      qb.orderBy('has_menu', 'DESC');
+      qb.addOrderBy('desc_length', 'DESC');
+    }
+
+    // Fetch more rows to ensure niche restaurants aren't lost
+    qb.take(80);
 
     const rawItems = await qb.getMany();
 
