@@ -275,7 +275,9 @@ export class AiSearchService {
         hasFilters = true;
       }
     }
-    if (params.venueType && !relaxed) {
+    // Only apply venueType filter when there's no dish filter — otherwise a restaurant
+    // with venue_type='restaurant' but pizza in menu would be excluded from pizza searches
+    if (params.venueType && !relaxed && !params.dish) {
       qb.andWhere('r.venue_type = :venueType', { venueType: params.venueType });
       hasFilters = true;
     }
