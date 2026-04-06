@@ -1104,6 +1104,10 @@ ${restaurantContext}
       if (dedupedVariants.length > 0) {
         this.logger.log(`[AI-Stream] name search variants: ${dedupedVariants.slice(0, 10).join(', ')}`);
         try {
+          // Score each restaurant by how many variants match — prioritize restaurants matching more words
+          const matchCountExpr = dedupedVariants.map((_, i) =>
+            `CASE WHEN r.name ILIKE :nv${i} THEN 1 ELSE 0 END`
+          ).join(' + ');
           const conditions = dedupedVariants.map((_, i) => `r.name ILIKE :nv${i}`).join(' OR ');
           const nameParams: Record<string, string> = {};
           dedupedVariants.forEach((v, i) => { nameParams[`nv${i}`] = `%${v}%`; });
@@ -1117,14 +1121,14 @@ ${restaurantContext}
             .leftJoinAndSelect('r.restaurantDishes', 'rd')
             .leftJoinAndSelect('rd.dish', 'dish')
             .leftJoinAndSelect('r.workingHours', 'wh')
+            .addSelect(`(${matchCountExpr})`, 'match_score')
             .where(`(${conditions})`, nameParams)
-            .andWhere('r.status = :status', { status: 'published' });
-
-          // Don't filter by city for name search — user may search for a specific restaurant in any city
+            .andWhere('r.status = :status', { status: 'published' })
+            .orderBy('match_score', 'DESC');
 
           const found = await qb.take(5).getMany();
           nameSearchResults = found.map(r => this.mapToSummary(r));
-          this.logger.log(`[AI-Stream] name search found: ${nameSearchResults.length} restaurants`);
+          this.logger.log(`[AI-Stream] name search found: ${nameSearchResults.length} (${nameSearchResults.map(r => r.name).join(', ')})`);
         } catch (e) {
           this.logger.warn(`[AI-Stream] name search failed: ${(e as Error).message}`);
         }
@@ -1239,7 +1243,10 @@ ${restaurantContext}
     restaurants = deduped;
 
     // ─── Quality filter: remove stub/empty restaurants that have nothing useful for AI ───
+    // Never remove restaurants that were found via direct name search
+    const nameMatchIds = new Set(nameSearchResults.map(r => r.id));
     const isStub = (r: RestaurantSummary): boolean => {
+      if (nameMatchIds.has(r.id)) return false; // never filter out name matches
       const descLen = (r.description || '').length;
       const isAutoDesc = descLen < 80 && /— (кафе|ресторан|бар|кофейня|пиццерия|пекарня|столовая|закусочная|кондитерская|буфет)/.test(r.description || '');
       const hasContent = descLen > 80 || r.features.length > 0 || r.dishes.length > 0 || r.cuisines.length > 0;
