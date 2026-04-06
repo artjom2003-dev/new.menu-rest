@@ -196,7 +196,7 @@ const DIETARY_MAP: Record<string, string> = {
   'без молок': 'lactose-free', 'безмолочн': 'lactose-free',
   'халяль': 'halal', 'халял': 'halal',
   'кошер': 'kosher',
-  'зож': 'healthy', 'кбжу': 'healthy', 'правильное питани': 'healthy', 'пп': 'healthy', 'диетическ': 'healthy',
+  'зож': 'healthy', 'кбжу': 'healthy', 'правильное питани': 'healthy', 'пп меню': 'healthy', 'пп-меню': 'healthy', 'пп питан': 'healthy', 'пп рецепт': 'healthy', 'диетическ': 'healthy',
   'без орехов': 'nut-free', 'без арахис': 'nut-free',
   'детское меню': 'kids-menu', 'детским меню': 'kids-menu',
 };
