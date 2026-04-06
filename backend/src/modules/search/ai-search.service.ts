@@ -547,7 +547,7 @@ export class AiSearchService {
       phone: r.phone,
       website: r.website,
       photos: r.photos?.map(p => ({ url: p.url, isCover: p.isCover })) || [],
-      dishes: r.restaurantDishes?.slice(0, 10).map(rd => ({
+      dishes: r.restaurantDishes?.slice(0, 30).map(rd => ({
         name: rd.dish?.name || '',
         price: rd.price,
       })).filter(d => d.name) || [],
@@ -1080,12 +1080,33 @@ ${restaurantContext}
       }
 
       const uniqueVariants = [...new Set(searchVariants.map(v => v.toLowerCase()))].filter(v => v.length >= 3);
-      if (uniqueVariants.length > 0) {
-        this.logger.log(`[AI-Stream] name search variants: ${uniqueVariants.join(', ')}`);
+
+      // Also extract word-level n-grams (2-3 words) for cases like "а в Krang pizza нет пепперони"
+      const stopWords = new Set(['а','в','на','не','нет','да','где','что','как','это','для','или','по','из','до','от','при','над','под','без','так','уже','ещё','еще','ли','бы','же','хочу','хотел','хотела','можно','есть','нету','подскажи','покажи','найди','порекомендуй','какой','какая','какие','какое']);
+      for (const variant of [...uniqueVariants]) {
+        const words = variant.replace(/[^\p{L}\p{N}\s]/gu, '').split(/\s+/).filter(w => w.length >= 3 && !stopWords.has(w));
+        // Generate 2-word and 3-word n-grams
+        for (let n = 2; n <= Math.min(3, words.length); n++) {
+          for (let i = 0; i <= words.length - n; i++) {
+            const ngram = words.slice(i, i + n).join(' ');
+            if (ngram.length >= 5) uniqueVariants.push(ngram);
+          }
+        }
+        // Also add individual long words (likely proper names)
+        for (const w of words) {
+          if (w.length >= 4 && !/^(пицц|пива|вино|суши|кофе|барн|ресторан|кафе|бист|бург)/.test(w)) {
+            uniqueVariants.push(w);
+          }
+        }
+      }
+      const dedupedVariants = [...new Set(uniqueVariants)].filter(v => v.length >= 3);
+
+      if (dedupedVariants.length > 0) {
+        this.logger.log(`[AI-Stream] name search variants: ${dedupedVariants.slice(0, 10).join(', ')}`);
         try {
-          const conditions = uniqueVariants.map((_, i) => `r.name ILIKE :nv${i}`).join(' OR ');
+          const conditions = dedupedVariants.map((_, i) => `r.name ILIKE :nv${i}`).join(' OR ');
           const nameParams: Record<string, string> = {};
-          uniqueVariants.forEach((v, i) => { nameParams[`nv${i}`] = `%${v}%`; });
+          dedupedVariants.forEach((v, i) => { nameParams[`nv${i}`] = `%${v}%`; });
 
           const qb = this.restaurantRepo
             .createQueryBuilder('r')
@@ -1099,12 +1120,9 @@ ${restaurantContext}
             .where(`(${conditions})`, nameParams)
             .andWhere('r.status = :status', { status: 'published' });
 
-          // Apply city filter if we have one
-          if (params.location) {
-            qb.andWhere('city.slug = :citySlug', { citySlug: params.location });
-          }
+          // Don't filter by city for name search — user may search for a specific restaurant in any city
 
-          const found = await qb.take(10).getMany();
+          const found = await qb.take(5).getMany();
           nameSearchResults = found.map(r => this.mapToSummary(r));
           this.logger.log(`[AI-Stream] name search found: ${nameSearchResults.length} restaurants`);
         } catch (e) {
