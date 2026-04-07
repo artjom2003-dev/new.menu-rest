@@ -558,7 +558,7 @@ function RecoCard({ restaurant: r, index }: { restaurant: RecoRestaurant; index:
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 'auto', paddingTop: 8 }}>
             {r.rating ? (
               <span style={{ fontSize: 12, color: 'var(--text2)', fontWeight: 600 }}>
-                ⭐ {r.rating.toFixed(1)}
+                ⭐ {Number(r.rating).toFixed(1)}
               </span>
             ) : <span />}
             <span style={{ fontSize: 11, color: 'var(--text3)' }}>
