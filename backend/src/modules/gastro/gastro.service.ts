@@ -163,8 +163,16 @@ export class GastroService {
     qb.andWhere('r.description IS NOT NULL');
     qb.andWhere('r.description != :empty', { empty: '' });
 
-    // Random offset for variety — count must use the SAME filters as the query
-    const total = await qb.clone().getCount();
+    // Count with the same filters for proper random offset
+    const countQb = this.restaurantRepo
+      .createQueryBuilder('r')
+      .leftJoin('r.city', 'city')
+      .where("r.status = 'published'")
+      .andWhere('r.description IS NOT NULL')
+      .andWhere('r.description != :empty', { empty: '' });
+    if (city) countQb.andWhere('city.slug = :city', { city });
+    const total = await countQb.getCount();
+
     const maxOffset = Math.max(0, total - 500);
     const randomOffset = maxOffset > 0 ? Math.floor(Math.random() * maxOffset) : 0;
     qb.skip(randomOffset);
