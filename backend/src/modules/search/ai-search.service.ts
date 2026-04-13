@@ -575,6 +575,23 @@ export class AiSearchService {
     };
   }
 
+  /** Common descriptive word stems — names composed entirely of these are not unique brands */
+  private static readonly GENERIC_NAME_STEMS = ['уютн', 'вкусн', 'домашн', 'тепл', 'красив', 'хорош', 'лучш', 'нов', 'стар', 'больш', 'маленьк', 'центральн', 'городск', 'место', 'кухн', 'кафе', 'ресторан', 'бар', 'столов', 'закусочн', 'трактир', 'двор', 'дворик', 'террас', 'веранд', 'сад', 'огонь', 'очаг', 'погреб', 'кухня', 'гостин', 'зал'];
+
+  /** Check if restaurant name is composed entirely of common descriptive words */
+  private isGenericName(name: string): boolean {
+    const words = name.toLowerCase().replace(/[^\p{L}\s]/gu, '').split(/\s+/).filter(w => w.length > 2);
+    if (words.length === 0) return false;
+    const genericCount = words.filter(w => AiSearchService.GENERIC_NAME_STEMS.some(s => w.startsWith(s))).length;
+    return genericCount >= words.length;
+  }
+
+  /** Check if query expresses broader search intent (not just looking for a specific place by name) */
+  private hasSearchIntent(query: string, params: ExtractedParams): boolean {
+    return !!(params.occasion || params.atmosphere || params.dish ||
+      /поблизости|рядом|ближайш|недалеко|для\s+(свидани|друзей|семьи|детей|двоих|компании|встречи)|недорог|бюджет|лучш|романтич|уютн\S*\s+\S|с\s+террас|где\s+можно|посоветуй|порекомендуй|подскажи|хочу|ищу/i.test(query));
+  }
+
   /** Haversine distance in km */
   private haversine(lat1: number, lng1: number, lat2: number, lng2: number): number {
     const R = 6371;
@@ -882,7 +899,10 @@ ${isBroadSocial ? '11. Запрос общий — после основных 2
     const firstResult = restaurants[0];
     const queryClean = query.toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, '').trim();
     const firstNameClean = firstResult?.name?.toLowerCase() || '';
-    const isSpecificRestaurant = firstResult && (
+
+    const nameMatchedButGeneric = firstResult && this.isGenericName(firstNameClean) && this.hasSearchIntent(query, params || {} as ExtractedParams);
+
+    const isSpecificRestaurant = firstResult && !nameMatchedButGeneric && (
       firstNameClean.includes(queryClean) ||
       queryClean.includes(firstNameClean) ||
       queryClean.split(/\s+/).filter(w => w.length > 2).every(w => firstNameClean.includes(w) || /ресторан|кафе|бар|меню|отзыв/.test(w))
@@ -1167,15 +1187,29 @@ ${isBroadSocial ? '11. Запрос общий — после основных 2
     }
 
     // Step 2: Find restaurants
-    let restaurants = await this.findRelevantRestaurants(query, params, false, userLat, userLng);
+    let restaurants: RestaurantSummary[];
+    try {
+      restaurants = await this.findRelevantRestaurants(query, params, false, userLat, userLng);
+    } catch (e) {
+      this.logger.error(`[AI-Stream] DB search failed: ${(e as Error).message}`);
+      yield JSON.stringify({ type: 'error', message: 'Сервер перегружен. Попробуйте через несколько секунд.' });
+      yield JSON.stringify({ type: 'done' });
+      return;
+    }
     this.logger.log(`[AI-Stream] strict search: ${restaurants.length} results`);
 
-    // Merge name-search results (higher priority — put first)
+    // Merge name-search results — but deprioritize generic names when user has broader intent
+    const queryHasIntent = this.hasSearchIntent(query, params);
     if (nameSearchResults.length > 0) {
       const existingIds = new Set(restaurants.map(r => r.id));
       for (const nr of nameSearchResults) {
         if (!existingIds.has(nr.id)) {
-          restaurants.unshift(nr);
+          // Generic name + broader intent → add to end, not front
+          if (queryHasIntent && this.isGenericName(nr.name)) {
+            restaurants.push(nr);
+          } else {
+            restaurants.unshift(nr);
+          }
           existingIds.add(nr.id);
         }
       }
@@ -1193,55 +1227,59 @@ ${isBroadSocial ? '11. Запрос общий — после основных 2
       }
     };
 
-    // If dish search found few results, also search for related dishes
-    if (params.dish && restaurants.length < 10 && params.relatedDishes?.length) {
-      for (const related of params.relatedDishes.slice(0, 4)) {
-        const relatedParams = { ...params, dish: related, relatedDishes: undefined };
-        const more = await this.findRelevantRestaurants(query, relatedParams, false, userLat, userLng);
-        mergeResults(restaurants, more);
-        if (restaurants.length >= 15) break;
-      }
-      this.logger.log(`[AI-Stream] after related search: ${restaurants.length} results`);
-    }
-
     // User explicitly asked for a specific city/location — never expand beyond it
     const hasExplicitLocation = !!(params.location || params.rawLocation);
 
-    if (restaurants.length === 0) {
-      restaurants = await this.findRelevantRestaurants(query, params, true, userLat, userLng);
-      this.logger.log(`[AI-Stream] relaxed search: ${restaurants.length} results`);
-    }
-
-    // If still nothing in the requested city — try without dish filter but keep location
-    if (restaurants.length === 0 && hasExplicitLocation && params.dish) {
-      const locationOnlyParams = { ...params, dish: undefined, relatedDishes: undefined, venueType: undefined };
-      restaurants = await this.findRelevantRestaurants(query, locationOnlyParams, true, userLat, userLng);
-      this.logger.log(`[AI-Stream] location-only search: ${restaurants.length} results`);
-    }
-
-    // Try implied venue types from LLM — but respect location
-    if (restaurants.length < 5 && llmVenueTypes.length) {
-      const venueParams = { ...params, dish: undefined, relatedDishes: undefined };
-      for (const vt of llmVenueTypes) {
-        venueParams.venueType = vt;
-        const more = await this.findRelevantRestaurants(query, venueParams, true, userLat, userLng);
-        mergeResults(restaurants, more);
-        if (restaurants.length >= 15) break;
+    try {
+      // If dish search found few results, also search for related dishes
+      if (params.dish && restaurants.length < 10 && params.relatedDishes?.length) {
+        for (const related of params.relatedDishes.slice(0, 4)) {
+          const relatedParams = { ...params, dish: related, relatedDishes: undefined };
+          const more = await this.findRelevantRestaurants(query, relatedParams, false, userLat, userLng);
+          mergeResults(restaurants, more);
+          if (restaurants.length >= 15) break;
+        }
+        this.logger.log(`[AI-Stream] after related search: ${restaurants.length} results`);
       }
-      this.logger.log(`[AI-Stream] after venue-type search: ${restaurants.length} results`);
-    }
+      if (restaurants.length === 0) {
+        restaurants = await this.findRelevantRestaurants(query, params, true, userLat, userLng);
+        this.logger.log(`[AI-Stream] relaxed search: ${restaurants.length} results`);
+      }
 
-    // Broad search fallback — only if no explicit location was requested
-    if (restaurants.length < 5 && extraSearchTerms.length && !hasExplicitLocation) {
-      const extraQuery = extraSearchTerms.join(' ');
-      const more = await this.broadTextSearch(extraQuery);
-      mergeResults(restaurants, more);
-      this.logger.log(`[AI-Stream] after extra-terms search: ${restaurants.length} results`);
-    }
+      // If still nothing in the requested city — try without dish filter but keep location
+      if (restaurants.length === 0 && hasExplicitLocation && params.dish) {
+        const locationOnlyParams = { ...params, dish: undefined, relatedDishes: undefined, venueType: undefined };
+        restaurants = await this.findRelevantRestaurants(query, locationOnlyParams, true, userLat, userLng);
+        this.logger.log(`[AI-Stream] location-only search: ${restaurants.length} results`);
+      }
 
-    if (restaurants.length === 0 && !hasExplicitLocation) {
-      restaurants = await this.broadTextSearch(query);
-      this.logger.log(`[AI-Stream] broad search: ${restaurants.length} results`);
+      // Try implied venue types from LLM — but respect location
+      if (restaurants.length < 5 && llmVenueTypes.length) {
+        const venueParams = { ...params, dish: undefined, relatedDishes: undefined };
+        for (const vt of llmVenueTypes) {
+          venueParams.venueType = vt;
+          const more = await this.findRelevantRestaurants(query, venueParams, true, userLat, userLng);
+          mergeResults(restaurants, more);
+          if (restaurants.length >= 15) break;
+        }
+        this.logger.log(`[AI-Stream] after venue-type search: ${restaurants.length} results`);
+      }
+
+      // Broad search fallback — only if no explicit location was requested
+      if (restaurants.length < 5 && extraSearchTerms.length && !hasExplicitLocation) {
+        const extraQuery = extraSearchTerms.join(' ');
+        const more = await this.broadTextSearch(extraQuery);
+        mergeResults(restaurants, more);
+        this.logger.log(`[AI-Stream] after extra-terms search: ${restaurants.length} results`);
+      }
+
+      if (restaurants.length === 0 && !hasExplicitLocation) {
+        restaurants = await this.broadTextSearch(query);
+        this.logger.log(`[AI-Stream] broad search: ${restaurants.length} results`);
+      }
+    } catch (e) {
+      this.logger.error(`[AI-Stream] fallback search failed: ${(e as Error).message}`);
+      // Continue with whatever restaurants we already found
     }
 
     // Only sort by distance and show km when user explicitly asks for nearby/proximity/distance
@@ -1293,7 +1331,8 @@ ${isBroadSocial ? '11. Запрос общий — после основных 2
       this.logger.log(`[AI-Stream] quality filter skipped: only ${quality.length}/${beforeFilter} quality results, keeping all`);
     }
 
-    // Re-sort: name-matched restaurants always come first, ranked by how many query words match
+    // Re-sort: name-matched restaurants come first — but only if they have unique (non-generic) names
+    // When user has broader intent (occasion/atmosphere), generic names like "Уютное место" stay in normal order
     if (nameMatchIds.size > 0) {
       const _stop = new Set(['а','в','на','не','нет','да','где','что','как','это','для','или','по','хочу','есть','нету']);
       const queryWords = query.toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, '').split(/\s+/).filter(w => w.length > 2 && !_stop.has(w));
@@ -1301,8 +1340,10 @@ ${isBroadSocial ? '11. Запрос общий — после основных 2
         const name = r.name.toLowerCase();
         return queryWords.filter(w => name.includes(w)).length;
       };
-      const named = restaurants.filter(r => nameMatchIds.has(r.id)).sort((a, b) => nameScore(b) - nameScore(a));
-      const rest = restaurants.filter(r => !nameMatchIds.has(r.id));
+      // Only prioritize non-generic name matches when user has broader intent
+      const shouldPrioritize = (r: RestaurantSummary) => nameMatchIds.has(r.id) && !(queryHasIntent && this.isGenericName(r.name));
+      const named = restaurants.filter(r => shouldPrioritize(r)).sort((a, b) => nameScore(b) - nameScore(a));
+      const rest = restaurants.filter(r => !shouldPrioritize(r));
       restaurants = [...named, ...rest];
     }
 
@@ -1344,7 +1385,7 @@ ${isBroadSocial ? '11. Запрос общий — после основных 2
 
     try {
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 90000);
+      const timeout = setTimeout(() => controller.abort(), 45000);
       const response = await fetch(`${this.ollamaUrl}/api/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

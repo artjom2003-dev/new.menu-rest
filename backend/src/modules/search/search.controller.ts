@@ -55,7 +55,8 @@ export class SearchController {
       }
     } catch (err) {
       console.error('[AI-Stream] Error:', (err as Error).message, (err as Error).stack);
-      res.write(`data: ${JSON.stringify({ type: 'error', message: 'Stream failed' })}\n\n`);
+      res.write(`data: ${JSON.stringify({ type: 'error', message: 'Сервер временно перегружен. Попробуйте ещё раз через несколько секунд.' })}\n\n`);
+      res.write(`data: ${JSON.stringify({ type: 'done' })}\n\n`);
     }
 
     res.end();

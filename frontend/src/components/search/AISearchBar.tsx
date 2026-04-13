@@ -349,6 +349,7 @@ export function AISearchBar() {
             const ev = JSON.parse(line.slice(6));
             if (ev.type === 'restaurants') { foundR = ev.restaurants || []; setStreamRestaurants(foundR); }
             else if (ev.type === 'token') { accText += ev.text; setStreamText(accText); }
+            else if (ev.type === 'error') { accText = ev.message || 'Произошла ошибка. Попробуйте ещё раз.'; setStreamText(accText); }
           } catch (_e) {}
         }
       }
