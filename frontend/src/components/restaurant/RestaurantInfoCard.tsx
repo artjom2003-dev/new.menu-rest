@@ -371,7 +371,7 @@ export function RestaurantInfoCard({ restaurant }: { restaurant: Restaurant }) {
           {/* Map */}
           {restaurant.lat && restaurant.lng && (
             <div className="mt-3">
-              <Suspense fallback={<div className="w-full rounded-[12px] border animate-pulse" style={{ height: 160, background: 'var(--bg3)', borderColor: 'var(--card-border)' }} />}>
+              <Suspense fallback={<div className="w-full rounded-[16px] border animate-pulse" style={{ aspectRatio: '16/9', minHeight: 180, maxHeight: 280, background: 'var(--bg3)', borderColor: 'var(--card-border)' }} />}>
                 <RestaurantMap lat={restaurant.lat} lng={restaurant.lng} name={displayName} address={fullAddress} />
               </Suspense>
             </div>
