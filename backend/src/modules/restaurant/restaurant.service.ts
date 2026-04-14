@@ -130,9 +130,9 @@ export class RestaurantService implements OnModuleInit {
       const countQb = qb.clone();
       const total = await countQb.getCount();
 
-      // Get raw results with distance, sorted
+      // Get raw results with distance, sorted (DISTINCT to avoid JOIN duplicates)
       const rawQb = qb.clone()
-        .select('r.id', 'id')
+        .select('DISTINCT r.id', 'id')
         .addSelect(distanceExpr, 'distance_km')
         .orderBy(distanceExpr, 'ASC')
         .offset((page - 1) * limit)
