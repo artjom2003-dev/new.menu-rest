@@ -162,7 +162,8 @@ function RestaurantsPageInner() {
   const [showReco, setShowReco] = useState(false);
 
   // Use city from URL, or fallback to saved city from CityStore
-  const effectiveCity = search ? undefined : (city || citySlug || undefined);
+  // When nearby (lat/lng) is active, skip city fallback so geo-filter works across city boundaries
+  const effectiveCity = search ? undefined : (city || (lat ? undefined : citySlug) || undefined);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
