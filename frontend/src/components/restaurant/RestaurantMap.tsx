@@ -104,9 +104,8 @@ export function RestaurantMap({ lat, lng, name, address }: Props) {
   }, [lat, lng, name, address]);
 
   const openInMaps = () => {
-    // Try Yandex Maps for Russian users, Google Maps as universal fallback
-    const yandexUrl = `https://yandex.ru/maps/?pt=${lng},${lat}&z=16&l=map&text=${encodeURIComponent(name)}`;
-    window.open(yandexUrl, '_blank', 'noopener');
+    const osmUrl = `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}#map=16/${lat}/${lng}`;
+    window.open(osmUrl, '_blank', 'noopener');
   };
 
   return (
@@ -144,7 +143,7 @@ export function RestaurantMap({ lat, lng, name, address }: Props) {
           <polyline points="15 3 21 3 21 9" />
           <line x1="10" y1="14" x2="21" y2="3" />
         </svg>
-        Открыть в Яндекс Картах
+        Открыть на карте
       </button>
     </div>
   );
