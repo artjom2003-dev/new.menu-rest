@@ -103,11 +103,6 @@ export function RestaurantMap({ lat, lng, name, address }: Props) {
     };
   }, [lat, lng, name, address]);
 
-  const openInMaps = () => {
-    const osmUrl = `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}#map=16/${lat}/${lng}`;
-    window.open(osmUrl, '_blank', 'noopener');
-  };
-
   return (
     <div className="relative">
       <div
@@ -126,25 +121,6 @@ export function RestaurantMap({ lat, lng, name, address }: Props) {
           Нажмите на карту для масштабирования
         </div>
       )}
-
-      {/* Open in maps button */}
-      <button
-        onClick={openInMaps}
-        className="absolute bottom-2.5 left-2.5 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-semibold cursor-pointer border-none transition-all hover:scale-105"
-        style={{
-          background: 'rgba(255,255,255,0.92)',
-          color: '#333',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-          backdropFilter: 'blur(4px)',
-        }}
-      >
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-          <polyline points="15 3 21 3 21 9" />
-          <line x1="10" y1="14" x2="21" y2="3" />
-        </svg>
-        Открыть на карте
-      </button>
     </div>
   );
 }
