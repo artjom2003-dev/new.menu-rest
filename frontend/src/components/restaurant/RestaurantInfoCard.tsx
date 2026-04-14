@@ -192,7 +192,7 @@ function WeekSchedule({ workingHours, closedLabel }: { workingHours: Restaurant[
         <span className="text-[10px] text-[var(--text3)] ml-1">{open ? '▲' : '▼'}</span>
       </button>
       {open && (
-        <div className="absolute left-0 top-full mt-1.5 z-50 p-3 rounded-[12px] border shadow-lg min-w-[180px]"
+        <div className="absolute left-0 bottom-full mb-1.5 z-50 p-3 rounded-[12px] border shadow-lg min-w-[180px]"
           style={{ background: 'var(--bg2)', borderColor: 'var(--card-border)', boxShadow: '0 8px 32px rgba(0,0,0,0.18)' }}>
           <div className="flex flex-col gap-1">
             {DAY_NAMES.map((day, i) => {
