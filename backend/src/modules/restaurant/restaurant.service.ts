@@ -122,14 +122,16 @@ export class RestaurantService implements OnModuleInit {
     if (lat && lng) {
       const distanceExpr = `(6371 * acos(LEAST(1.0, cos(radians(:lat)) * cos(radians(r.lat)) * cos(radians(r.lng) - radians(:lng)) + sin(radians(:lat)) * sin(radians(r.lat)))))`;
       qb.addSelect(`${distanceExpr}`, 'distance_km');
-      qb.orderBy(distanceExpr, 'ASC');
+      qb.orderBy('distance_km', 'ASC');
+
+      const countQb = qb.clone().select('COUNT(DISTINCT r.id)', 'cnt');
+      const countResult = await countQb.getRawOne();
+      const total = parseInt(countResult?.cnt || '0', 10);
 
       const { entities, raw } = await qb
         .skip((page - 1) * limit)
         .take(limit)
         .getRawAndEntities();
-
-      const total = await qb.getCount();
 
       const distanceMap = new Map<number, number>();
       for (const r of raw) {
