@@ -120,28 +120,54 @@ export class RestaurantService implements OnModuleInit {
     }
 
     if (lat && lng) {
-      const distanceExpr = `(6371 * acos(LEAST(1.0, cos(radians(:lat)) * cos(radians(r.lat)) * cos(radians(r.lng) - radians(:lng)) + sin(radians(:lat)) * sin(radians(r.lat)))))`;
-      qb.addSelect(`${distanceExpr}`, 'distance_km');
-      qb.orderBy('distance_km', 'ASC');
+      // Inline validated numbers to avoid TypeORM alias parsing issues
+      const safeLat = Number(lat);
+      const safeLng = Number(lng);
+      const distanceExpr = `(6371 * acos(LEAST(1.0, cos(radians(${safeLat})) * cos(radians(r.lat)) * cos(radians(r.lng) - radians(${safeLng})) + sin(radians(${safeLat})) * sin(radians(r.lat)))))`;
+      qb.addSelect(distanceExpr, 'distance_km');
 
-      const countQb = qb.clone().select('COUNT(DISTINCT r.id)', 'cnt');
-      const countResult = await countQb.getRawOne();
-      const total = parseInt(countResult?.cnt || '0', 10);
+      // Get total count (without pagination/ordering)
+      const countQb = qb.clone();
+      const total = await countQb.getCount();
 
-      const { entities, raw } = await qb
-        .skip((page - 1) * limit)
-        .take(limit)
-        .getRawAndEntities();
+      // Get raw results with distance, sorted
+      const rawQb = qb.clone()
+        .select('r.id', 'id')
+        .addSelect(distanceExpr, 'distance_km')
+        .orderBy(distanceExpr, 'ASC')
+        .offset((page - 1) * limit)
+        .limit(limit);
 
-      const distanceMap = new Map<number, number>();
-      for (const r of raw) {
-        distanceMap.set(r.r_id, Math.round(parseFloat(r.distance_km) * 10) / 10);
+      const rawResults: Array<{ id: number; distance_km: string }> = await rawQb.getRawMany();
+
+      if (!rawResults.length) {
+        return { items: [], meta: { total, page, limit, pages: Math.ceil(total / limit) } };
       }
 
-      const items = entities.map(e => ({
-        ...this.sanitize(e),
-        distanceKm: distanceMap.get(e.id) ?? undefined,
-      }));
+      const orderedIds = rawResults.map(r => r.id);
+      const distanceMap = new Map<number, number>();
+      for (const r of rawResults) {
+        distanceMap.set(r.id, Math.round(parseFloat(r.distance_km) * 10) / 10);
+      }
+
+      // Fetch full entities by IDs
+      const entities = await this.restaurantRepo
+        .createQueryBuilder('r')
+        .leftJoinAndSelect('r.cuisines', 'c')
+        .leftJoinAndSelect('r.city', 'city')
+        .leftJoinAndSelect('r.features', 'features')
+        .whereInIds(orderedIds)
+        .getMany();
+
+      // Reorder to match distance sort
+      const entityMap = new Map(entities.map(e => [e.id, e]));
+      const items = orderedIds
+        .map(id => entityMap.get(id))
+        .filter(Boolean)
+        .map(e => ({
+          ...this.sanitize(e!),
+          distanceKm: distanceMap.get(e!.id) ?? undefined,
+        }));
 
       return {
         items,
