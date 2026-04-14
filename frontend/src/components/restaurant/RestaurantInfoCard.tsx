@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, lazy, Suspense } from 'react';
+import { useState, useCallback, useRef, useEffect, lazy, Suspense } from 'react';
 import Image from 'next/image';
 import { useTranslations, useLocale } from 'next-intl';
 import { useAuthStore } from '@/stores/auth.store';
@@ -168,30 +168,44 @@ function getTodayHours(workingHours?: Restaurant['workingHours'], closedLabel?: 
 
 function WeekSchedule({ workingHours, closedLabel }: { workingHours: Restaurant['workingHours']; closedLabel: string }) {
   const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
   const today = (new Date().getDay() + 6) % 7;
   const todayText = getTodayHours(workingHours, closedLabel);
+
+  // Close on click outside
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
 
   if (!workingHours?.length) return null;
 
   return (
-    <div>
+    <div className="relative" ref={ref}>
       <button onClick={() => setOpen(!open)}
         className="flex items-center gap-1 text-[12px] font-semibold text-[var(--text)] cursor-pointer bg-transparent border-none p-0 font-sans">
         {todayText || closedLabel}
         <span className="text-[10px] text-[var(--text3)] ml-1">{open ? '▲' : '▼'}</span>
       </button>
       {open && (
-        <div className="mt-1.5 flex flex-col gap-0.5">
-          {DAY_NAMES.map((day, i) => {
-            const wh = workingHours.find(h => h.dayOfWeek === i);
-            const isToday = i === today;
-            return (
-              <div key={i} className="flex justify-between text-[11px] gap-3" style={{ color: isToday ? 'var(--accent)' : 'var(--text3)' }}>
-                <span className="font-medium">{day}</span>
-                <span>{wh?.isClosed ? closedLabel : wh ? `${wh.openTime?.slice(0, 5)} – ${wh.closeTime?.slice(0, 5)}` : '—'}</span>
-              </div>
-            );
-          })}
+        <div className="absolute left-0 top-full mt-1.5 z-50 p-3 rounded-[12px] border shadow-lg min-w-[180px]"
+          style={{ background: 'var(--bg2)', borderColor: 'var(--card-border)', boxShadow: '0 8px 32px rgba(0,0,0,0.18)' }}>
+          <div className="flex flex-col gap-1">
+            {DAY_NAMES.map((day, i) => {
+              const wh = workingHours.find(h => h.dayOfWeek === i);
+              const isToday = i === today;
+              return (
+                <div key={i} className="flex justify-between text-[11px] gap-4" style={{ color: isToday ? 'var(--accent)' : 'var(--text3)', fontWeight: isToday ? 600 : 400 }}>
+                  <span>{day}</span>
+                  <span>{wh?.isClosed ? closedLabel : wh ? `${wh.openTime?.slice(0, 5)} – ${wh.closeTime?.slice(0, 5)}` : '—'}</span>
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
     </div>
