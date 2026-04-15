@@ -31,6 +31,7 @@ export function Footer() {
         { href: '/help', label: t('help') },
         { href: '/contacts', label: t('contacts') },
         { href: '/privacy', label: t('privacy') },
+        { href: '/consent', label: t('consent') },
         { href: '/terms', label: t('terms') },
       ],
     },

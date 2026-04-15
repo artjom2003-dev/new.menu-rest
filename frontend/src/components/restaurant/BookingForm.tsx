@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { useAuthStore } from '@/stores/auth.store';
 import { bookingApi } from '@/lib/api';
 import { AuthModal } from '@/components/auth/AuthModal';
@@ -40,6 +41,7 @@ export function BookingForm({ restaurantId, restaurantName, workingHours, open, 
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
+  const [consent, setConsent] = useState(false);
   const [form, setForm] = useState({
     bookingDate: '',
     bookingTime: '19:00',
@@ -189,9 +191,25 @@ export function BookingForm({ restaurantId, restaurantName, workingHours, open, 
                   style={{ background: 'var(--bg3)', borderColor: 'var(--card-border)' }} />
               </div>
 
+              {/* Согласие на обработку ПД (152-ФЗ) */}
+              <label className="flex items-start gap-2.5 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={consent}
+                  onChange={(e) => setConsent(e.target.checked)}
+                  className="mt-0.5 w-4 h-4 shrink-0 accent-[var(--accent)]"
+                />
+                <span className="text-[11px] text-[var(--text3)] leading-[1.5]">
+                  {t('consentText')}{' '}
+                  <Link href="/consent" target="_blank" className="text-[var(--accent)] underline">
+                    {t('consentLink')}
+                  </Link>
+                </span>
+              </label>
+
               {error && <p className="text-[12px] text-red-400">{error}</p>}
 
-              <button type="submit" disabled={loading}
+              <button type="submit" disabled={loading || !consent}
                 className="w-full py-3.5 rounded-full text-[13px] font-semibold text-white border-none cursor-pointer transition-all disabled:opacity-60"
                 style={{ background: 'var(--accent)', boxShadow: '0 0 20px var(--accent-glow)' }}>
                 {loading ? t('submitting') : t('submit')}

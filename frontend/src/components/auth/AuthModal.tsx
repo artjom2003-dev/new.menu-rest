@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useAuthStore } from '@/stores/auth.store';
 import { authApi } from '@/lib/api';
 import { useTranslations } from 'next-intl';
@@ -23,6 +24,7 @@ export function AuthModal({ open, onClose }: AuthModalProps) {
   const { setUser } = useAuthStore();
 
   const [form, setForm] = useState({ name: '', email: '', password: '', code: '', newPassword: '' });
+  const [consent, setConsent] = useState(false);
 
   // Подхватываем реферальный код из URL (?ref=XXXX)
   const [refCode, setRefCode] = useState('');
@@ -208,12 +210,34 @@ export function AuthModal({ open, onClose }: AuthModalProps) {
             { minLength: 8, passwordToggle: [showNewPassword, setShowNewPassword] },
           )}
 
+          {/* Согласие на обработку ПД — только регистрация (152-ФЗ) */}
+          {mode === 'register' && (
+            <label className="flex items-start gap-2.5 cursor-pointer mb-2 mt-1">
+              <input
+                type="checkbox"
+                checked={consent}
+                onChange={(e) => setConsent(e.target.checked)}
+                className="mt-0.5 w-4 h-4 shrink-0 accent-[var(--accent)]"
+              />
+              <span className="text-[11px] text-[var(--text3)] leading-[1.5]">
+                {t('consentText')}{' '}
+                <Link href="/privacy" target="_blank" className="text-[var(--accent)] underline">
+                  {t('consentPrivacy')}
+                </Link>{' '}
+                {t('consentAnd')}{' '}
+                <Link href="/consent" target="_blank" className="text-[var(--accent)] underline">
+                  {t('consentProcessing')}
+                </Link>
+              </span>
+            </label>
+          )}
+
           {error && <p className="text-[12px] text-red-400 mb-3">{error}</p>}
           {success && <p className="text-[12px] text-green-400 mb-3">{success}</p>}
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || (mode === 'register' && !consent)}
             className="w-full flex items-center justify-center py-3.5 rounded-full text-[13px] font-semibold text-white border-none cursor-pointer transition-all mt-1.5 disabled:opacity-60"
             style={{ background: 'var(--accent)', boxShadow: '0 0 20px var(--accent-glow)' }}>
             {loading ? '...' : buttonLabels[mode]}

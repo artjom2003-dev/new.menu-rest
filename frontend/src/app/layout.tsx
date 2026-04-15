@@ -7,6 +7,7 @@ import { Footer } from '@/components/layout/Footer';
 import { BudgetCalcPanel } from '@/components/budget/BudgetCalcPanel';
 import { ChatWidget } from '@/components/chat/ChatWidget';
 import { ToastProvider } from '@/components/ui/Toast';
+import { CookieBanner } from '@/components/ui/CookieBanner';
 import '../styles/globals.css';
 
 export const viewport: Viewport = {
@@ -72,6 +73,7 @@ export default async function RootLayout({
               <BudgetCalcPanel />
               <ChatWidget />
               <Footer />
+              <CookieBanner />
             </ToastProvider>
           </ThemeProvider>
         </NextIntlClientProvider>

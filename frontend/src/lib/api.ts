@@ -25,13 +25,20 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Handle 401 → refresh or redirect
+// Handle 401 → clear all auth state and redirect (skip auth endpoints like login/register)
 api.interceptors.response.use(
   (res) => res,
   async (error) => {
-    if (error.response?.status === 401) {
+    const url = error.config?.url || '';
+    const isAuthEndpoint = url.includes('/auth/login') || url.includes('/auth/register')
+      || url.includes('/auth/forgot-password') || url.includes('/auth/reset-password');
+
+    if (error.response?.status === 401 && !isAuthEndpoint) {
       if (typeof window !== 'undefined') {
+        // Clear all token storage: Zustand persisted state, legacy key, cookie
+        localStorage.removeItem('menurest-auth');
         localStorage.removeItem('access_token');
+        document.cookie = 'access_token=; path=/; max-age=0';
         if (!window.location.pathname.startsWith('/login')) {
           window.location.href = '/login';
         }

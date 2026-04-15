@@ -94,6 +94,7 @@
     "help": "Help",
     "contacts": "Contacts",
     "privacy": "Privacy policy",
+    "consent": "Data processing",
     "terms": "Terms of service",
     "tagline": "Smart restaurant search by dishes, allergens and budget. AI search, nutrition, booking.",
     "rights": "All rights reserved.",
@@ -137,7 +138,11 @@
     "register": "Sign Up",
     "hasAccount": "Already have an account?",
     "login": "Sign In",
-    "backToLogin": "Back to sign in"
+    "backToLogin": "Back to sign in",
+    "consentText": "I consent to the processing of my personal data in accordance with the",
+    "consentPrivacy": "Privacy Policy",
+    "consentAnd": "and",
+    "consentProcessing": "Personal Data Processing Agreement"
   },
   "booking": {
     "title": "Book a Table",
@@ -157,7 +162,9 @@
     "submitting": "Booking...",
     "submit": "Book a Table",
     "dayClosed": "The restaurant is closed on this day",
-    "outsideHours": "Selected time is outside working hours"
+    "outsideHours": "Selected time is outside working hours",
+    "consentText": "I consent to the processing of my personal data (name, phone) for booking purposes in accordance with the",
+    "consentLink": "Personal Data Processing Agreement"
   },
   "review": {
     "title": "Reviews",

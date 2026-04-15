@@ -43,7 +43,7 @@ export const useAuthStore = create<AuthState>()(
 
       setUser: (user, accessToken) => {
         localStorage.setItem('access_token', accessToken);
-        document.cookie = `access_token=${accessToken}; path=/; max-age=${60 * 60 * 24 * 30}; SameSite=Lax`;
+        document.cookie = `access_token=${accessToken}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
         set({ user, accessToken, isLoggedIn: true });
       },
 
@@ -70,7 +70,7 @@ export const useAuthStore = create<AuthState>()(
           state._hydrated = true;
           if (state.accessToken) {
             localStorage.setItem('access_token', state.accessToken);
-            document.cookie = `access_token=${state.accessToken}; path=/; max-age=${60 * 60 * 24 * 30}; SameSite=Lax`;
+            document.cookie = `access_token=${state.accessToken}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
           }
         }
       },
