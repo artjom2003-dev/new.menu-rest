@@ -35,6 +35,7 @@ export class ChatService {
       conversation = this.conversationRepo.create({
         participant1Id: p1,
         participant2Id: p2,
+        createdById: userId1,
       });
       conversation = await this.conversationRepo.save(conversation);
       conversation = await this.conversationRepo.findOne({
@@ -84,6 +85,8 @@ export class ChatService {
           unreadCount,
           lastMessageAt: conv.lastMessageAt,
           createdAt: conv.createdAt,
+          name: conv.name,
+          createdById: conv.createdById,
         };
       }),
     );
@@ -172,6 +175,16 @@ export class ChatService {
       .andWhere('m.read_at IS NULL')
       .getCount();
     return { count };
+  }
+
+  async renameConversation(conversationId: number, userId: number, name: string) {
+    const conversation = await this.conversationRepo.findOneBy({ id: conversationId });
+    if (!conversation) throw new NotFoundException('Диалог не найден');
+    if (conversation.createdById !== userId) {
+      throw new ForbiddenException('Только создатель может переименовать диалог');
+    }
+    conversation.name = name?.trim() || null;
+    return this.conversationRepo.save(conversation);
   }
 
   getOtherUserId(conversation: Conversation, userId: number): number {

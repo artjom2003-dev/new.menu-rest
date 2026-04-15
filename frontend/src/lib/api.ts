@@ -211,6 +211,20 @@ export const chatApi = {
     api.post(`/chat/conversations/${convId}/messages`, { text }),
   markRead: (convId: number) => api.patch(`/chat/conversations/${convId}/read`),
   getUnreadCount: () => api.get('/chat/unread-count'),
+  renameConversation: (convId: number, name: string) =>
+    api.patch(`/chat/conversations/${convId}/name`, { name }),
+};
+
+// ─── Companions (Компания) ──────────────────────────────
+export const companionApi = {
+  getMyCompanions: () => api.get('/companions'),
+  getPending: () => api.get('/companions/pending'),
+  getStatus: (userId: number) => api.get(`/companions/status/${userId}`),
+  invite: (userId: number) => api.post('/companions/invite', { userId }),
+  accept: (id: number) => api.patch(`/companions/${id}/accept`),
+  decline: (id: number) => api.patch(`/companions/${id}/decline`),
+  remove: (id: number) => api.delete(`/companions/${id}`),
+  search: (q: string) => api.get('/companions/search', { params: { q } }),
 };
 
 // ─── Budget Calculator ───────────────────────────────────

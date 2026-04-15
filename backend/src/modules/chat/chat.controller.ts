@@ -59,6 +59,16 @@ export class ChatController {
     return this.service.markRead(conversationId, userId);
   }
 
+  @Patch('conversations/:id/name')
+  @ApiOperation({ summary: 'Переименовать диалог (только создатель)' })
+  renameConversation(
+    @Param('id', ParseIntPipe) conversationId: number,
+    @CurrentUser('id') userId: number,
+    @Body('name') name: string,
+  ) {
+    return this.service.renameConversation(conversationId, userId, name);
+  }
+
   @Get('unread-count')
   @ApiOperation({ summary: 'Кол-во непрочитанных сообщений' })
   getUnreadCount(@CurrentUser('id') userId: number) {

@@ -215,7 +215,17 @@
     "quickLetsGo": "Let's go together?",
     "quickHello": "Hello!",
     "quickKnowPlaces": "Know any good places?",
-    "quickRecommend": "What do you recommend?"
+    "quickRecommend": "What do you recommend?",
+    "company": "Companions",
+    "searchUsers": "Search by name...",
+    "noResults": "No one found",
+    "invite": "Invite",
+    "pendingInvites": "Invitations",
+    "noCompanions": "No companions yet.\nSearch above to find people!",
+    "writeMessage": "Message",
+    "removeCompanion": "Remove",
+    "rename": "Rename",
+    "renamePlaceholder": "Conversation name..."
   },
   "budget": {
     "title": "Enough for dinner?",

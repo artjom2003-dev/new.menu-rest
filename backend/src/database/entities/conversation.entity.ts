@@ -27,6 +27,12 @@ export class Conversation {
   @Column({ name: 'last_message_at', type: 'timestamptz', nullable: true })
   lastMessageAt: Date | null;
 
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  name: string | null;
+
+  @Column({ name: 'created_by_id', type: 'int', nullable: true })
+  createdById: number | null;
+
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;
 }

@@ -19,6 +19,7 @@ import { BudgetCalcModule } from '@modules/budget-calc/budget-calc.module';
 import { RestaurantRequestModule } from '@modules/restaurant-request/restaurant-request.module';
 import { ChatModule } from '@modules/chat/chat.module';
 import { GastroModule } from '@modules/gastro/gastro.module';
+import { CompanionModule } from '@modules/companion/companion.module';
 import { TablesModule } from '@modules/tables/tables.module';
 import { StaffModule } from '@modules/staff/staff.module';
 import { OrdersModule } from '@modules/orders/orders.module';
@@ -89,6 +90,7 @@ import { CommonModule } from '@common/common.module';
     RestaurantRequestModule,
     ChatModule,
     GastroModule,
+    CompanionModule,
     TablesModule,
     StaffModule,
     OrdersModule,

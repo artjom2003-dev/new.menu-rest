@@ -2,6 +2,7 @@ export { Allergen } from './allergen.entity';
 export { Article } from './article.entity';
 export { Booking } from './booking.entity';
 export { City } from './city.entity';
+export { Companion } from './companion.entity';
 export { Cuisine } from './cuisine.entity';
 export { Dish } from './dish.entity';
 export { District } from './district.entity';

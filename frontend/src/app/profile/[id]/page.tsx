@@ -2,7 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { userApi } from '@/lib/api';
+import { userApi, companionApi } from '@/lib/api';
+import { useAuthStore } from '@/stores/auth.store';
+import { useChatStore } from '@/stores/chat.store';
 
 interface PublicProfile {
   id: number;
@@ -28,8 +30,12 @@ const LEVEL_META: Record<string, { label: string; color: string; gradient: strin
 export default function PublicProfilePage() {
   const params = useParams();
   const router = useRouter();
+  const { isLoggedIn, user: me } = useAuthStore();
+  const openChat = useChatStore(s => s.open);
   const [profile, setProfile] = useState<PublicProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [compStatus, setCompStatus] = useState<{ status: string; id: number | null; direction?: string }>({ status: 'none', id: null });
+  const [inviting, setInviting] = useState(false);
 
   useEffect(() => {
     const id = Number(params.id);
@@ -38,7 +44,28 @@ export default function PublicProfilePage() {
       .then(r => setProfile(r.data))
       .catch(() => setProfile(null))
       .finally(() => setLoading(false));
-  }, [params.id]);
+    if (isLoggedIn) {
+      companionApi.getStatus(id).then(r => setCompStatus(r.data)).catch(() => {});
+    }
+  }, [params.id, isLoggedIn]);
+
+  const handleInvite = async () => {
+    if (!profile) return;
+    setInviting(true);
+    try {
+      await companionApi.invite(profile.id);
+      setCompStatus({ status: 'pending', id: null, direction: 'sent' });
+    } catch {}
+    setInviting(false);
+  };
+
+  const handleAccept = async () => {
+    if (!compStatus.id) return;
+    try {
+      await companionApi.accept(compStatus.id);
+      setCompStatus({ ...compStatus, status: 'accepted' });
+    } catch {}
+  };
 
   if (loading) {
     return (
@@ -144,6 +171,39 @@ export default function PublicProfilePage() {
               <span style={{ width: 8, height: 8, borderRadius: '50%', background: level.color, display: 'inline-block' }} />
               {level.label}
             </div>
+
+            {/* Actions: invite to company + message */}
+            {isLoggedIn && me?.id !== profile.id && (
+              <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginBottom: 20 }}>
+                {compStatus.status === 'none' && (
+                  <button onClick={handleInvite} disabled={inviting}
+                    style={{ padding: '8px 18px', borderRadius: 12, border: 'none', background: 'var(--accent)', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 6, opacity: inviting ? 0.6 : 1 }}>
+                    🍽️ Пригласить в компанию
+                  </button>
+                )}
+                {compStatus.status === 'pending' && compStatus.direction === 'sent' && (
+                  <span style={{ padding: '8px 18px', borderRadius: 12, border: '1px solid var(--card-border)', background: 'var(--bg3)', color: 'var(--text3)', fontSize: 13, fontWeight: 500 }}>
+                    Приглашение отправлено
+                  </span>
+                )}
+                {compStatus.status === 'pending' && compStatus.direction === 'received' && (
+                  <button onClick={handleAccept}
+                    style={{ padding: '8px 18px', borderRadius: 12, border: 'none', background: 'rgba(20,184,166,0.15)', color: 'var(--teal)', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+                    Принять приглашение
+                  </button>
+                )}
+                {compStatus.status === 'accepted' && (
+                  <span style={{ padding: '8px 18px', borderRadius: 12, border: '1px solid rgba(20,184,166,0.2)', background: 'rgba(20,184,166,0.08)', color: 'var(--teal)', fontSize: 13, fontWeight: 600 }}>
+                    В вашей компании
+                  </span>
+                )}
+                <button onClick={() => openChat({ userId: profile.id })}
+                  style={{ padding: '8px 18px', borderRadius: 12, border: '1px solid var(--card-border)', background: 'var(--bg3)', color: 'var(--text2)', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  💬 Написать
+                </button>
+              </div>
+            )}
+
             <div className="pub-profile-stats">
               <div className="pub-profile-stat">
                 <div className="pub-profile-stat-value">{profile.loyaltyPoints.toLocaleString('ru-RU')}</div>

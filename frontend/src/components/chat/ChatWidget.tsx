@@ -4,14 +4,19 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useAuthStore } from '@/stores/auth.store';
 import { useChatStore } from '@/stores/chat.store';
-import { chatApi } from '@/lib/api';
+import { chatApi, companionApi } from '@/lib/api';
 import { useTranslations } from 'next-intl';
+
+interface CompanionUser { id: number; name: string | null; avatarUrl?: string | null; loyaltyLevel?: string }
+interface CompanionRecord { id: number; user: CompanionUser; since?: string; createdAt?: string }
 
 interface Conversation {
   id: number;
   otherUser: { id: number; name: string; avatarUrl?: string };
   lastMessage?: { text: string; createdAt: string; senderId: number };
   unreadCount: number;
+  name?: string | null;
+  createdById?: number | null;
 }
 interface Message {
   id: number; text: string; senderId: number; conversationId: number; createdAt: string; read: boolean;
@@ -36,6 +41,19 @@ export function ChatWidget() {
   const [hasMore, setHasMore] = useState(false);
   const [typing, setTyping] = useState<string | null>(null);
 
+  // Companion tab
+  const [leftTab, setLeftTab] = useState<'chats' | 'companions'>('chats');
+  const [companions, setCompanions] = useState<CompanionRecord[]>([]);
+  const [pending, setPending] = useState<CompanionRecord[]>([]);
+  const [compLoading, setCompLoading] = useState(false);
+  const [searchQ, setSearchQ] = useState('');
+  const [searchResults, setSearchResults] = useState<CompanionUser[]>([]);
+  const [searching, setSearching] = useState(false);
+
+  // Rename conversation
+  const [renamingId, setRenamingId] = useState<number | null>(null);
+  const [renameValue, setRenameValue] = useState('');
+
   const socketRef = useRef<Socket | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const typingRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -57,6 +75,79 @@ export function ChatWidget() {
     { emoji: '📍', label: t('quickKnowPlaces') },
     { emoji: '⭐', label: t('quickRecommend') },
   ];
+
+  // Load companions when tab switches
+  useEffect(() => {
+    if (!isOpen || !isLoggedIn || leftTab !== 'companions') return;
+    setCompLoading(true);
+    Promise.all([companionApi.getMyCompanions(), companionApi.getPending()])
+      .then(([c, p]) => { setCompanions(c.data || []); setPending(p.data || []); })
+      .catch(() => {})
+      .finally(() => setCompLoading(false));
+  }, [isOpen, isLoggedIn, leftTab]);
+
+  // Search users debounce
+  useEffect(() => {
+    if (searchQ.length < 2) { setSearchResults([]); return; }
+    setSearching(true);
+    const t = setTimeout(() => {
+      companionApi.search(searchQ)
+        .then(r => setSearchResults(r.data || []))
+        .catch(() => setSearchResults([]))
+        .finally(() => setSearching(false));
+    }, 300);
+    return () => clearTimeout(t);
+  }, [searchQ]);
+
+  const handleInvite = async (targetId: number) => {
+    try {
+      await companionApi.invite(targetId);
+      setSearchQ('');
+      setSearchResults([]);
+      // Reload pending sent
+    } catch {}
+  };
+
+  const handleAccept = async (id: number) => {
+    try {
+      await companionApi.accept(id);
+      setPending(p => p.filter(r => r.id !== id));
+      companionApi.getMyCompanions().then(r => setCompanions(r.data || [])).catch(() => {});
+    } catch {}
+  };
+
+  const handleDecline = async (id: number) => {
+    try {
+      await companionApi.decline(id);
+      setPending(p => p.filter(r => r.id !== id));
+    } catch {}
+  };
+
+  const handleRemoveCompanion = async (id: number) => {
+    try {
+      await companionApi.remove(id);
+      setCompanions(c => c.filter(r => r.id !== id));
+    } catch {}
+  };
+
+  const startChatWith = async (userId: number) => {
+    try {
+      const r = await chatApi.createConversation(userId);
+      const id = r.data?.id || r.data?.conversationId || r.data;
+      setActiveId(id);
+      setLeftTab('chats');
+      chatApi.getConversations().then(r2 => setConvs(r2.data || [])).catch(() => {});
+    } catch {}
+  };
+
+  const handleRename = async (convId: number) => {
+    try {
+      await chatApi.renameConversation(convId, renameValue);
+      setConvs(p => p.map(c => c.id === convId ? { ...c, name: renameValue.trim() || null } : c));
+    } catch {}
+    setRenamingId(null);
+    setRenameValue('');
+  };
 
   // Load conversations when opened
   useEffect(() => {
@@ -187,49 +278,165 @@ export function ChatWidget() {
         <div style={{ width: '100%', height: 'min(560px, calc(100vh - 60px))', display: 'flex', borderRadius: 20, overflow: 'hidden', border: '1px solid var(--card-border)', boxShadow: '0 16px 64px rgba(0,0,0,0.4)' }}>
         <style>{`@keyframes chatIn { from { opacity: 0; transform: scale(0.95) translateY(10px); } to { opacity: 1; transform: none; } }`}</style>
 
-        {/* Left: Conversations — hidden on mobile when viewing messages */}
-        <div style={{ width: 240, minWidth: 240, background: 'var(--bg2)', borderRight: '1px solid var(--card-border)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
+        {/* Left: Tabs (Dialogs / Companions) — hidden on mobile when viewing messages */}
+        <div style={{ width: 260, minWidth: 260, background: 'var(--bg2)', borderRight: '1px solid var(--card-border)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
           className={activeId ? 'max-sm:hidden' : ''}>
-          <div style={{ padding: '14px 16px 12px', background: 'linear-gradient(135deg, rgba(255,92,40,0.06), rgba(57,255,209,0.03))', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <h2 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 7 }}>
-              <span style={{ width: 26, height: 26, borderRadius: 8, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,92,40,0.12)' }}>
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" /></svg>
-              </span>
-              {t('dialogs')}
-            </h2>
-            <button onClick={close} style={{ width: 28, height: 28, borderRadius: 8, border: 'none', background: 'var(--bg3)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text3)', transition: 'all 0.15s', fontFamily: 'inherit' }}
-              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.15)'; e.currentTarget.style.color = '#ef4444'; }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'var(--bg3)'; e.currentTarget.style.color = 'var(--text3)'; }}>
-              ✕
-            </button>
-          </div>
-          <div style={{ flex: 1, overflowY: 'auto', padding: 6 }}>
-            {loading ? <div style={{ padding: 30, textAlign: 'center', color: 'var(--text3)', fontSize: 12 }}>{t('loading')}</div>
-            : convs.length === 0 ? (
-              <div style={{ padding: '40px 16px', textAlign: 'center' }}>
-                <div style={{ fontSize: 28, marginBottom: 8 }}>💬</div>
-                <p style={{ color: 'var(--text3)', fontSize: 12, margin: 0 }}>{t('noDialogs')}</p>
-              </div>
-            ) : convs.map(c => {
-              const act = c.id === activeId, unr = c.unreadCount > 0;
-              return (
-                <button key={c.id} onClick={() => setActiveId(c.id)}
-                  style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '9px 10px', borderRadius: 12, border: 'none', background: act ? 'linear-gradient(135deg, rgba(255,92,40,0.1), rgba(255,92,40,0.04))' : 'transparent', cursor: 'pointer', transition: 'all 0.15s', textAlign: 'left', marginBottom: 2, fontFamily: 'inherit', boxShadow: act ? 'inset 0 0 0 1px rgba(255,92,40,0.2)' : 'none' }}
-                  onMouseEnter={e => { if (!act) e.currentTarget.style.background = 'var(--nav-hover)'; }}
-                  onMouseLeave={e => { if (!act) e.currentTarget.style.background = 'transparent'; }}>
-                  <div style={{ position: 'relative', flexShrink: 0 }}>
-                    <div style={{ width: 36, height: 36, borderRadius: '50%', overflow: 'hidden', background: 'var(--bg3)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: act ? '2px solid var(--accent)' : '2px solid var(--card-border)' }}>
-                      {c.otherUser.avatarUrl ? <img src={c.otherUser.avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <span style={{ fontSize: 15 }}>👤</span>}
-                    </div>
-                    {unr && <span style={{ position: 'absolute', top: -1, right: -1, width: 9, height: 9, borderRadius: 5, background: 'var(--accent)', border: '2px solid var(--bg2)' }} />}
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <span style={{ fontSize: 13, fontWeight: unr ? 700 : 500, color: 'var(--text)', display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.otherUser.name || t('user')}</span>
-                    {c.lastMessage && <span style={{ fontSize: 11, color: unr ? 'var(--text2)' : 'var(--text3)', display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: 1 }}>{c.lastMessage.senderId === user?.id ? `${t('you')}: ` : ''}{trunc(c.lastMessage.text, 20)}</span>}
-                  </div>
+          {/* Tab header */}
+          <div style={{ background: 'linear-gradient(135deg, rgba(255,92,40,0.06), rgba(57,255,209,0.03))' }}>
+            <div style={{ display: 'flex', padding: '0 6px', borderBottom: '1px solid var(--card-border)' }}>
+              {(['chats', 'companions'] as const).map(tab => (
+                <button key={tab} onClick={() => setLeftTab(tab)}
+                  style={{ flex: 1, padding: '11px 0', fontSize: 12, fontWeight: 600, border: 'none', background: 'none', cursor: 'pointer', fontFamily: 'inherit', color: leftTab === tab ? 'var(--accent)' : 'var(--text3)', borderBottom: leftTab === tab ? '2px solid var(--accent)' : '2px solid transparent', transition: 'all 0.15s', position: 'relative' }}>
+                  {tab === 'chats' ? t('dialogs') : t('company')}
+                  {tab === 'companions' && pending.length > 0 && (
+                    <span style={{ position: 'absolute', top: 6, marginLeft: 4, width: 16, height: 16, borderRadius: 8, background: 'var(--accent)', color: '#fff', fontSize: 10, fontWeight: 700, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>{pending.length}</span>
+                  )}
                 </button>
-              );
-            })}
+              ))}
+            </div>
+          </div>
+
+          <div style={{ flex: 1, overflowY: 'auto', padding: 6 }}>
+            {leftTab === 'chats' ? (
+              /* ── Conversations list ── */
+              <>
+                {loading ? <div style={{ padding: 30, textAlign: 'center', color: 'var(--text3)', fontSize: 12 }}>{t('loading')}</div>
+                : convs.length === 0 ? (
+                  <div style={{ padding: '40px 16px', textAlign: 'center' }}>
+                    <div style={{ fontSize: 28, marginBottom: 8 }}>💬</div>
+                    <p style={{ color: 'var(--text3)', fontSize: 12, margin: 0 }}>{t('noDialogs')}</p>
+                  </div>
+                ) : convs.map(c => {
+                  const act = c.id === activeId, unr = c.unreadCount > 0;
+                  const displayName = c.name || c.otherUser.name || t('user');
+                  return (
+                    <div key={c.id} style={{ position: 'relative', marginBottom: 2 }}>
+                      <button onClick={() => setActiveId(c.id)}
+                        style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '9px 10px', borderRadius: 12, border: 'none', background: act ? 'linear-gradient(135deg, rgba(255,92,40,0.1), rgba(255,92,40,0.04))' : 'transparent', cursor: 'pointer', transition: 'all 0.15s', textAlign: 'left', fontFamily: 'inherit', boxShadow: act ? 'inset 0 0 0 1px rgba(255,92,40,0.2)' : 'none' }}
+                        onMouseEnter={e => { if (!act) e.currentTarget.style.background = 'var(--nav-hover)'; }}
+                        onMouseLeave={e => { if (!act) e.currentTarget.style.background = 'transparent'; }}>
+                        <div style={{ position: 'relative', flexShrink: 0 }}>
+                          <div style={{ width: 36, height: 36, borderRadius: '50%', overflow: 'hidden', background: 'var(--bg3)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: act ? '2px solid var(--accent)' : '2px solid var(--card-border)' }}>
+                            {c.otherUser.avatarUrl ? <img src={c.otherUser.avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <span style={{ fontSize: 15 }}>👤</span>}
+                          </div>
+                          {unr && <span style={{ position: 'absolute', top: -1, right: -1, width: 9, height: 9, borderRadius: 5, background: 'var(--accent)', border: '2px solid var(--bg2)' }} />}
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <span style={{ fontSize: 13, fontWeight: unr ? 700 : 500, color: 'var(--text)', display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{displayName}</span>
+                          {c.lastMessage && <span style={{ fontSize: 11, color: unr ? 'var(--text2)' : 'var(--text3)', display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: 1 }}>{c.lastMessage.senderId === user?.id ? `${t('you')}: ` : ''}{trunc(c.lastMessage.text, 20)}</span>}
+                        </div>
+                      </button>
+                      {/* Rename button — only for creator */}
+                      {c.createdById === user?.id && act && (
+                        <button
+                          onClick={() => { setRenamingId(c.id); setRenameValue(c.name || ''); }}
+                          title={t('rename')}
+                          style={{ position: 'absolute', top: 8, right: 6, width: 22, height: 22, borderRadius: 6, border: 'none', background: 'rgba(255,92,40,0.1)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent)', fontSize: 11, fontFamily: 'inherit' }}>
+                          ✎
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+                {/* Rename modal */}
+                {renamingId && (
+                  <div style={{ padding: '8px 6px' }}>
+                    <div style={{ display: 'flex', gap: 4 }}>
+                      <input value={renameValue} onChange={e => setRenameValue(e.target.value)}
+                        placeholder={t('renamePlaceholder')}
+                        onKeyDown={e => { if (e.key === 'Enter') handleRename(renamingId); if (e.key === 'Escape') setRenamingId(null); }}
+                        autoFocus
+                        style={{ flex: 1, padding: '6px 10px', borderRadius: 8, border: '1px solid var(--card-border)', background: 'var(--bg3)', color: 'var(--text)', fontSize: 12, fontFamily: 'inherit', outline: 'none' }} />
+                      <button onClick={() => handleRename(renamingId)} style={{ padding: '6px 10px', borderRadius: 8, border: 'none', background: 'var(--accent)', color: '#fff', fontSize: 11, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>OK</button>
+                    </div>
+                  </div>
+                )}
+              </>
+            ) : (
+              /* ── Companions tab ── */
+              <>
+                {/* Search users */}
+                <div style={{ padding: '6px 6px 4px' }}>
+                  <input value={searchQ} onChange={e => setSearchQ(e.target.value)}
+                    placeholder={t('searchUsers')}
+                    style={{ width: '100%', padding: '7px 10px', borderRadius: 10, border: '1px solid var(--card-border)', background: 'var(--bg3)', color: 'var(--text)', fontSize: 12, fontFamily: 'inherit', outline: 'none' }} />
+                </div>
+
+                {/* Search results */}
+                {searchQ.length >= 2 && (
+                  <div style={{ padding: '0 6px 6px' }}>
+                    {searching ? <div style={{ padding: 8, textAlign: 'center', color: 'var(--text3)', fontSize: 11 }}>...</div>
+                    : searchResults.length === 0 ? <div style={{ padding: 8, textAlign: 'center', color: 'var(--text3)', fontSize: 11 }}>{t('noResults')}</div>
+                    : searchResults.map(u => (
+                      <div key={u.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px', borderRadius: 10, marginBottom: 2 }}>
+                        <div style={{ width: 28, height: 28, borderRadius: '50%', overflow: 'hidden', background: 'var(--bg3)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid var(--card-border)', flexShrink: 0 }}>
+                          {u.avatarUrl ? <img src={u.avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <span style={{ fontSize: 12 }}>👤</span>}
+                        </div>
+                        <span style={{ flex: 1, fontSize: 12, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{u.name}</span>
+                        <button onClick={() => handleInvite(u.id)}
+                          style={{ padding: '3px 8px', borderRadius: 6, border: 'none', background: 'rgba(255,92,40,0.12)', color: 'var(--accent)', fontSize: 10, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>
+                          + {t('invite')}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {searchQ.length < 2 && (
+                  <>
+                    {/* Pending invitations */}
+                    {pending.length > 0 && (
+                      <div style={{ padding: '4px 6px' }}>
+                        <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: 1, padding: '4px 4px 6px' }}>{t('pendingInvites')}</div>
+                        {pending.map(p => (
+                          <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px', borderRadius: 10, marginBottom: 2, background: 'rgba(255,92,40,0.04)', border: '1px solid rgba(255,92,40,0.1)' }}>
+                            <div style={{ width: 28, height: 28, borderRadius: '50%', overflow: 'hidden', background: 'var(--bg3)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                              {p.user.avatarUrl ? <img src={p.user.avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <span style={{ fontSize: 12 }}>👤</span>}
+                            </div>
+                            <span style={{ flex: 1, fontSize: 12, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.user.name}</span>
+                            <button onClick={() => handleAccept(p.id)} style={{ padding: '3px 7px', borderRadius: 6, border: 'none', background: 'rgba(20,184,166,0.15)', color: 'var(--teal)', fontSize: 10, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>OK</button>
+                            <button onClick={() => handleDecline(p.id)} style={{ padding: '3px 7px', borderRadius: 6, border: 'none', background: 'rgba(239,68,68,0.1)', color: '#ef4444', fontSize: 10, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>✕</button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Companion list */}
+                    {compLoading ? <div style={{ padding: 30, textAlign: 'center', color: 'var(--text3)', fontSize: 12 }}>{t('loading')}</div>
+                    : companions.length === 0 && pending.length === 0 ? (
+                      <div style={{ padding: '40px 16px', textAlign: 'center' }}>
+                        <div style={{ fontSize: 28, marginBottom: 8 }}>🍽️</div>
+                        <p style={{ color: 'var(--text3)', fontSize: 12, margin: 0, lineHeight: 1.6 }}>{t('noCompanions')}</p>
+                      </div>
+                    ) : (
+                      <div style={{ padding: '4px 6px' }}>
+                        {companions.length > 0 && <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: 1, padding: '4px 4px 6px' }}>{t('company')}</div>}
+                        {companions.map(c => (
+                          <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 8px', borderRadius: 10, marginBottom: 2 }}
+                            onMouseEnter={e => { e.currentTarget.style.background = 'var(--nav-hover)'; }}
+                            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}>
+                            <div style={{ width: 32, height: 32, borderRadius: '50%', overflow: 'hidden', background: 'var(--bg3)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid var(--card-border)', flexShrink: 0 }}>
+                              {c.user.avatarUrl ? <img src={c.user.avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <span style={{ fontSize: 14 }}>👤</span>}
+                            </div>
+                            <span style={{ flex: 1, fontSize: 13, fontWeight: 500, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.user.name}</span>
+                            <button onClick={() => startChatWith(c.user.id)} title={t('writeMessage')}
+                              style={{ width: 26, height: 26, borderRadius: 7, border: 'none', background: 'rgba(255,92,40,0.1)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent)', flexShrink: 0 }}>
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" /></svg>
+                            </button>
+                            <button onClick={() => handleRemoveCompanion(c.id)} title={t('removeCompanion')}
+                              style={{ width: 22, height: 22, borderRadius: 6, border: 'none', background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text3)', fontSize: 11, flexShrink: 0 }}
+                              onMouseEnter={e => { e.currentTarget.style.color = '#ef4444'; }}
+                              onMouseLeave={e => { e.currentTarget.style.color = 'var(--text3)'; }}>
+                              ✕
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                )}
+              </>
+            )}
           </div>
         </div>
 

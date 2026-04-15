@@ -215,7 +215,17 @@
     "quickLetsGo": "Пойдём вместе?",
     "quickHello": "Привет!",
     "quickKnowPlaces": "Знаешь хорошие места?",
-    "quickRecommend": "Что порекомендуешь?"
+    "quickRecommend": "Что порекомендуешь?",
+    "company": "Компания",
+    "searchUsers": "Поиск по имени...",
+    "noResults": "Никого не найдено",
+    "invite": "Пригласить",
+    "pendingInvites": "Приглашения",
+    "noCompanions": "Пока пусто. Найдите попутчиков\nчерез поиск выше!",
+    "writeMessage": "Написать",
+    "removeCompanion": "Убрать из компании",
+    "rename": "Переименовать",
+    "renamePlaceholder": "Название беседы..."
   },
   "budget": {
     "title": "Хватит на ужин?",
