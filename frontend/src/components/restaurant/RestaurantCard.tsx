@@ -7,6 +7,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import { useAuthStore } from '@/stores/auth.store';
 import { useFavoritesStore } from '@/stores/favorites.store';
 import { useWishlistStore } from '@/stores/wishlist.store';
+import { ShareModal } from './ShareModal';
 
 interface Restaurant {
   id?: number;
@@ -121,6 +122,32 @@ function FavoriteButton({ restaurantId }: { restaurantId?: number }) {
   );
 }
 
+function ShareButton({ onClick }: { onClick: (e: React.MouseEvent) => void }) {
+  const [hovered, setHovered] = useState(false);
+
+  return (
+    <button
+      aria-label="Поделиться"
+      onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      className="absolute top-3.5 right-[5.5rem] max-sm:top-2 max-sm:right-[4.5rem] z-10 w-9 h-9 max-sm:w-7 max-sm:h-7 rounded-full flex items-center justify-center text-[14px] max-sm:text-[11px] transition-all duration-300"
+      title="Поделиться"
+      style={{
+        background: hovered ? 'rgba(255,92,40,0.5)' : 'rgba(0,0,0,0.4)',
+        backdropFilter: 'blur(8px)',
+        border: '1px solid rgba(255,255,255,0.08)',
+        color: hovered ? '#fff' : 'var(--text2)',
+        transform: hovered ? 'scale(1.1)' : 'scale(1)',
+      }}>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+        <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+      </svg>
+    </button>
+  );
+}
+
 function WishlistButton({ restaurantId }: { restaurantId?: number }) {
   const isLoggedIn = useAuthStore(s => s.isLoggedIn);
   const isInWishlist = useWishlistStore(s => restaurantId ? s.ids.has(restaurantId) : false);
@@ -165,6 +192,7 @@ export function RestaurantCard({ restaurant }: { restaurant: Restaurant }) {
   const displayDesc = (locale !== 'ru' && tr?.description?.[locale]) || restaurant.description;
   const cover = (restaurant.photos?.find((p) => p.isCover) || restaurant.photos?.[0])?.url;
   const [imgError, setImgError] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
   const location = restaurant.locations?.[0];
   const city = location?.city?.name;
   const address = restaurant.address;
@@ -225,7 +253,8 @@ export function RestaurantCard({ restaurant }: { restaurant: Restaurant }) {
             )}
           </div>
 
-          {/* Wishlist & Favorite buttons */}
+          {/* Share, Wishlist & Favorite buttons */}
+          <ShareButton onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShareOpen(true); }} />
           <WishlistButton restaurantId={restaurant.id} />
           <FavoriteButton restaurantId={restaurant.id} />
 
@@ -280,6 +309,14 @@ export function RestaurantCard({ restaurant }: { restaurant: Restaurant }) {
           </div>
         </div>
       </article>
+      {shareOpen && (
+        <ShareModal
+          open={shareOpen}
+          onClose={() => setShareOpen(false)}
+          restaurantName={displayName}
+          restaurantSlug={restaurant.slug}
+        />
+      )}
     </Link>
   );
 }
