@@ -6,7 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useTheme } from 'next-themes';
 import { useTranslations } from 'next-intl';
 import { useAuthStore } from '@/stores/auth.store';
-import { useBudgetStore } from '@/stores/budget.store';
+
 import { useFavoritesStore } from '@/stores/favorites.store';
 import { useWishlistStore } from '@/stores/wishlist.store';
 import { useCityStore } from '@/stores/city.store';
@@ -241,7 +241,6 @@ export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { theme, setTheme } = useTheme();
   const { isLoggedIn, user } = useAuthStore();
-  const { toggle: toggleCalc } = useBudgetStore();
   const pathname = usePathname();
   const router = useRouter();
   const t = useTranslations('header');
@@ -456,16 +455,6 @@ export function Header() {
 
           {/* Right — desktop */}
           <div className="flex gap-2.5 max-lg:hidden items-center">
-            {/* Budget calc — guests only */}
-            {!isOwner && (
-              <button
-                onClick={toggleCalc}
-                className="flex items-center gap-1.5 px-4 py-1.5 rounded-full text-[13px] font-semibold border transition-all cursor-pointer"
-                style={{ background: 'var(--glass)', color: 'var(--text2)', borderColor: 'var(--glass-border)', backdropFilter: 'blur(8px)' }}>
-                🍽️ {t('budgetCalc')}
-              </button>
-            )}
-
             {/* Open on site — owners only */}
             {isOwner && mounted && ownerSlug && (
               <Link
@@ -626,18 +615,6 @@ export function Header() {
                 {item.label}
               </Link>
             ))}
-            {!isOwner && (
-              <>
-                <hr className="border-[var(--card-border)] my-0.5" />
-                <button
-                  onClick={() => { toggleCalc(); setMobileMenuOpen(false); }}
-                  className="px-3 py-2 rounded-lg text-[13px] font-semibold text-left border-none cursor-pointer"
-                  style={{ background: 'transparent', color: 'var(--text2)' }}>
-                  🍽️ {t('budgetCalc')}
-                </button>
-              </>
-
-            )}
           </div>
         </div>
       )}
