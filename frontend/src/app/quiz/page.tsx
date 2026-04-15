@@ -642,20 +642,22 @@ export default function QuizPage() {
     setStage('loading');
     setSubmitting(true);
 
-    // Try API first
-    try {
-      const res = await gastroApi.submitQuiz(answers);
-      if (res.data) {
-        setProfile(res.data);
-        setSubmitting(false);
-        setTimeout(() => setStage('result'), 2500);
-        return;
+    // Try API first (only if logged in — endpoint requires auth)
+    if (isLoggedIn) {
+      try {
+        const res = await gastroApi.submitQuiz(answers);
+        if (res.data) {
+          setProfile(res.data);
+          setSubmitting(false);
+          setTimeout(() => setStage('result'), 2500);
+          return;
+        }
+      } catch {
+        // API unavailable — compute client-side
       }
-    } catch {
-      // API unavailable — compute client-side
     }
 
-    // Client-side fallback
+    // Client-side fallback (works without auth)
     const result = computeProfile(answers);
     setProfile(result);
     setSubmitting(false);
