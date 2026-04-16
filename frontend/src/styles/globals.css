@@ -189,10 +189,13 @@ body::after {
   padding-bottom: 12px;
 }
 
-/* Light theme: softer headings, warm tints */
+/* Light theme: softer headings & logo — warm brown instead of black */
 .light h1, .light h2, .light h3 {
-  color: var(--text);
+  color: #5C4A2E !important;
   letter-spacing: -0.01em;
+}
+.light header a.font-serif {
+  color: #5C4A2E !important;
 }
 
 /* Light theme: cards — flat, minimal shadow */
