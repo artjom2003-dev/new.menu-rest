@@ -71,7 +71,7 @@
     "schedule": "营业时间",
     "avgBill": "人均消费",
     "occasion": "场合",
-    "atmosphere": "氛围",
+    "atmosphere": "特色",
     "closed": "已关门",
     "callToCheck": "请致电确认",
     "notSpecified": "未注明",
@@ -252,7 +252,7 @@
     "district": "区域",
     "venueType": "店铺类型",
     "occasion": "场合",
-    "atmosphere": "氛围",
+    "atmosphere": "特色",
     "entertainment": "娱乐",
     "bill": "价位",
     "nearbyTag": "我附近"

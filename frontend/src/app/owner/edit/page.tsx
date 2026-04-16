@@ -11,7 +11,7 @@ interface HourRow { dayOfWeek: number; openTime: string; closeTime: string; isCl
 interface FeatureItem { id: number; name: string; slug: string; category: string; icon?: string | null }
 
 const FEATURE_CATEGORY_LABELS: Record<string, string> = {
-  atmosphere: 'Атмосфера',
+  atmosphere: 'Особенности',
   occasion: 'Поводы',
   service: 'Сервис',
   cuisine_feature: 'Кухня',

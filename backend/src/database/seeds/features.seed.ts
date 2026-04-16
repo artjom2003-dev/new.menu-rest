@@ -12,7 +12,7 @@ export const featuresSeed = [
   { name: 'Быстро перекусить',      slug: 'quick-bite',        category: 'occasion', icon: '⚡' },
   { name: 'Поработать с ноутбуком',  slug: 'laptop-work',       category: 'occasion', icon: '💻' },
 
-  // ─── Удобства и атмосфера (atmosphere) — 13 шт ───
+  // ─── Особенности (atmosphere) — 13 шт ───
   { name: 'Спокойная атмосфера',           slug: 'quiet',         category: 'atmosphere', icon: '🤫' },
   { name: 'Веранда',                       slug: 'terrace',       category: 'atmosphere', icon: '🌿' },
   { name: 'Живая музыка',                  slug: 'live-music',    category: 'atmosphere', icon: '🎵' },

@@ -71,7 +71,7 @@
     "schedule": "Horaires",
     "avgBill": "Addition moyenne",
     "occasion": "Occasion",
-    "atmosphere": "Ambiance",
+    "atmosphere": "Particularités",
     "closed": "Fermé",
     "callToCheck": "Appelez pour vérifier",
     "notSpecified": "Non précisé",
@@ -252,7 +252,7 @@
     "district": "Quartier",
     "venueType": "Type d'établissement",
     "occasion": "Occasion",
-    "atmosphere": "Ambiance",
+    "atmosphere": "Particularités",
     "entertainment": "Divertissement",
     "bill": "Addition",
     "nearbyTag": "Près de moi"

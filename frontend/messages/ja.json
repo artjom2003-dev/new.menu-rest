@@ -71,7 +71,7 @@
     "schedule": "営業時間",
     "avgBill": "平均予算",
     "occasion": "シーン",
-    "atmosphere": "雰囲気",
+    "atmosphere": "特徴",
     "closed": "閉店",
     "callToCheck": "お電話でご確認ください",
     "notSpecified": "未設定",
@@ -252,7 +252,7 @@
     "district": "地区",
     "venueType": "店舗タイプ",
     "occasion": "シーン",
-    "atmosphere": "雰囲気",
+    "atmosphere": "特徴",
     "entertainment": "エンタメ",
     "bill": "会計",
     "nearbyTag": "近くのお店"

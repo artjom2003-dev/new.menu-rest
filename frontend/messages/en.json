@@ -71,7 +71,7 @@
     "schedule": "Hours",
     "avgBill": "Average bill",
     "occasion": "Occasion",
-    "atmosphere": "Atmosphere",
+    "atmosphere": "Features",
     "closed": "Closed",
     "callToCheck": "Call to check",
     "notSpecified": "Not specified",
@@ -272,7 +272,7 @@
     "district": "District",
     "venueType": "Venue type",
     "occasion": "Occasion",
-    "atmosphere": "Atmosphere",
+    "atmosphere": "Features",
     "entertainment": "Entertainment",
     "bill": "Bill",
     "nearbyTag": "Near me"

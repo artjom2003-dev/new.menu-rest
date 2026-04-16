@@ -71,7 +71,7 @@
     "schedule": "영업시간",
     "avgBill": "평균 가격",
     "occasion": "목적",
-    "atmosphere": "분위기",
+    "atmosphere": "특징",
     "closed": "영업 종료",
     "callToCheck": "전화로 확인해 주세요",
     "notSpecified": "미정",
@@ -252,7 +252,7 @@
     "district": "지역",
     "venueType": "업종",
     "occasion": "목적",
-    "atmosphere": "분위기",
+    "atmosphere": "특징",
     "entertainment": "엔터테인먼트",
     "bill": "가격대",
     "nearbyTag": "내 근처"

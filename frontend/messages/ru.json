@@ -71,7 +71,7 @@
     "schedule": "Режим",
     "avgBill": "Средний чек",
     "occasion": "Повод",
-    "atmosphere": "Атмосфера",
+    "atmosphere": "Особенности",
     "closed": "Закрыто",
     "callToCheck": "Уточните по телефону",
     "notSpecified": "Не указан",
@@ -272,7 +272,7 @@
     "district": "Район",
     "venueType": "Тип заведения",
     "occasion": "Повод",
-    "atmosphere": "Атмосфера",
+    "atmosphere": "Особенности",
     "entertainment": "Развлечения",
     "bill": "Чек",
     "nearbyTag": "Рядом со мной"

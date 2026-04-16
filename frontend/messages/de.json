@@ -71,7 +71,7 @@
     "schedule": "Öffnungszeiten",
     "avgBill": "Durchschnittspreis",
     "occasion": "Anlass",
-    "atmosphere": "Atmosphäre",
+    "atmosphere": "Besonderheiten",
     "closed": "Geschlossen",
     "callToCheck": "Bitte telefonisch bestätigen",
     "notSpecified": "Nicht angegeben",
@@ -252,7 +252,7 @@
     "district": "Bezirk",
     "venueType": "Lokaltyp",
     "occasion": "Anlass",
-    "atmosphere": "Atmosphäre",
+    "atmosphere": "Besonderheiten",
     "entertainment": "Unterhaltung",
     "bill": "Rechnung",
     "nearbyTag": "In meiner Nähe"

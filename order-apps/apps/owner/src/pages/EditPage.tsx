@@ -135,7 +135,7 @@ export function EditPage() {
   if (!restaurant) return <p className="text-text-muted py-12 text-center">Загрузка...</p>;
 
   const DAY_NAMES = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
-  const CATEGORY_LABELS: Record<string, string> = { atmosphere: 'Атмосфера', occasion: 'Повод', entertainment: 'Развлечения', service: 'Сервис' };
+  const CATEGORY_LABELS: Record<string, string> = { atmosphere: 'Особенности', occasion: 'Повод', entertainment: 'Развлечения', service: 'Сервис' };
 
   return (
     <div>

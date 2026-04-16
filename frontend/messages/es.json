@@ -71,7 +71,7 @@
     "schedule": "Horario",
     "avgBill": "Cuenta media",
     "occasion": "Ocasión",
-    "atmosphere": "Ambiente",
+    "atmosphere": "Características",
     "closed": "Cerrado",
     "callToCheck": "Llame para confirmar",
     "notSpecified": "No especificado",
@@ -252,7 +252,7 @@
     "district": "Barrio",
     "venueType": "Tipo de local",
     "occasion": "Ocasión",
-    "atmosphere": "Ambiente",
+    "atmosphere": "Características",
     "entertainment": "Entretenimiento",
     "bill": "Cuenta",
     "nearbyTag": "Cerca de mí"
