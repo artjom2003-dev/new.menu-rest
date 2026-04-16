@@ -557,7 +557,6 @@ export function Header() {
                   useFavoritesStore.getState().clear();
                   useWishlistStore.getState().clear();
                   useGastroStore.getState().reset();
-                  localStorage.removeItem('access_token');
                   window.location.href = '/';
                 }}
                 className="flex items-center gap-1.5 px-5 py-2.5 rounded-full text-[13px] font-semibold no-underline cursor-pointer transition-all border"
