@@ -28,17 +28,14 @@ export class Table {
   @Column({ type: 'int', default: 4 })
   capacity: number;
 
-  @Column({ name: 'is_active', default: true })
-  isActive: boolean;
-
   @Column({ type: 'varchar', length: 20, default: 'free' })
   status: TableStatus;
 
-  @Column({ name: 'qr_code_url', type: 'varchar', length: 500, nullable: true })
-  qrCodeUrl: string | null;
-
   @Column({ name: 'current_order_id', type: 'int', nullable: true })
   currentOrderId: number | null;
+
+  @Column({ name: 'waiter_id', type: 'int', nullable: true })
+  waiterId: number | null;
 
   @Column({ name: 'guest_count', type: 'int', nullable: true })
   guestCount: number | null;

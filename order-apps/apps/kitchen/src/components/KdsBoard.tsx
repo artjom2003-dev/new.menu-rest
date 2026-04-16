@@ -25,7 +25,8 @@ export function KdsBoard() {
   useEffect(() => {
     const path = window.location.pathname.replace('/', '');
     const id = parseInt(path, 10);
-    setConfig(id && !isNaN(id) ? id : 1);
+    const envId = parseInt(import.meta.env.VITE_RESTAURANT_ID || '', 10);
+    setConfig(id && !isNaN(id) ? id : (envId && !isNaN(envId) ? envId : 1));
   }, []);
 
   useEffect(() => { if (restaurantId) loadOrders(); }, [restaurantId]);

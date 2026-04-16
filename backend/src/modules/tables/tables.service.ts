@@ -12,7 +12,7 @@ export class TablesService {
 
   async findByRestaurant(restaurantId: number): Promise<Table[]> {
     return this.tableRepo.find({
-      where: { restaurantId, isActive: true },
+      where: { restaurantId },
       order: { number: 'ASC' },
     });
   }
