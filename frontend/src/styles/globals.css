@@ -276,13 +276,29 @@ body::after {
 /* Custom cursor disabled */
 .a11y-enabled, .a11y-enabled * { cursor: auto !important; }
 
-/* ── Font sizes (only page content, not the a11y panel) ── */
-.a11y-font-large main,
-.a11y-font-large header,
-.a11y-font-large footer { font-size: 120% !important; }
-.a11y-font-xlarge main,
-.a11y-font-xlarge header,
-.a11y-font-xlarge footer { font-size: 150% !important; }
+/* ── Font sizes via zoom (scales everything incl. px values) ── */
+.a11y-font-large main { zoom: 1.25; padding-top: calc((var(--a11y-panel-h, 0px) + 72px) / 1.25) !important; }
+.a11y-font-large footer { zoom: 1.2; }
+.a11y-font-large header { zoom: 1.1; }
+.a11y-font-xlarge main { zoom: 1.5; padding-top: calc((var(--a11y-panel-h, 0px) + 80px) / 1.5) !important; }
+.a11y-font-xlarge footer { zoom: 1.4; }
+.a11y-font-xlarge header { zoom: 1.25; }
+@media (max-width: 640px) {
+  .a11y-font-large main { padding-top: calc((var(--a11y-panel-h, 0px) + 62px) / 1.25) !important; }
+  .a11y-font-xlarge main { padding-top: calc((var(--a11y-panel-h, 0px) + 70px) / 1.5) !important; }
+}
+
+/* ── Grid: fewer columns at larger font sizes ── */
+.a11y-font-large .grid-cols-4 { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+.a11y-font-large .grid-cols-3 { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+.a11y-font-xlarge .grid-cols-4 { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+.a11y-font-xlarge .grid-cols-3 { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+@media (max-width: 640px) {
+  .a11y-font-large .grid-cols-4,
+  .a11y-font-large .grid-cols-3,
+  .a11y-font-xlarge .grid-cols-4,
+  .a11y-font-xlarge .grid-cols-3 { grid-template-columns: repeat(1, minmax(0, 1fr)) !important; }
+}
 
 /* ── Letter spacing ── */
 .a11y-ls-medium main *,
