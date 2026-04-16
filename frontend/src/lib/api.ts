@@ -102,7 +102,7 @@ export const authApi = {
 
 // ─── User ─────────────────────────────────────────────────
 export const userApi = {
-  getMe: () => api.get('/users/me'),
+  getMe: () => api.get(`/users/me?_t=${Date.now()}`),
   updateMe: (data: unknown) => api.patch('/users/me', data),
   getFavorites: () => api.get('/users/me/favorites'),
   toggleFavorite: (restaurantId: number) =>
