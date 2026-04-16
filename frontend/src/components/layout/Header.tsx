@@ -311,12 +311,13 @@ export function Header() {
   return (
     <>
       <header
-        className="fixed top-0 left-0 right-0 z-[1000] h-[64px] max-sm:h-[56px] flex items-center px-10 max-md:px-4 max-sm:px-3 transition-all duration-[400ms]"
+        className="fixed top-0 left-0 right-0 z-[1000] h-[64px] max-sm:h-[56px] flex items-center px-10 max-md:px-4 max-sm:px-3"
         style={{
           background: scrolled ? 'var(--header-bg-scroll)' : 'var(--header-bg)',
           backdropFilter: 'blur(40px) saturate(1.4)',
           borderBottom: `1px solid ${scrolled ? 'var(--header-border)' : 'transparent'}`,
           boxShadow: scrolled ? '0 4px 24px rgba(0,0,0,0.12)' : 'none',
+          transition: 'background 400ms, border-bottom 400ms, box-shadow 400ms',
         }}>
         <div className="w-full flex items-center justify-between">
           {/* Left: Burger (mobile) + Logo */}

@@ -271,7 +271,10 @@ body::after {
 /* Disable decorative effects in a11y mode */
 .a11y-enabled body::before,
 .a11y-enabled body::after { display: none !important; }
-.a11y-enabled * { animation: none !important; transition: none !important; }
+.a11y-enabled main *,
+.a11y-enabled footer * { animation: none !important; transition: none !important; }
+/* Custom cursor disabled */
+.a11y-enabled, .a11y-enabled * { cursor: auto !important; }
 
 /* ── Font sizes (only page content, not the a11y panel) ── */
 .a11y-font-large main,
