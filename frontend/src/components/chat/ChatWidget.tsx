@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useAuthStore } from '@/stores/auth.store';
 import { useChatStore } from '@/stores/chat.store';
-import { chatApi, companionApi, restaurantApi } from '@/lib/api';
+import { chatApi, companionApi, restaurantApi, pickSessionApi } from '@/lib/api';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { PickSessionPanel, parsePickSessionMsg, PickSessionInvite } from './PickSession';
@@ -91,6 +91,7 @@ export function ChatWidget() {
   const [hasMore, setHasMore] = useState(false);
   const [pickSessionOpen, setPickSessionOpen] = useState(false);
   const [pickJoinId, setPickJoinId] = useState<number | undefined>(undefined);
+  const [activePickId, setActivePickId] = useState<number | null>(null);
   const [typing, setTyping] = useState<string | null>(null);
 
   // Companion tab
@@ -254,6 +255,10 @@ export function ChatWidget() {
       .catch(() => setMsgsLoading(false));
     chatApi.markRead(activeId).catch(() => {});
     setConvs(p => p.map(c => c.id === activeId ? { ...c, unreadCount: 0 } : c));
+    // Check for active pick session
+    pickSessionApi.getActive(activeId).then(r => {
+      setActivePickId(r.data?.id || null);
+    }).catch(() => setActivePickId(null));
   }, [activeId]);
 
   const loadMore = useCallback(() => {
@@ -337,7 +342,7 @@ export function ChatWidget() {
           <div style={{ background: 'linear-gradient(135deg, rgba(255,92,40,0.06), rgba(57,255,209,0.03))' }}>
             <div style={{ display: 'flex', padding: '0 6px', borderBottom: '1px solid var(--card-border)' }}>
               {(['chats', 'companions'] as const).map(tab => (
-                <button key={tab} onClick={() => setLeftTab(tab)}
+                <button key={tab} data-tab={tab} onClick={() => setLeftTab(tab)}
                   style={{ flex: 1, padding: '11px 0', fontSize: 12, fontWeight: 600, border: 'none', background: 'none', cursor: 'pointer', fontFamily: 'inherit', color: leftTab === tab ? 'var(--accent)' : 'var(--text3)', borderBottom: leftTab === tab ? '2px solid var(--accent)' : '2px solid transparent', transition: 'all 0.15s', position: 'relative' }}>
                   {tab === 'chats' ? t('dialogs') : t('company')}
                   {tab === 'companions' && pending.length > 0 && (
@@ -579,6 +584,16 @@ export function ChatWidget() {
                 <div style={{ position: 'absolute', inset: 0, zIndex: 50, background: 'var(--bg)', borderRadius: 20, overflow: 'hidden' }}>
                   <PickSessionPanel conversationId={activeId} sessionId={pickJoinId} socket={socketRef.current} onClose={() => { setPickSessionOpen(false); setPickJoinId(undefined); }} />
                 </div>
+              )}
+
+              {/* Active pick session banner */}
+              {activePickId && !pickSessionOpen && (
+                <button onClick={() => { setPickJoinId(activePickId); setPickSessionOpen(true); }}
+                  style={{ padding: '8px 14px', background: 'linear-gradient(135deg, rgba(255,92,40,0.1), rgba(255,140,66,0.1))', borderTop: '1px solid rgba(255,92,40,0.2)', display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', border: 'none', borderBottom: 'none', width: '100%', fontFamily: 'inherit' }}>
+                  <span style={{ fontSize: 16 }}>🍽️</span>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--accent)', flex: 1, textAlign: 'left' }}>Активная сессия подбора</span>
+                  <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--accent)', padding: '4px 10px', borderRadius: 8, background: 'rgba(255,92,40,0.15)' }}>Продолжить →</span>
+                </button>
               )}
 
               {/* Input */}

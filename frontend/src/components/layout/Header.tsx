@@ -486,6 +486,21 @@ export function Header() {
               </Link>
             )}
 
+            {/* Contacts — guests only */}
+            {mounted && isLoggedIn && !isOwner && (
+              <button
+                onClick={() => { useChatStore.getState().open(); setTimeout(() => document.querySelector<HTMLButtonElement>('[data-tab="companions"]')?.click(), 100); }}
+                title="Контакты"
+                className="relative flex items-center justify-center w-[36px] h-[36px] rounded-full transition-all cursor-pointer"
+                style={{ background: 'var(--glass)', border: '1px solid var(--glass-border)' }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--accent)'; (e.currentTarget as HTMLElement).style.background = 'var(--accent-glow)'; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--glass-border)'; (e.currentTarget as HTMLElement).style.background = 'var(--glass)'; }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text2)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4-4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 00-3-3.87" /><path d="M16 3.13a4 4 0 010 7.75" />
+                </svg>
+              </button>
+            )}
+
             {/* Chat — guests only */}
             {mounted && isLoggedIn && !isOwner && (
               <button
