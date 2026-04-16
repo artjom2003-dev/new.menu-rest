@@ -34,11 +34,12 @@ interface PaginationMeta {
   pages: number;
 }
 
-function SearchWithSuggestions({ value, onChange, onSearch, onClear }: {
+function SearchWithSuggestions({ value, onChange, onSearch, onClear, city }: {
   value: string;
   onChange: (v: string) => void;
   onSearch: (q: string) => void;
   onClear?: () => void;
+  city?: string;
 }) {
   const [suggestions, setSuggestions] = useState<Array<{ slug: string; name: string; city?: { name: string } }>>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -51,13 +52,13 @@ function SearchWithSuggestions({ value, onChange, onSearch, onClear }: {
     if (value.trim().length < 2) { setSuggestions([]); return; }
     timerRef.current = setTimeout(async () => {
       try {
-        const res = await restaurantApi.list({ search: value.trim(), limit: 6 });
+        const res = await restaurantApi.list({ search: value.trim(), limit: 6, ...(city ? { city } : {}) });
         setSuggestions(res.data.items?.map((r: any) => ({ slug: r.slug, name: r.name, city: r.city })) || []);
         setShowSuggestions(true);
       } catch { setSuggestions([]); }
     }, 250);
     return () => { if (timerRef.current) clearTimeout(timerRef.current); };
-  }, [value]);
+  }, [value, city]);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -163,12 +164,12 @@ function RestaurantsPageInner() {
 
   // Use city from URL, or fallback to saved city from CityStore
   // When nearby (lat/lng) is active, skip city fallback so geo-filter works across city boundaries
-  const effectiveCity = search ? undefined : (city || (lat ? undefined : citySlug) || undefined);
+  const effectiveCity = city || (lat ? undefined : citySlug) || undefined;
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await restaurantApi.list({ page, limit: 24, city: effectiveCity, cuisine: search ? undefined : cuisine, priceLevelMin: search ? undefined : priceLevelMin, priceLevelMax: search ? undefined : priceLevelMax, sortBy: lat ? undefined : sortBy, search, features: search ? undefined : features, metro: search ? undefined : metro, district: search ? undefined : district, venueType: search ? undefined : venueType, ...(hasMenu && !search ? { hasMenu: 'true' } : {}), ...(lat && lng && !search ? { lat, lng } : {}) });
+      const res = await restaurantApi.list({ page, limit: 24, city: effectiveCity, cuisine, priceLevelMin, priceLevelMax, sortBy: lat ? undefined : sortBy, search, features, metro, district, venueType, ...(hasMenu ? { hasMenu: 'true' } : {}), ...(lat && lng ? { lat, lng } : {}) });
       setRestaurants(res.data.items);
       setMeta(res.data.meta);
     } catch {
@@ -265,6 +266,7 @@ function RestaurantsPageInner() {
           <SearchWithSuggestions
             value={searchInput}
             onChange={setSearchInput}
+            city={effectiveCity}
             onSearch={(q) => {
               const params = new URLSearchParams(searchParams.toString());
               if (q.trim()) { params.set('search', q.trim()); } else { params.delete('search'); }
