@@ -401,7 +401,13 @@ function ProfileContent() {
     setDeleteConfirm(false);
   };
 
-  if (!user || !roleLoaded || !serverLoaded) return null;
+  if (!user || !roleLoaded || !serverLoaded) return (
+    <div className="max-w-[900px] mx-auto px-6 py-20 text-center">
+      <div className="w-16 h-16 rounded-full mx-auto mb-4 animate-pulse" style={{ background: 'var(--bg3)' }} />
+      <div className="w-40 h-5 rounded mx-auto mb-2 animate-pulse" style={{ background: 'var(--bg3)' }} />
+      <div className="w-28 h-4 rounded mx-auto animate-pulse" style={{ background: 'var(--bg3)' }} />
+    </div>
+  );
 
   const level = LEVEL_INFO[user.loyaltyLevel] || LEVEL_INFO.bronze;
 
