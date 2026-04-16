@@ -72,15 +72,23 @@ export class StorageService implements OnModuleInit {
     });
 
     return {
-      original: `${this.publicUrl}/${this.bucket}/${originalKey}`,
-      thumb: `${this.publicUrl}/${this.bucket}/${thumbKey}`,
+      original: `${this.publicUrl}/${originalKey}`,
+      thumb: `${this.publicUrl}/${thumbKey}`,
     };
   }
 
   async delete(url: string): Promise<void> {
-    const prefix = `${this.publicUrl}/${this.bucket}/`;
-    if (!url.startsWith(prefix)) return;
-    const key = url.slice(prefix.length);
+    // Support both old format (with bucket) and new format (without bucket)
+    const prefixNew = `${this.publicUrl}/`;
+    const prefixOld = `${this.publicUrl}/${this.bucket}/`;
+    let key: string;
+    if (url.startsWith(prefixOld)) {
+      key = url.slice(prefixOld.length);
+    } else if (url.startsWith(prefixNew)) {
+      key = url.slice(prefixNew.length);
+    } else {
+      return;
+    }
     await this.client.removeObject(this.bucket, key);
     // Try removing thumbnail too
     const thumbKey = key.replace(/\.(\w+)$/, '_thumb.webp');
