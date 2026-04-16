@@ -6,20 +6,21 @@ const api = axios.create({
   headers: { 'Content-Type': 'application/json' },
 });
 
-// Attach JWT token — try Zustand store first, fallback to localStorage
+// Attach JWT token — access_token is set synchronously on login, so it's always fresh
 api.interceptors.request.use((config) => {
   if (typeof window !== 'undefined') {
-    // Primary: read from Zustand persisted state (single source of truth)
-    let token: string | null = null;
-    try {
-      const stored = localStorage.getItem('menurest-auth');
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        token = parsed?.state?.accessToken || null;
-      }
-    } catch {}
-    // Fallback: legacy key
-    if (!token) token = localStorage.getItem('access_token');
+    // Primary: access_token key (written synchronously in setUser, always up-to-date)
+    let token: string | null = localStorage.getItem('access_token');
+    // Fallback: Zustand persisted state (may lag behind after login due to async persist)
+    if (!token) {
+      try {
+        const stored = localStorage.getItem('menurest-auth');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          token = parsed?.state?.accessToken || null;
+        }
+      } catch {}
+    }
     if (token) config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
