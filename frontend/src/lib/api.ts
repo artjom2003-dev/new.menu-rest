@@ -37,6 +37,7 @@ api.interceptors.response.use(
       if (typeof window !== 'undefined') {
         // Clear all token storage: Zustand persisted state, legacy key, cookie
         localStorage.removeItem('menurest-auth');
+        localStorage.removeItem('menurest-gastro');
         localStorage.removeItem('access_token');
         document.cookie = 'access_token=; path=/; max-age=0';
         if (!window.location.pathname.startsWith('/login')) {

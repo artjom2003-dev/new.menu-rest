@@ -8,11 +8,13 @@ import { useBudgetStore } from '@/stores/budget.store';
 import { AddRestaurantModal } from './AddRestaurantModal';
 import { BookingForm } from './BookingForm';
 import { StartChatButton } from '@/components/chat/StartChatButton';
+import { ShareModal } from './ShareModal';
 
 const RestaurantMap = lazy(() => import('./RestaurantMap').then(m => ({ default: m.RestaurantMap })));
 
 interface Restaurant {
   id?: number;
+  slug?: string;
   hasOwner?: boolean;
   name: string;
   description?: string;
@@ -303,6 +305,7 @@ export function RestaurantInfoCard({ restaurant }: { restaurant: Restaurant }) {
   const [claimOpen, setClaimOpen] = useState(false);
   const [bookingOpen, setBookingOpen] = useState(false);
   const [bookingError, setBookingError] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
   const hasBooking = !!restaurant.hasOwner; // Only restaurants with owner support bookings
   const t = useTranslations('restaurant');
   const locale = useLocale();
@@ -415,6 +418,15 @@ export function RestaurantInfoCard({ restaurant }: { restaurant: Restaurant }) {
                 style={{ background: 'var(--accent)', boxShadow: '0 0 20px var(--accent-glow)' }}>
                 📅 {t('book')}
               </button>
+              <button
+                onClick={() => setShareOpen(true)}
+                className="flex items-center justify-center gap-2 px-4 py-3 max-sm:py-3.5 rounded-full text-[13px] font-semibold border transition-all"
+                style={{ background: 'var(--glass)', color: 'var(--text2)', borderColor: 'var(--glass-border)', backdropFilter: 'blur(8px)' }}>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+                  <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+                </svg>
+              </button>
             </div>
 
             {restaurant.hasOwner && restaurant.id && (
@@ -461,6 +473,14 @@ export function RestaurantInfoCard({ restaurant }: { restaurant: Restaurant }) {
       </div>
 
       <AddRestaurantModal open={claimOpen} onClose={() => setClaimOpen(false)} />
+      {shareOpen && (
+        <ShareModal
+          open={shareOpen}
+          onClose={() => setShareOpen(false)}
+          restaurantName={displayName}
+          restaurantSlug={restaurant.slug || ''}
+        />
+      )}
     </div>
   );
 }

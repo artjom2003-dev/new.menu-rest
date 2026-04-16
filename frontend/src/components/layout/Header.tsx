@@ -10,6 +10,7 @@ import { useAuthStore } from '@/stores/auth.store';
 import { useFavoritesStore } from '@/stores/favorites.store';
 import { useWishlistStore } from '@/stores/wishlist.store';
 import { useCityStore } from '@/stores/city.store';
+import { useGastroStore } from '@/stores/gastro.store';
 import { AuthModal } from '@/components/auth/AuthModal';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { chatApi, ownerApi, referenceApi } from '@/lib/api';
@@ -553,6 +554,9 @@ export function Header() {
               <button
                 onClick={() => {
                   useAuthStore.getState().logout();
+                  useFavoritesStore.getState().clear();
+                  useWishlistStore.getState().clear();
+                  useGastroStore.getState().reset();
                   localStorage.removeItem('access_token');
                   window.location.href = '/';
                 }}

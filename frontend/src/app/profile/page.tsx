@@ -360,6 +360,9 @@ function ProfileContent() {
 
   const handleLogout = () => {
     logout();
+    useFavoritesStore.getState().clear();
+    useWishlistStore.getState().clear();
+    useGastroStore.getState().reset();
     localStorage.removeItem('access_token');
     router.push('/');
   };

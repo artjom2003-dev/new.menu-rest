@@ -109,7 +109,7 @@ function FavoriteButton({ restaurantId }: { restaurantId?: number }) {
       onClick={handleClick}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      className="absolute top-3.5 right-3.5 max-sm:top-2 max-sm:right-2 z-10 w-9 h-9 max-sm:w-7 max-sm:h-7 rounded-full flex items-center justify-center text-[15px] max-sm:text-[12px] transition-all duration-300"
+      className="absolute top-3.5 right-3 max-sm:top-2 max-sm:right-2 z-10 w-9 h-9 max-sm:w-7 max-sm:h-7 rounded-full flex items-center justify-center text-[15px] max-sm:text-[12px] transition-all duration-300"
       style={{
         background: isFav ? 'rgba(255,60,60,0.7)' : hovered ? 'rgba(255,80,120,0.45)' : 'rgba(0,0,0,0.4)',
         backdropFilter: 'blur(8px)',
@@ -131,7 +131,7 @@ function ShareButton({ onClick }: { onClick: (e: React.MouseEvent) => void }) {
       onClick={onClick}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      className="absolute top-3.5 right-[5.5rem] max-sm:top-2 max-sm:right-[4.5rem] z-10 w-9 h-9 max-sm:w-7 max-sm:h-7 rounded-full flex items-center justify-center text-[14px] max-sm:text-[11px] transition-all duration-300"
+      className="absolute top-3.5 right-[90px] max-sm:top-2 max-sm:right-[68px] z-10 w-9 h-9 max-sm:w-7 max-sm:h-7 rounded-full flex items-center justify-center text-[14px] max-sm:text-[11px] transition-all duration-300"
       title="Поделиться"
       style={{
         background: hovered ? 'rgba(255,92,40,0.5)' : 'rgba(0,0,0,0.4)',
@@ -170,7 +170,7 @@ function WishlistButton({ restaurantId }: { restaurantId?: number }) {
       onClick={handleClick}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      className="absolute top-3.5 right-14 max-sm:top-2 max-sm:right-10 z-10 w-9 h-9 max-sm:w-7 max-sm:h-7 rounded-full flex items-center justify-center text-[15px] max-sm:text-[12px] transition-all duration-300"
+      className="absolute top-3.5 right-[51px] max-sm:top-2 max-sm:right-[38px] z-10 w-9 h-9 max-sm:w-7 max-sm:h-7 rounded-full flex items-center justify-center text-[15px] max-sm:text-[12px] transition-all duration-300"
       title="Хочу сходить"
       style={{
         background: isInWishlist ? 'rgba(20,184,166,0.7)' : hovered ? 'rgba(20,184,166,0.45)' : 'rgba(0,0,0,0.4)',

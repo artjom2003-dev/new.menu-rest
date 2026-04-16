@@ -49,6 +49,7 @@ export const useAuthStore = create<AuthState>()(
 
       logout: () => {
         localStorage.removeItem('access_token');
+        localStorage.removeItem('menurest-gastro');
         document.cookie = 'access_token=; path=/; max-age=0';
         set({ user: null, accessToken: null, isLoggedIn: false });
       },
