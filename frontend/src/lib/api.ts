@@ -218,6 +218,22 @@ export const chatApi = {
     api.patch(`/chat/conversations/${convId}/name`, { name }),
 };
 
+// ─── Pick Session (совместный выбор) ─────────────────────
+export const pickSessionApi = {
+  create: (data: { conversationId: number; mode: string; filters?: Record<string, unknown>; restaurantIds?: number[] }) =>
+    api.post('/pick-sessions', data),
+  getActive: (conversationId: number) =>
+    api.get('/pick-sessions/active', { params: { conversationId } }),
+  getSession: (id: number) => api.get(`/pick-sessions/${id}`),
+  getNextCard: (id: number) => api.get(`/pick-sessions/${id}/next-card`),
+  getRestaurants: (id: number) => api.get(`/pick-sessions/${id}/restaurants`),
+  submitVote: (id: number, restaurantId: number, reaction: string) =>
+    api.post(`/pick-sessions/${id}/votes`, { restaurantId, reaction }),
+  getResults: (id: number) => api.get(`/pick-sessions/${id}/results`),
+  complete: (id: number) => api.patch(`/pick-sessions/${id}/complete`),
+  cancel: (id: number) => api.patch(`/pick-sessions/${id}/cancel`),
+};
+
 // ─── Companions (Компания) ──────────────────────────────
 export const companionApi = {
   getMyCompanions: () => api.get('/companions'),

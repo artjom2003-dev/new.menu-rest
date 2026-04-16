@@ -23,3 +23,5 @@ export { Table } from './table.entity';
 export { Staff } from './staff.entity';
 export { StaffTableAssignment } from './staff-table-assignment.entity';
 export { OrderStatusHistory } from './order-status-history.entity';
+export { PickSession } from './pick-session.entity';
+export { PickVote } from './pick-vote.entity';

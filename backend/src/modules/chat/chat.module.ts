@@ -6,9 +6,13 @@ import { User } from '@database/entities/user.entity';
 import { ChatController } from './chat.controller';
 import { ChatService } from './chat.service';
 import { ChatGateway } from './chat.gateway';
+import { PickSessionModule } from '@modules/pick-session/pick-session.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Conversation, Message, User])],
+  imports: [
+    TypeOrmModule.forFeature([Conversation, Message, User]),
+    PickSessionModule,
+  ],
   controllers: [ChatController],
   providers: [ChatService, ChatGateway],
   exports: [ChatService],

@@ -7,6 +7,7 @@ import { useChatStore } from '@/stores/chat.store';
 import { chatApi, companionApi, restaurantApi } from '@/lib/api';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
+import { PickSessionPanel } from './PickSession';
 
 interface CompanionUser { id: number; name: string | null; avatarUrl?: string | null; loyaltyLevel?: string }
 interface CompanionRecord { id: number; user: CompanionUser; since?: string; createdAt?: string }
@@ -88,6 +89,7 @@ export function ChatWidget() {
   const [msgsLoading, setMsgsLoading] = useState(false);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
+  const [pickSessionOpen, setPickSessionOpen] = useState(false);
   const [typing, setTyping] = useState<string | null>(null);
 
   // Companion tab
@@ -565,8 +567,21 @@ export function ChatWidget() {
                 <div style={{ height: 1 }} />
               </div>
 
+              {/* Pick session overlay */}
+              {pickSessionOpen && activeId && (
+                <div style={{ position: 'absolute', inset: 0, zIndex: 50, background: 'var(--bg)', borderRadius: 20, overflow: 'hidden' }}>
+                  <PickSessionPanel conversationId={activeId} socket={socketRef.current} onClose={() => setPickSessionOpen(false)} />
+                </div>
+              )}
+
               {/* Input */}
               <div style={{ padding: '10px 14px', background: 'var(--bg2)', borderTop: '1px solid var(--card-border)', display: 'flex', alignItems: 'flex-end', gap: 8 }}>
+                <button onClick={() => setPickSessionOpen(true)} title="Подобрать ресторан вместе"
+                  style={{ width: 38, height: 38, borderRadius: 12, border: '1px solid var(--card-border)', background: 'var(--bg3)', color: 'var(--text3)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 16, transition: 'all 0.15s' }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.color = 'var(--accent)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--card-border)'; e.currentTarget.style.color = 'var(--text3)'; }}>
+                  🍽️
+                </button>
                 <textarea value={input} onChange={e => { setInput(e.target.value); emitTyping(); }} onKeyDown={onKey}
                   placeholder={t('placeholder')} rows={1}
                   style={{ flex: 1, padding: '9px 14px', borderRadius: 14, border: '1px solid var(--card-border)', background: 'var(--bg3)', color: 'var(--text)', fontSize: 13, fontFamily: 'inherit', resize: 'none', outline: 'none', minHeight: 38, maxHeight: 80, lineHeight: 1.4, transition: 'border-color 0.15s, box-shadow 0.15s' }}

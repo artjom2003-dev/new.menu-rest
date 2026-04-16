@@ -18,6 +18,7 @@ import { AdminModule } from '@modules/admin/admin.module';
 import { BudgetCalcModule } from '@modules/budget-calc/budget-calc.module';
 import { RestaurantRequestModule } from '@modules/restaurant-request/restaurant-request.module';
 import { ChatModule } from '@modules/chat/chat.module';
+import { PickSessionModule } from '@modules/pick-session/pick-session.module';
 import { GastroModule } from '@modules/gastro/gastro.module';
 import { CompanionModule } from '@modules/companion/companion.module';
 import { TablesModule } from '@modules/tables/tables.module';
@@ -89,6 +90,7 @@ import { CommonModule } from '@common/common.module';
     BudgetCalcModule,
     RestaurantRequestModule,
     ChatModule,
+    PickSessionModule,
     GastroModule,
     CompanionModule,
     TablesModule,
