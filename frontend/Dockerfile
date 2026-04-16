@@ -1,7 +1,7 @@
 FROM node:20-alpine AS base
 WORKDIR /app
 COPY package*.json ./
-RUN npm install --legacy-peer-deps
+RUN npm install --legacy-peer-deps && npm install @next/swc-linux-x64-musl --legacy-peer-deps 2>/dev/null || true
 
 FROM base AS development
 COPY . .
