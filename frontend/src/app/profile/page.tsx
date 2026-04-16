@@ -174,7 +174,15 @@ export default function ProfilePage() {
 
 function ProfileContent() {
   const t = useTranslations('profile');
-  const { user, isLoggedIn, logout, updateUser, _hydrated } = useAuthStore();
+  const { isLoggedIn, logout, _hydrated } = useAuthStore();
+  // Profile-local user state — populated ONLY from server getMe() response
+  // Never trust zustand store for display — it may contain stale data from another user
+  const [user, setLocalUser] = useState<ReturnType<typeof useAuthStore.getState>['user']>(null);
+  // Update both local display state and zustand store (for header etc.)
+  const updateUser = (partial: Partial<NonNullable<typeof user>>) => {
+    setLocalUser(prev => prev ? { ...prev, ...partial } : null);
+    useAuthStore.getState().updateUser(partial);
+  };
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
@@ -234,32 +242,29 @@ function ProfileContent() {
     if (!_hydrated) return; // ждём загрузки store из localStorage
     if (!isLoggedIn) { router.push('/login'); return; }
 
-    // Fetch fresh user data to get role and sync store — server is the source of truth
+    // Fetch user from server — this is the ONLY source of truth for the profile page
     userApi.getMe().then(r => {
       if (r.data) {
         const serverUser = {
           id: r.data.id, name: r.data.name, email: r.data.email,
-          avatarUrl: r.data.avatarUrl, loyaltyPoints: r.data.loyaltyPoints,
-          loyaltyLevel: r.data.loyaltyLevel, role: r.data.role || 'user',
+          avatarUrl: r.data.avatarUrl, loyaltyPoints: r.data.loyaltyPoints ?? 0,
+          loyaltyLevel: r.data.loyaltyLevel ?? 'bronze', role: r.data.role || 'user',
           referralCode: r.data.referralCode,
           allergenProfile: r.data.allergenProfile,
           bio: r.data.bio, age: r.data.age,
           cityName: r.data.city?.name || r.data.cityName,
           hideFromWishlists: r.data.hideFromWishlists,
           blockMessages: r.data.blockMessages,
-        };
-        // If no user in store or server returns different user — full replace via setUser
-        if (!user || r.data.id !== user.id) {
-          const token = localStorage.getItem('access_token') || '';
-          useAuthStore.getState().setUser({ ...serverUser, loyaltyPoints: serverUser.loyaltyPoints ?? 0, loyaltyLevel: serverUser.loyaltyLevel ?? 'bronze' } as any, token);
-        } else {
-          updateUser(serverUser);
-        }
+        } as any;
+        // Set local display user from server
+        setLocalUser(serverUser);
+        // Sync zustand store (for header display etc.)
+        const token = localStorage.getItem('access_token') || '';
+        useAuthStore.getState().setUser(serverUser, token);
         setNameInput(r.data.name || '');
       }
       setServerLoaded(true);
       const role = r.data?.role;
-      if (role && role !== user?.role) updateUser({ role });
       const ownerRole = role === 'owner' || role === 'admin';
       setIsOwner(ownerRole);
       setRoleLoaded(true);
@@ -278,35 +283,18 @@ function ProfileContent() {
         }).finally(() => setRestLoading(false));
       }
     }).catch(() => {
-      // If token was cleared by 401 interceptor — hard redirect, no React routing
-      if (!localStorage.getItem('access_token')) {
-        window.location.replace('/login');
-        return;
-      }
-      setNameInput(user?.name || '');
-      setServerLoaded(true);
-      setIsOwner(user?.role === 'owner' || user?.role === 'admin');
-      setRoleLoaded(true);
+      // getMe failed — token is invalid, redirect to login
+      window.location.replace('/login');
     });
   }, [isLoggedIn, _hydrated, router]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Load allergens & refresh user profile on mount
+  // Load allergens when user is loaded
   useEffect(() => {
-    if (!isLoggedIn || isOwner) return;
+    if (!user || isOwner) return;
     referenceApi.getAllergens().then(r => setAllergens(r.data || [])).catch(() => {});
-    // Fetch fresh user data from server (includes allergenProfile)
-    userApi.getMe().then(r => {
-      if (r.data) {
-        updateUser(r.data);
-        const ids = r.data.allergenProfile?.map((a: { id: number }) => a.id) || [];
-        setUserAllergenIds(new Set(ids));
-      }
-    }).catch(() => {
-      // Fallback to store
-      const ids = user?.allergenProfile?.map(a => a.id) || [];
-      setUserAllergenIds(new Set(ids));
-    });
-  }, [isLoggedIn, isOwner]); // eslint-disable-line react-hooks/exhaustive-deps
+    const ids = user.allergenProfile?.map(a => a.id) || [];
+    setUserAllergenIds(new Set(ids));
+  }, [user?.id, isOwner]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Guest tab data loading
   useEffect(() => {
