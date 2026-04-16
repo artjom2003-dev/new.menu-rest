@@ -54,7 +54,10 @@ function getTokenUserId(): number | null {
 export function getVerifiedUser(state: AuthState): User | null {
   if (!state.user) return null;
   const tokenUid = getTokenUserId();
-  if (tokenUid !== null && tokenUid !== state.user.id) return null;
+  // No token in localStorage → not authenticated
+  if (tokenUid === null) return null;
+  // Token belongs to a different user → stale store data
+  if (tokenUid !== state.user.id) return null;
   return state.user;
 }
 

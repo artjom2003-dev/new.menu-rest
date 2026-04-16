@@ -36,11 +36,16 @@ api.interceptors.response.use(
 
     if (error.response?.status === 401 && !isAuthEndpoint) {
       if (typeof window !== 'undefined') {
-        // Clear all token storage: Zustand persisted state, legacy key, cookie
+        // Clear all auth state: localStorage, cookie, and in-memory zustand store
         localStorage.removeItem('menurest-auth');
         localStorage.removeItem('menurest-gastro');
         localStorage.removeItem('access_token');
         document.cookie = 'access_token=; path=/; max-age=0';
+        // Clear zustand in-memory state to prevent stale user showing
+        try {
+          const { useAuthStore } = require('@/stores/auth.store');
+          useAuthStore.getState().logout();
+        } catch {}
         if (!window.location.pathname.startsWith('/login')) {
           window.location.href = '/login';
         }
