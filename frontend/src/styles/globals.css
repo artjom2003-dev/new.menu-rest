@@ -261,12 +261,11 @@ body::after {
    Accessibility mode (версия для слабовидящих)
    ══════════════════════════════════════════════════════ */
 
-/* Shift page content below the a11y panel */
-.a11y-enabled main { padding-top: 140px !important; }
-.a11y-enabled header { top: 76px !important; }
+/* Shift header & content below the a11y panel (height set dynamically via JS) */
+.a11y-enabled header { top: var(--a11y-panel-h, 0px) !important; }
+.a11y-enabled main { padding-top: calc(var(--a11y-panel-h, 0px) + 72px) !important; }
 @media (max-width: 640px) {
-  .a11y-enabled main { padding-top: 200px !important; }
-  .a11y-enabled header { top: 140px !important; }
+  .a11y-enabled main { padding-top: calc(var(--a11y-panel-h, 0px) + 60px) !important; }
 }
 
 /* Disable decorative effects in a11y mode */
@@ -274,112 +273,131 @@ body::after {
 .a11y-enabled body::after { display: none !important; }
 .a11y-enabled * { animation: none !important; transition: none !important; }
 
-/* ── Font sizes ── */
-.a11y-font-large { font-size: 120% !important; }
-.a11y-font-large body { font-size: 120% !important; }
-.a11y-font-xlarge { font-size: 150% !important; }
-.a11y-font-xlarge body { font-size: 150% !important; }
+/* ── Font sizes (only page content, not the a11y panel) ── */
+.a11y-font-large main,
+.a11y-font-large header,
+.a11y-font-large footer { font-size: 120% !important; }
+.a11y-font-xlarge main,
+.a11y-font-xlarge header,
+.a11y-font-xlarge footer { font-size: 150% !important; }
 
 /* ── Letter spacing ── */
-.a11y-ls-medium * { letter-spacing: 0.08em !important; }
-.a11y-ls-large * { letter-spacing: 0.16em !important; }
+.a11y-ls-medium main *,
+.a11y-ls-medium header *,
+.a11y-ls-medium footer * { letter-spacing: 0.08em !important; }
+.a11y-ls-large main *,
+.a11y-ls-large header *,
+.a11y-ls-large footer * { letter-spacing: 0.16em !important; }
 
 /* ── Line height ── */
-.a11y-lh-medium * { line-height: 2 !important; }
-.a11y-lh-large * { line-height: 2.5 !important; }
+.a11y-lh-medium main *,
+.a11y-lh-medium header *,
+.a11y-lh-medium footer * { line-height: 2 !important; }
+.a11y-lh-large main *,
+.a11y-lh-large header *,
+.a11y-lh-large footer * { line-height: 2.5 !important; }
 
-/* ── Hide images ── */
-.a11y-no-images img,
-.a11y-no-images picture,
-.a11y-no-images svg:not([data-a11y-keep]),
-.a11y-no-images [style*="background-image"] { visibility: hidden !important; }
-/* Keep a11y panel icons visible */
-.a11y-no-images [data-a11y-keep] { visibility: visible !important; }
+/* ── Hide images (everywhere except the a11y panel) ── */
+.a11y-no-images main img,
+.a11y-no-images header img,
+.a11y-no-images footer img,
+.a11y-no-images main picture,
+.a11y-no-images main [style*="background-image"] { visibility: hidden !important; }
+.a11y-no-images main svg:not([data-a11y-keep]) { visibility: hidden !important; }
 
-/* ── Color: White on black ── */
-.a11y-color-white-on-black,
-.a11y-color-white-on-black body {
-  background: #000 !important;
-  color: #fff !important;
-}
-.a11y-color-white-on-black *:not([data-a11y-panel] *) {
+/* ────────────────────────────────────────────────────
+   Color schemes — scoped to main/header/footer
+   so the a11y panel keeps its own inline styles
+   ──────────────────────────────────────────────────── */
+
+/* White on black */
+.a11y-color-white-on-black { background: #000 !important; }
+.a11y-color-white-on-black body { background: #000 !important; color: #fff !important; }
+.a11y-color-white-on-black main,
+.a11y-color-white-on-black main *,
+.a11y-color-white-on-black header,
+.a11y-color-white-on-black header *,
+.a11y-color-white-on-black footer,
+.a11y-color-white-on-black footer * {
   background-color: transparent !important;
   color: #fff !important;
   border-color: #555 !important;
   box-shadow: none !important;
 }
-.a11y-color-white-on-black a { color: #ffff00 !important; text-decoration: underline !important; }
-.a11y-color-white-on-black button { border: 1px solid #888 !important; }
-.a11y-color-white-on-black input,
-.a11y-color-white-on-black textarea,
-.a11y-color-white-on-black select {
-  background: #111 !important;
-  color: #fff !important;
-  border: 1px solid #666 !important;
+.a11y-color-white-on-black main a,
+.a11y-color-white-on-black footer a { color: #ffff00 !important; text-decoration: underline !important; }
+.a11y-color-white-on-black main input,
+.a11y-color-white-on-black main textarea,
+.a11y-color-white-on-black main select,
+.a11y-color-white-on-black header input {
+  background: #111 !important; color: #fff !important; border: 1px solid #666 !important;
 }
 
-/* ── Color: Black on white ── */
-.a11y-color-black-on-white,
-.a11y-color-black-on-white body {
-  background: #fff !important;
-  color: #000 !important;
-}
-.a11y-color-black-on-white *:not([data-a11y-panel] *) {
+/* Black on white */
+.a11y-color-black-on-white { background: #fff !important; }
+.a11y-color-black-on-white body { background: #fff !important; color: #000 !important; }
+.a11y-color-black-on-white main,
+.a11y-color-black-on-white main *,
+.a11y-color-black-on-white header,
+.a11y-color-black-on-white header *,
+.a11y-color-black-on-white footer,
+.a11y-color-black-on-white footer * {
   background-color: transparent !important;
   color: #000 !important;
   border-color: #999 !important;
   box-shadow: none !important;
 }
-.a11y-color-black-on-white a { color: #0000cc !important; text-decoration: underline !important; }
-.a11y-color-black-on-white button { border: 1px solid #666 !important; }
-.a11y-color-black-on-white input,
-.a11y-color-black-on-white textarea,
-.a11y-color-black-on-white select {
-  background: #f0f0f0 !important;
-  color: #000 !important;
-  border: 1px solid #999 !important;
+.a11y-color-black-on-white main a,
+.a11y-color-black-on-white footer a { color: #0000cc !important; text-decoration: underline !important; }
+.a11y-color-black-on-white main input,
+.a11y-color-black-on-white main textarea,
+.a11y-color-black-on-white main select,
+.a11y-color-black-on-white header input {
+  background: #f0f0f0 !important; color: #000 !important; border: 1px solid #999 !important;
 }
 
-/* ── Color: Blue (dark blue bg, light blue text) ── */
-.a11y-color-blue,
-.a11y-color-blue body {
-  background: #063462 !important;
-  color: #8CADD6 !important;
-}
-.a11y-color-blue *:not([data-a11y-panel] *) {
+/* Blue */
+.a11y-color-blue { background: #063462 !important; }
+.a11y-color-blue body { background: #063462 !important; color: #8CADD6 !important; }
+.a11y-color-blue main,
+.a11y-color-blue main *,
+.a11y-color-blue header,
+.a11y-color-blue header *,
+.a11y-color-blue footer,
+.a11y-color-blue footer * {
   background-color: transparent !important;
   color: #8CADD6 !important;
   border-color: #3a6d9e !important;
   box-shadow: none !important;
 }
-.a11y-color-blue a { color: #BEE0FF !important; text-decoration: underline !important; }
-.a11y-color-blue button { border: 1px solid #5a8db6 !important; }
-.a11y-color-blue input,
-.a11y-color-blue textarea,
-.a11y-color-blue select {
-  background: #0a2a4a !important;
-  color: #8CADD6 !important;
-  border: 1px solid #3a6d9e !important;
+.a11y-color-blue main a,
+.a11y-color-blue footer a { color: #BEE0FF !important; text-decoration: underline !important; }
+.a11y-color-blue main input,
+.a11y-color-blue main textarea,
+.a11y-color-blue main select,
+.a11y-color-blue header input {
+  background: #0a2a4a !important; color: #8CADD6 !important; border: 1px solid #3a6d9e !important;
 }
 
-/* ── Color: Beige (warm, low contrast) ── */
-.a11y-color-beige,
-.a11y-color-beige body {
-  background: #F7F3D6 !important;
-  color: #4D4B43 !important;
-}
-.a11y-color-beige *:not([data-a11y-panel] *) {
+/* Beige */
+.a11y-color-beige { background: #F7F3D6 !important; }
+.a11y-color-beige body { background: #F7F3D6 !important; color: #4D4B43 !important; }
+.a11y-color-beige main,
+.a11y-color-beige main *,
+.a11y-color-beige header,
+.a11y-color-beige header *,
+.a11y-color-beige footer,
+.a11y-color-beige footer * {
   background-color: transparent !important;
   color: #4D4B43 !important;
   border-color: #B8B5A0 !important;
   box-shadow: none !important;
 }
-.a11y-color-beige a { color: #6B4226 !important; text-decoration: underline !important; }
-.a11y-color-beige button { border: 1px solid #A8A590 !important; }
-.a11y-color-beige input,
-.a11y-color-beige textarea,
-.a11y-color-beige select {
-  background: #EEEACC !important;
-  color: #4D4B43 !important;
-  border: 1px solid #B8B5A0 !important;
+.a11y-color-beige main a,
+.a11y-color-beige footer a { color: #6B4226 !important; text-decoration: underline !important; }
+.a11y-color-beige main input,
+.a11y-color-beige main textarea,
+.a11y-color-beige main select,
+.a11y-color-beige header input {
+  background: #EEEACC !important; color: #4D4B43 !important; border: 1px solid #B8B5A0 !important;
 }
