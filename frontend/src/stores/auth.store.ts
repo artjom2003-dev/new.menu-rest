@@ -83,9 +83,13 @@ export const useAuthStore = create<AuthState>()(
       onRehydrateStorage: () => (state) => {
         if (state) {
           state._hydrated = true;
-          // Only sync token if access_token doesn't exist yet (fresh page load)
-          // Never overwrite — setUser writes it synchronously and is always fresher
-          if (state.accessToken && !localStorage.getItem('access_token')) {
+          const lsToken = localStorage.getItem('access_token');
+          if (lsToken && state.accessToken && lsToken !== state.accessToken) {
+            // localStorage token was updated by another tab/login — it's fresher
+            // Force store to use the localStorage token (server will determine the user)
+            state.accessToken = lsToken;
+          }
+          if (state.accessToken && !lsToken) {
             localStorage.setItem('access_token', state.accessToken);
             document.cookie = `access_token=${state.accessToken}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
           }

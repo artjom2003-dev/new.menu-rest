@@ -236,9 +236,8 @@ function ProfileContent() {
 
     // Fetch fresh user data to get role and sync store — server is the source of truth
     userApi.getMe().then(r => {
-      // Always overwrite store with server data (token determines user, not localStorage)
       if (r.data) {
-        updateUser({
+        const serverUser = {
           id: r.data.id, name: r.data.name, email: r.data.email,
           avatarUrl: r.data.avatarUrl, loyaltyPoints: r.data.loyaltyPoints,
           loyaltyLevel: r.data.loyaltyLevel, role: r.data.role || 'user',
@@ -248,7 +247,14 @@ function ProfileContent() {
           cityName: r.data.city?.name || r.data.cityName,
           hideFromWishlists: r.data.hideFromWishlists,
           blockMessages: r.data.blockMessages,
-        });
+        };
+        // If server returns a different user than store (stale session), force full replace
+        if (user?.id && r.data.id !== user.id) {
+          const token = localStorage.getItem('access_token') || '';
+          useAuthStore.getState().setUser({ ...serverUser, loyaltyPoints: serverUser.loyaltyPoints ?? 0, loyaltyLevel: serverUser.loyaltyLevel ?? 'bronze' } as any, token);
+        } else {
+          updateUser(serverUser);
+        }
         setNameInput(r.data.name || '');
       }
       setServerLoaded(true);
