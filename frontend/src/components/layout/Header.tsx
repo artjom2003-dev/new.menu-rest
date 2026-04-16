@@ -13,6 +13,7 @@ import { useCityStore } from '@/stores/city.store';
 import { useGastroStore } from '@/stores/gastro.store';
 import { useChatStore } from '@/stores/chat.store';
 import { AuthModal } from '@/components/auth/AuthModal';
+import { ContactsPanel } from '@/components/chat/ContactsPanel';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { AccessibilityToggle } from './AccessibilityPanel';
 import { chatApi, ownerApi, referenceApi } from '@/lib/api';
@@ -240,6 +241,7 @@ function HeaderCityPicker() {
 export function Header() {
   const [scrolled, setScrolled] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
+  const [contactsOpen, setContactsOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { theme, setTheme } = useTheme();
@@ -489,7 +491,7 @@ export function Header() {
             {/* Contacts — guests only */}
             {mounted && isLoggedIn && !isOwner && (
               <button
-                onClick={() => { useChatStore.getState().open(); setTimeout(() => document.querySelector<HTMLButtonElement>('[data-tab="companions"]')?.click(), 100); }}
+                onClick={() => setContactsOpen(true)}
                 title="Контакты"
                 className="relative flex items-center justify-center w-[36px] h-[36px] rounded-full transition-all cursor-pointer"
                 style={{ background: 'var(--glass)', border: '1px solid var(--glass-border)' }}
@@ -639,6 +641,7 @@ export function Header() {
       )}
 
       <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} />
+      <ContactsPanel open={contactsOpen} onClose={() => setContactsOpen(false)} />
 
       {/* Fixed theme toggle — bottom right */}
       <button
