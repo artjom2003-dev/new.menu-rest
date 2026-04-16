@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { useAuthStore } from '@/stores/auth.store';
 
 const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL || '/api',
@@ -36,14 +37,11 @@ api.interceptors.response.use(
 
     if (error.response?.status === 401 && !isAuthEndpoint) {
       if (typeof window !== 'undefined') {
-        // Clear ALL auth storage and hard redirect — no React, no zustand, just vanilla JS
-        localStorage.removeItem('menurest-auth');
-        localStorage.removeItem('menurest-gastro');
-        localStorage.removeItem('access_token');
-        document.cookie = 'access_token=; path=/; max-age=0';
+        // 1. Clear zustand in-memory state FIRST — prevents persist from writing stale data back
+        useAuthStore.getState().logout();
+        // 2. Hard redirect — bypasses React/Next.js routing entirely
         if (!window.location.pathname.startsWith('/login')) {
           window.location.replace('/login');
-          return; // stop promise chain
         }
       }
     }
