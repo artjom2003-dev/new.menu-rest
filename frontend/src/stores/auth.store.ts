@@ -42,6 +42,8 @@ export const useAuthStore = create<AuthState>()(
       _hydrated: false,
 
       setUser: (user, accessToken) => {
+        // Clear user-specific caches from previous session
+        localStorage.removeItem('menurest-gastro');
         localStorage.setItem('access_token', accessToken);
         document.cookie = `access_token=${accessToken}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
         set({ user, accessToken, isLoggedIn: true });

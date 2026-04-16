@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuthStore } from '@/stores/auth.store';
+import { useFavoritesStore } from '@/stores/favorites.store';
+import { useWishlistStore } from '@/stores/wishlist.store';
 import { authApi } from '@/lib/api';
 import { useTranslations } from 'next-intl';
 
@@ -45,10 +47,14 @@ export function AuthModal({ open, onClose }: AuthModalProps) {
     try {
       if (mode === 'login') {
         const res = await authApi.login(form.email, form.password);
+        useFavoritesStore.getState().clear();
+        useWishlistStore.getState().clear();
         setUser(res.data.user, res.data.accessToken);
         onClose();
       } else if (mode === 'register') {
         const res = await authApi.register({ name: form.name, email: form.email, password: form.password, ...(refCode ? { referralCode: refCode } : {}) });
+        useFavoritesStore.getState().clear();
+        useWishlistStore.getState().clear();
         setUser(res.data.user, res.data.accessToken);
         onClose();
       } else if (mode === 'forgot') {

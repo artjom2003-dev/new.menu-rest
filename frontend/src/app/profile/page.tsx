@@ -225,20 +225,31 @@ function ProfileContent() {
   const [deleting, setDeleting] = useState(false);
   const [showReferral, setShowReferral] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
+  const [serverLoaded, setServerLoaded] = useState(false);
 
   // Load role + restaurant on mount
   useEffect(() => {
     if (!_hydrated) return; // ждём загрузки store из localStorage
     if (!isLoggedIn) { router.push('/login'); return; }
-    setNameInput(user?.name || '');
 
-    // Fetch fresh user data to get role and sync store
+    // Fetch fresh user data to get role and sync store — server is the source of truth
     userApi.getMe().then(r => {
-      // If server returns a different user, update store to match server (token is truth)
-      if (r.data?.id && user?.id && r.data.id !== user.id) {
-        console.warn(`[Profile] Store user ${user.id} differs from server user ${r.data.id}. Syncing from server.`);
-        updateUser({ id: r.data.id, name: r.data.name, email: r.data.email });
+      // Always overwrite store with server data (token determines user, not localStorage)
+      if (r.data) {
+        updateUser({
+          id: r.data.id, name: r.data.name, email: r.data.email,
+          avatarUrl: r.data.avatarUrl, loyaltyPoints: r.data.loyaltyPoints,
+          loyaltyLevel: r.data.loyaltyLevel, role: r.data.role || 'user',
+          referralCode: r.data.referralCode,
+          allergenProfile: r.data.allergenProfile,
+          bio: r.data.bio, age: r.data.age,
+          cityName: r.data.city?.name || r.data.cityName,
+          hideFromWishlists: r.data.hideFromWishlists,
+          blockMessages: r.data.blockMessages,
+        });
+        setNameInput(r.data.name || '');
       }
+      setServerLoaded(true);
       const role = r.data?.role;
       if (role && role !== user?.role) updateUser({ role });
       const ownerRole = role === 'owner' || role === 'admin';
@@ -259,6 +270,8 @@ function ProfileContent() {
         }).finally(() => setRestLoading(false));
       }
     }).catch(() => {
+      setNameInput(user?.name || '');
+      setServerLoaded(true);
       setIsOwner(user?.role === 'owner' || user?.role === 'admin');
       setRoleLoaded(true);
     });
@@ -367,7 +380,7 @@ function ProfileContent() {
     router.push('/');
   };
 
-  if (!user || !roleLoaded) return null;
+  if (!user || !roleLoaded || !serverLoaded) return null;
 
   const level = LEVEL_INFO[user.loyaltyLevel] || LEVEL_INFO.bronze;
 
