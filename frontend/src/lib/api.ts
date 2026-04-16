@@ -117,6 +117,7 @@ export const userApi = {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
   },
+  deleteAccount: () => api.delete('/users/me'),
   getPublicProfile: (id: number) => api.get(`/users/${id}/profile`),
   getWishlist: () => api.get('/users/me/wishlist'),
   toggleWishlist: (restaurantId: number) =>

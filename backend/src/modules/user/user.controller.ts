@@ -23,6 +23,13 @@ export class UserController {
     return this.service.updateMe(req.user.id, dto as never);
   }
 
+  @Delete()
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Удалить аккаунт' })
+  async deleteAccount(@Request() req: { user: { id: number } }) {
+    await this.service.deleteAccount(req.user.id);
+  }
+
   @Post('avatar')
   @ApiOperation({ summary: 'Загрузить аватар' })
   @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 5 * 1024 * 1024 } }))

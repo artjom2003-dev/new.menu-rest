@@ -226,6 +226,8 @@ function ProfileContent() {
   const [showReferral, setShowReferral] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [serverLoaded, setServerLoaded] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   // Load role + restaurant on mount
   useEffect(() => {
@@ -378,6 +380,18 @@ function ProfileContent() {
     useGastroStore.getState().reset();
     localStorage.removeItem('access_token');
     router.push('/');
+  };
+
+  const handleDeleteAccount = async () => {
+    setDeleteLoading(true);
+    try {
+      await userApi.deleteAccount();
+      handleLogout();
+    } catch {
+      toast('Не удалось удалить аккаунт', 'error');
+    }
+    setDeleteLoading(false);
+    setDeleteConfirm(false);
   };
 
   if (!user || !roleLoaded || !serverLoaded) return null;
@@ -1927,11 +1941,34 @@ function ProfileContent() {
           {/* Danger zone */}
           <div className="rounded-[20px] border p-6" style={{ background: 'var(--bg2)', borderColor: 'rgba(239,68,68,0.15)' }}>
             <h2 className="text-[15px] font-semibold text-red-400 mb-4">{t("dangerZone")}</h2>
-            <button onClick={handleLogout}
-              className="px-5 py-2.5 rounded-full text-[13px] font-semibold text-red-400 border cursor-pointer transition-all"
-              style={{ background: 'rgba(239,68,68,0.06)', borderColor: 'rgba(239,68,68,0.25)' }}>
-              {t("logoutAccount")}
-            </button>
+            <div className="flex gap-3 flex-wrap">
+              <button onClick={handleLogout}
+                className="px-5 py-2.5 rounded-full text-[13px] font-semibold text-red-400 border cursor-pointer transition-all"
+                style={{ background: 'rgba(239,68,68,0.06)', borderColor: 'rgba(239,68,68,0.25)' }}>
+                {t("logoutAccount")}
+              </button>
+              {!deleteConfirm ? (
+                <button onClick={() => setDeleteConfirm(true)}
+                  className="px-5 py-2.5 rounded-full text-[13px] font-semibold text-red-400/60 border cursor-pointer transition-all"
+                  style={{ background: 'transparent', borderColor: 'rgba(239,68,68,0.15)' }}>
+                  Удалить аккаунт
+                </button>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <span className="text-[12px] text-red-400">Вы уверены?</span>
+                  <button onClick={handleDeleteAccount} disabled={deleteLoading}
+                    className="px-4 py-2 rounded-full text-[12px] font-semibold text-white border-none cursor-pointer transition-all"
+                    style={{ background: 'rgba(239,68,68,0.8)' }}>
+                    {deleteLoading ? '...' : 'Да, удалить'}
+                  </button>
+                  <button onClick={() => setDeleteConfirm(false)}
+                    className="px-4 py-2 rounded-full text-[12px] font-semibold text-[var(--text3)] border cursor-pointer"
+                    style={{ background: 'var(--bg3)', borderColor: 'var(--card-border)' }}>
+                    Отмена
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}

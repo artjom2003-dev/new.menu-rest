@@ -72,6 +72,27 @@ export class UserService {
     return this.getMe(userId);
   }
 
+  async deleteAccount(userId: number): Promise<void> {
+    const user = await this.userRepo.findOne({ where: { id: userId } });
+    if (!user) throw new NotFoundException('Пользователь не найден');
+
+    // Clean up related data that doesn't cascade automatically
+    await this.userRepo.manager.query('DELETE FROM user_allergens WHERE user_id = $1', [userId]);
+    await this.userRepo.manager.query('DELETE FROM user_favorites WHERE "userId" = $1', [userId]);
+    await this.userRepo.manager.query('DELETE FROM user_wishlists WHERE "userId" = $1', [userId]);
+    await this.userRepo.manager.query('DELETE FROM messages WHERE sender_id = $1', [userId]);
+    await this.userRepo.manager.query(
+      'DELETE FROM conversations WHERE participant1_id = $1 OR participant2_id = $1', [userId],
+    );
+
+    // Delete avatar from storage
+    if (user.avatarUrl) {
+      try { await this.storage.delete(user.avatarUrl); } catch {}
+    }
+
+    await this.userRepo.delete(userId);
+  }
+
   async uploadAvatar(userId: number, file: Express.Multer.File): Promise<User> {
     const user = await this.userRepo.findOne({ where: { id: userId } });
     if (!user) throw new NotFoundException('Пользователь не найден');
