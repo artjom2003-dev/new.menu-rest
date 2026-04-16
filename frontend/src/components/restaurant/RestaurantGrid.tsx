@@ -78,7 +78,6 @@ function BestOfWeekGrid() {
           <h2 className="font-serif text-[36px] max-sm:text-[20px] font-bold text-[var(--text)] leading-tight">
             {t('bestOfWeek')}
           </h2>
-          <p className="text-[13px] max-sm:text-[11px] text-[var(--text3)] mt-1">{t('bestOfWeekSub')}</p>
         </div>
         <a href="/restaurants?hasMenu=true" className="text-[13px] max-sm:text-[12px] text-[var(--accent)] font-medium no-underline flex-shrink-0 whitespace-nowrap">
           {t('all')}
