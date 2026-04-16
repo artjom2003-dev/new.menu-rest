@@ -311,7 +311,7 @@ export function ChatWidget() {
 
   return (
     <div
-      style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', justifyContent: 'center', alignItems: 'center', background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)' }}
+      style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', justifyContent: 'center', alignItems: 'center', background: 'rgba(0,0,0,0.5)' }}
       onClick={e => { if (e.target === e.currentTarget) close(); }}
     >
       <div style={{ position: 'relative', width: 720, maxWidth: 'calc(100vw - 16px)', animation: 'chatIn 0.2s ease-out' }}>

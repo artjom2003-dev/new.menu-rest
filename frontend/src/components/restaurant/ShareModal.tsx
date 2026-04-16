@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { chatApi, companionApi } from '@/lib/api';
 import { useAuthStore } from '@/stores/auth.store';
+import { useChatStore } from '@/stores/chat.store';
 
 interface ShareTarget {
   type: 'conversation' | 'companion';
@@ -90,8 +91,8 @@ export function ShareModal({ open, onClose, restaurantName, restaurantSlug }: Sh
       }
 
       await chatApi.sendMessage(convId, messageText);
-      setSentTo(target.userId);
-      setTimeout(() => onClose(), 1200);
+      onClose();
+      useChatStore.getState().open({ conversationId: convId });
     } catch {}
   };
 
@@ -102,15 +103,9 @@ export function ShareModal({ open, onClose, restaurantName, restaurantSlug }: Sh
     });
   };
 
-  const handleNativeShare = () => {
-    if (navigator.share) {
-      navigator.share({ title: restaurantName, text: `Посмотри ресторан: ${restaurantName}`, url });
-    }
-  };
-
   return (
     <div
-      style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }}
+      style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.5)' }}
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
       <div style={{ width: 340, maxWidth: 'calc(100vw - 32px)', maxHeight: 'calc(100vh - 80px)', borderRadius: 20, overflow: 'hidden', border: '1px solid var(--card-border)', background: 'var(--bg2)', boxShadow: '0 16px 48px rgba(0,0,0,0.35)', animation: 'shareIn 0.15s ease-out' }}>
         <style>{`@keyframes shareIn { from { opacity: 0; transform: scale(0.95) translateY(8px); } to { opacity: 1; transform: none; } }`}</style>
@@ -165,18 +160,12 @@ export function ShareModal({ open, onClose, restaurantName, restaurantSlug }: Sh
           })}
         </div>
 
-        {/* Footer: copy link + native share */}
-        <div style={{ padding: '10px 12px', borderTop: '1px solid var(--card-border)', display: 'flex', gap: 6 }}>
+        {/* Footer: copy link */}
+        <div style={{ padding: '10px 12px', borderTop: '1px solid var(--card-border)' }}>
           <button onClick={handleCopy}
-            style={{ flex: 1, padding: '9px 0', borderRadius: 10, border: '1px solid var(--card-border)', background: copied ? 'rgba(20,184,166,0.08)' : 'var(--bg3)', color: copied ? 'var(--teal)' : 'var(--text2)', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.15s' }}>
+            style={{ width: '100%', padding: '9px 0', borderRadius: 10, border: '1px solid var(--card-border)', background: copied ? 'rgba(20,184,166,0.08)' : 'var(--bg3)', color: copied ? 'var(--teal)' : 'var(--text2)', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.15s' }}>
             {copied ? 'Скопировано!' : '🔗 Копировать ссылку'}
           </button>
-          {typeof navigator !== 'undefined' && typeof navigator.share === 'function' && (
-            <button onClick={handleNativeShare}
-              style={{ padding: '9px 16px', borderRadius: 10, border: '1px solid var(--card-border)', background: 'var(--bg3)', color: 'var(--text2)', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
-              Ещё
-            </button>
-          )}
         </div>
       </div>
     </div>
