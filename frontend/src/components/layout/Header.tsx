@@ -11,6 +11,7 @@ import { useFavoritesStore } from '@/stores/favorites.store';
 import { useWishlistStore } from '@/stores/wishlist.store';
 import { useCityStore } from '@/stores/city.store';
 import { useGastroStore } from '@/stores/gastro.store';
+import { useChatStore } from '@/stores/chat.store';
 import { AuthModal } from '@/components/auth/AuthModal';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { AccessibilityToggle } from './AccessibilityPanel';
@@ -487,26 +488,22 @@ export function Header() {
 
             {/* Chat — guests only */}
             {mounted && isLoggedIn && !isOwner && (
-              <Link
-                href="/chat"
-                className="relative flex items-center justify-center w-[36px] h-[36px] rounded-full transition-all no-underline"
+              <button
+                onClick={() => useChatStore.getState().open()}
+                className="relative flex items-center justify-center w-[36px] h-[36px] rounded-full transition-all cursor-pointer"
                 style={{
-                  background: pathname === '/chat' ? 'var(--search-border)' : 'var(--glass)',
-                  border: `1px solid ${pathname === '/chat' ? 'var(--accent)' : 'var(--glass-border)'}`,
+                  background: 'var(--glass)',
+                  border: '1px solid var(--glass-border)',
                 }}
                 onMouseEnter={(e) => {
-                  if (pathname !== '/chat') {
-                    (e.currentTarget as HTMLElement).style.borderColor = 'var(--accent)';
-                    (e.currentTarget as HTMLElement).style.background = 'var(--accent-glow)';
-                  }
+                  (e.currentTarget as HTMLElement).style.borderColor = 'var(--accent)';
+                  (e.currentTarget as HTMLElement).style.background = 'var(--accent-glow)';
                 }}
                 onMouseLeave={(e) => {
-                  if (pathname !== '/chat') {
-                    (e.currentTarget as HTMLElement).style.borderColor = 'var(--glass-border)';
-                    (e.currentTarget as HTMLElement).style.background = 'var(--glass)';
-                  }
+                  (e.currentTarget as HTMLElement).style.borderColor = 'var(--glass-border)';
+                  (e.currentTarget as HTMLElement).style.background = 'var(--glass)';
                 }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={pathname === '/chat' ? 'var(--accent)' : 'var(--text2)'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text2)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
                 </svg>
                 {chatUnread > 0 && (
@@ -530,7 +527,7 @@ export function Header() {
                     {chatUnread > 99 ? '99+' : chatUnread}
                   </span>
                 )}
-              </Link>
+              </button>
             )}
 
             {/* Auth / Profile */}
