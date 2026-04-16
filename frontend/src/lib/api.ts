@@ -1,5 +1,4 @@
 import axios from 'axios';
-import { useAuthStore } from '@/stores/auth.store';
 
 const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL || '/api',
@@ -37,15 +36,14 @@ api.interceptors.response.use(
 
     if (error.response?.status === 401 && !isAuthEndpoint) {
       if (typeof window !== 'undefined') {
-        // Clear all auth state: localStorage, cookie, and in-memory zustand store
+        // Clear ALL auth storage and hard redirect — no React, no zustand, just vanilla JS
         localStorage.removeItem('menurest-auth');
         localStorage.removeItem('menurest-gastro');
         localStorage.removeItem('access_token');
         document.cookie = 'access_token=; path=/; max-age=0';
-        // Clear zustand in-memory state to prevent stale user showing
-        useAuthStore.getState().logout();
         if (!window.location.pathname.startsWith('/login')) {
-          window.location.href = '/login';
+          window.location.replace('/login');
+          return; // stop promise chain
         }
       }
     }
