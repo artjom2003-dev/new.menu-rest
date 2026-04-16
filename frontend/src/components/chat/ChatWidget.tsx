@@ -7,7 +7,7 @@ import { useChatStore } from '@/stores/chat.store';
 import { chatApi, companionApi, restaurantApi } from '@/lib/api';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
-import { PickSessionPanel } from './PickSession';
+import { PickSessionPanel, parsePickSessionMsg, PickSessionInvite } from './PickSession';
 
 interface CompanionUser { id: number; name: string | null; avatarUrl?: string | null; loyaltyLevel?: string }
 interface CompanionRecord { id: number; user: CompanionUser; since?: string; createdAt?: string }
@@ -90,6 +90,7 @@ export function ChatWidget() {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
   const [pickSessionOpen, setPickSessionOpen] = useState(false);
+  const [pickJoinId, setPickJoinId] = useState<number | undefined>(undefined);
   const [typing, setTyping] = useState<string | null>(null);
 
   // Companion tab
@@ -374,7 +375,7 @@ export function ChatWidget() {
                         </div>
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <span style={{ fontSize: 13, fontWeight: unr ? 700 : 500, color: 'var(--text)', display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{displayName}</span>
-                          {c.lastMessage && <span style={{ fontSize: 11, color: unr ? 'var(--text2)' : 'var(--text3)', display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: 1 }}>{c.lastMessage.senderId === user?.id ? `${t('you')}: ` : ''}{(() => { const rp = parseRestaurantMsg(c.lastMessage!.text); return rp ? `🍽️ ${rp.name}` : trunc(c.lastMessage!.text, 20); })()}</span>}
+                          {c.lastMessage && <span style={{ fontSize: 11, color: unr ? 'var(--text2)' : 'var(--text3)', display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: 1 }}>{c.lastMessage.senderId === user?.id ? `${t('you')}: ` : ''}{(() => { const rp = parseRestaurantMsg(c.lastMessage!.text); if (rp) return `🍽️ ${rp.name}`; const pp = parsePickSessionMsg(c.lastMessage!.text); if (pp) return `🍽️ Куда пойдём?`; return trunc(c.lastMessage!.text, 20); })()}</span>}
                         </div>
                       </button>
                       {/* Rename button — only for creator */}
@@ -552,8 +553,14 @@ export function ChatWidget() {
                       return (
                         <div key={m.id} style={{ display: 'flex', justifyContent: mine ? 'flex-end' : 'flex-start', alignItems: 'flex-end', gap: 6, marginBottom: 3 }}>
                           {!mine && <div style={{ width: 22, height: 22, borderRadius: '50%', overflow: 'hidden', flexShrink: 0, visibility: showAv ? 'visible' : 'hidden', background: 'var(--bg3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{activeConv?.otherUser.avatarUrl ? <img src={activeConv.otherUser.avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <span style={{ fontSize: 9 }}>👤</span>}</div>}
-                          <div style={{ maxWidth: '75%', padding: parseRestaurantMsg(m.text) ? '4px' : '7px 11px', borderRadius: mine ? '14px 14px 3px 14px' : '14px 14px 14px 3px', background: parseRestaurantMsg(m.text) ? 'transparent' : mine ? 'linear-gradient(135deg, var(--accent), #ff8c42)' : 'var(--bg2)', color: mine ? '#fff' : 'var(--text)', fontSize: 13, lineHeight: 1.5, wordBreak: 'break-word', boxShadow: parseRestaurantMsg(m.text) ? 'none' : mine ? '0 2px 8px rgba(255,92,40,0.2)' : '0 1px 2px rgba(0,0,0,0.08)', border: parseRestaurantMsg(m.text) ? 'none' : mine ? 'none' : '1px solid var(--card-border)' }}>
-                            {(() => { const rp = parseRestaurantMsg(m.text); return rp ? <RestaurantBubble slug={rp.slug} name={rp.name} mine={mine} /> : <div>{m.text}</div>; })()}
+                          <div style={(() => { const isSpecial = parseRestaurantMsg(m.text) || parsePickSessionMsg(m.text); return { maxWidth: '75%', padding: isSpecial ? '4px' : '7px 11px', borderRadius: mine ? '14px 14px 3px 14px' : '14px 14px 14px 3px', background: isSpecial ? 'transparent' : mine ? 'linear-gradient(135deg, var(--accent), #ff8c42)' : 'var(--bg2)', color: mine ? '#fff' : 'var(--text)', fontSize: 13, lineHeight: 1.5, wordBreak: 'break-word' as const, boxShadow: isSpecial ? 'none' : mine ? '0 2px 8px rgba(255,92,40,0.2)' : '0 1px 2px rgba(0,0,0,0.08)', border: isSpecial ? 'none' : mine ? 'none' : '1px solid var(--card-border)' }; })()}>
+                            {(() => {
+                              const rp = parseRestaurantMsg(m.text);
+                              if (rp) return <RestaurantBubble slug={rp.slug} name={rp.name} mine={mine} />;
+                              const pp = parsePickSessionMsg(m.text);
+                              if (pp) return <PickSessionInvite sessionId={pp.sessionId} mode={pp.mode} label={pp.label} onJoin={(sid) => { setPickJoinId(sid); setPickSessionOpen(true); }} />;
+                              return <div>{m.text}</div>;
+                            })()}
                             <div style={{ fontSize: 9, marginTop: 2, textAlign: 'right', opacity: 0.5, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 3 }}>
                               {fmtTime(m.createdAt)}
                               {mine && <span>{m.read ? <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6L7 17l-5-5" /><path d="M22 6L11 17" /></svg> : <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5" /></svg>}</span>}
@@ -570,7 +577,7 @@ export function ChatWidget() {
               {/* Pick session overlay */}
               {pickSessionOpen && activeId && (
                 <div style={{ position: 'absolute', inset: 0, zIndex: 50, background: 'var(--bg)', borderRadius: 20, overflow: 'hidden' }}>
-                  <PickSessionPanel conversationId={activeId} socket={socketRef.current} onClose={() => setPickSessionOpen(false)} />
+                  <PickSessionPanel conversationId={activeId} sessionId={pickJoinId} socket={socketRef.current} onClose={() => { setPickSessionOpen(false); setPickJoinId(undefined); }} />
                 </div>
               )}
 
