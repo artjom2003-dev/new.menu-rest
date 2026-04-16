@@ -33,11 +33,14 @@ interface AuthState {
   updateUser: (partial: Partial<User>) => void;
 }
 
-// Write persist state synchronously to avoid race conditions
-function syncPersist(state: { user: User | null; accessToken: string | null; isLoggedIn: boolean }) {
+/** Decode JWT payload without library */
+function decodeJwtPayload(token: string): { sub?: number; email?: string } | null {
   try {
-    localStorage.setItem('menurest-auth', JSON.stringify({ state, version: 0 }));
-  } catch {}
+    const parts = token.split('.');
+    if (parts.length !== 3) return null;
+    const payload = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    return JSON.parse(atob(payload));
+  } catch { return null; }
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -51,20 +54,18 @@ export const useAuthStore = create<AuthState>()(
       setUser: (user, accessToken) => {
         // Clear user-specific caches from previous session
         localStorage.removeItem('menurest-gastro');
-        // Write token synchronously — this is the source of truth for API calls
+        // Write token and user id synchronously — source of truth for API calls
         localStorage.setItem('access_token', accessToken);
+        localStorage.setItem('menurest-uid', String(user.id));
         document.cookie = `access_token=${accessToken}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
-        // Write persist state synchronously so reloads see the new user immediately
-        syncPersist({ user, accessToken, isLoggedIn: true });
         set({ user, accessToken, isLoggedIn: true });
       },
 
       logout: () => {
         localStorage.removeItem('access_token');
+        localStorage.removeItem('menurest-uid');
         localStorage.removeItem('menurest-gastro');
         document.cookie = 'access_token=; path=/; max-age=0';
-        // Write persist state synchronously so reloads don't resurrect old user
-        syncPersist({ user: null, accessToken: null, isLoggedIn: false });
         set({ user: null, accessToken: null, isLoggedIn: false });
       },
 
@@ -84,12 +85,29 @@ export const useAuthStore = create<AuthState>()(
         if (state) {
           state._hydrated = true;
           const lsToken = localStorage.getItem('access_token');
-          if (lsToken && state.accessToken && lsToken !== state.accessToken) {
-            // localStorage token was updated by another tab/login — it's fresher
-            // Force store to use the localStorage token (server will determine the user)
+          const lsUid = localStorage.getItem('menurest-uid');
+
+          if (lsToken) {
+            // localStorage token is the source of truth (written synchronously at login)
             state.accessToken = lsToken;
-          }
-          if (state.accessToken && !lsToken) {
+
+            // Check if stored user matches the token
+            const jwtPayload = decodeJwtPayload(lsToken);
+            const tokenUid = jwtPayload?.sub;
+            const storeUid = state.user?.id;
+
+            if (tokenUid && storeUid && tokenUid !== storeUid) {
+              // Token belongs to a different user — clear stale user data
+              // AuthSync will fetch the correct user from server
+              state.user = null;
+              state.isLoggedIn = true; // keep logged in — token is valid
+            } else if (lsUid && storeUid && String(storeUid) !== lsUid) {
+              // uid mismatch — same treatment
+              state.user = null;
+              state.isLoggedIn = true;
+            }
+          } else if (state.accessToken) {
+            // No token in localStorage but store has one — restore it
             localStorage.setItem('access_token', state.accessToken);
             document.cookie = `access_token=${state.accessToken}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
           }

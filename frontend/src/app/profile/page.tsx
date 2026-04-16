@@ -248,8 +248,8 @@ function ProfileContent() {
           hideFromWishlists: r.data.hideFromWishlists,
           blockMessages: r.data.blockMessages,
         };
-        // If server returns a different user than store (stale session), force full replace
-        if (user?.id && r.data.id !== user.id) {
+        // If no user in store or server returns different user — full replace via setUser
+        if (!user || r.data.id !== user.id) {
           const token = localStorage.getItem('access_token') || '';
           useAuthStore.getState().setUser({ ...serverUser, loyaltyPoints: serverUser.loyaltyPoints ?? 0, loyaltyLevel: serverUser.loyaltyLevel ?? 'bronze' } as any, token);
         } else {
