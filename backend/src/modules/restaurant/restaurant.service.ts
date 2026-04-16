@@ -247,17 +247,19 @@ export class RestaurantService implements OnModuleInit {
       totalPromise,
     ]);
 
-    // Load cover photos separately (fast indexed query)
+    // Load one photo per restaurant for catalog cards (cover preferred, fallback to first)
     if (rawItems.length > 0) {
       const ids = rawItems.map(r => r.id);
-      const photos = await this.photoRepo
-        .createQueryBuilder('p')
-        .where('p.restaurant_id IN (:...ids)', { ids })
-        .andWhere('p.is_cover = true')
-        .getMany();
-      const photoMap = new Map(photos.map(p => [p.restaurantId, p]));
+      const photos: Array<{ id: number; restaurant_id: number; url: string; is_cover: boolean; sort_order: number }> = await this.photoRepo.manager.query(`
+        SELECT DISTINCT ON (p.restaurant_id) p.id, p.restaurant_id, p.url, p.is_cover, p.sort_order
+        FROM photos p
+        WHERE p.restaurant_id = ANY($1)
+        ORDER BY p.restaurant_id, p.is_cover DESC, p.sort_order ASC
+      `, [ids]);
+      const photoMap = new Map(photos.map(p => [p.restaurant_id, p]));
       for (const r of rawItems) {
-        (r as any).photos = photoMap.has(r.id) ? [photoMap.get(r.id)] : [];
+        const photo = photoMap.get(r.id);
+        (r as any).photos = photo ? [{ id: photo.id, url: photo.url, isCover: photo.is_cover, restaurantId: photo.restaurant_id, sortOrder: photo.sort_order }] : [];
       }
     }
 
