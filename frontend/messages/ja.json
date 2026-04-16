@@ -51,6 +51,8 @@
   },
   "grid": {
     "recommend": "おすすめレストラン",
+    "bestOfWeek": "今週のベストレストラン",
+    "bestOfWeekSub": "メニューと写真が充実した厳選レストラン",
     "all": "すべて →"
   },
   "cta": {

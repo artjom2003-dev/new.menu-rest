@@ -41,6 +41,65 @@ function adaptApiItem(r: RestaurantItem) {
   };
 }
 
+const BEST_OF_WEEK_SLUGS = [
+  'mango-moscow',
+  'chuck',
+  'chuck-corner',
+  'black-market',
+  'marchelli-s',
+  'pkhali-khinkali-spb',
+  'kvartira-spb',
+  't-g-i-friday-s-moscow-16',
+];
+
+function BestOfWeekGrid() {
+  const [items, setItems] = useState<ReturnType<typeof adaptApiItem>[]>([]);
+  const [loading, setLoading] = useState(true);
+  const t = useTranslations('grid');
+
+  useEffect(() => {
+    Promise.all(BEST_OF_WEEK_SLUGS.map(s => restaurantApi.getBySlug(s).catch(() => null)))
+      .then((results) => {
+        const list = results
+          .filter((r): r is NonNullable<typeof r> => r !== null && r.data)
+          .map(r => adaptApiItem(r.data));
+        setItems(list);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, []);
+
+  if (!loading && items.length === 0) return null;
+
+  return (
+    <>
+      <div className="max-w-[1400px] mx-auto px-10 max-md:px-4 max-sm:px-3 pt-8 max-sm:pt-4 pb-3 flex justify-between items-center">
+        <div>
+          <h2 className="font-serif text-[36px] max-sm:text-[20px] font-bold text-[var(--text)] leading-tight">
+            {t('bestOfWeek')}
+          </h2>
+          <p className="text-[13px] max-sm:text-[11px] text-[var(--text3)] mt-1">{t('bestOfWeekSub')}</p>
+        </div>
+        <a href="/restaurants?hasMenu=true" className="text-[13px] max-sm:text-[12px] text-[var(--accent)] font-medium no-underline flex-shrink-0 whitespace-nowrap">
+          {t('all')}
+        </a>
+      </div>
+
+      <div className="max-w-[1400px] mx-auto px-10 max-md:px-4 max-sm:px-3 pb-12 max-sm:pb-8 grid grid-cols-4 gap-4 max-xl:grid-cols-3 max-lg:grid-cols-2 max-sm:grid-cols-2 max-sm:gap-2.5">
+        {loading ? (
+          Array.from({ length: 8 }).map((_, i) => (
+            <div key={i} className="h-[240px] max-sm:h-[180px] rounded-[16px] animate-pulse" style={{ background: 'var(--bg3)' }} />
+          ))
+        ) : (
+          items.map((r) => (
+            <RestaurantCard key={r.slug} restaurant={r} />
+          ))
+        )}
+      </div>
+    </>
+  );
+}
+
 export function RestaurantGrid() {
   const [restaurants, setRestaurants] = useState<ReturnType<typeof adaptApiItem>[]>([]);
   const [loading, setLoading] = useState(true);
@@ -114,6 +173,8 @@ export function RestaurantGrid() {
           ))
         )}
       </div>
+
+      <BestOfWeekGrid />
     </>
   );
 }

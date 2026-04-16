@@ -51,6 +51,8 @@
   },
   "grid": {
     "recommend": "为您推荐",
+    "bestOfWeek": "本周最佳餐厅",
+    "bestOfWeekSub": "精选餐厅，提供完整菜单和照片",
     "all": "全部 →"
   },
   "cta": {

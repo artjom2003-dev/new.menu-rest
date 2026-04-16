@@ -51,6 +51,8 @@
   },
   "grid": {
     "recommend": "추천 레스토랑",
+    "bestOfWeek": "이번 주 최고의 레스토랑",
+    "bestOfWeekSub": "메뉴와 사진이 완비된 검증된 레스토랑",
     "all": "전체 →"
   },
   "cta": {

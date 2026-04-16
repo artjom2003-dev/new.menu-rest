@@ -51,6 +51,8 @@
   },
   "grid": {
     "recommend": "Recomendados para ti",
+    "bestOfWeek": "Mejores restaurantes de la semana",
+    "bestOfWeekSub": "Restaurantes destacados con menú completo y fotos",
     "all": "Todo →"
   },
   "cta": {
