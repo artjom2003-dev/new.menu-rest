@@ -256,3 +256,130 @@ body::after {
   from { opacity: 0; transform: translateY(12px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+/* ══════════════════════════════════════════════════════
+   Accessibility mode (версия для слабовидящих)
+   ══════════════════════════════════════════════════════ */
+
+/* Shift page content below the a11y panel */
+.a11y-enabled main { padding-top: 140px !important; }
+.a11y-enabled header { top: 76px !important; }
+@media (max-width: 640px) {
+  .a11y-enabled main { padding-top: 200px !important; }
+  .a11y-enabled header { top: 140px !important; }
+}
+
+/* Disable decorative effects in a11y mode */
+.a11y-enabled body::before,
+.a11y-enabled body::after { display: none !important; }
+.a11y-enabled * { animation: none !important; transition: none !important; }
+
+/* ── Font sizes ── */
+.a11y-font-large { font-size: 120% !important; }
+.a11y-font-large body { font-size: 120% !important; }
+.a11y-font-xlarge { font-size: 150% !important; }
+.a11y-font-xlarge body { font-size: 150% !important; }
+
+/* ── Letter spacing ── */
+.a11y-ls-medium * { letter-spacing: 0.08em !important; }
+.a11y-ls-large * { letter-spacing: 0.16em !important; }
+
+/* ── Line height ── */
+.a11y-lh-medium * { line-height: 2 !important; }
+.a11y-lh-large * { line-height: 2.5 !important; }
+
+/* ── Hide images ── */
+.a11y-no-images img,
+.a11y-no-images picture,
+.a11y-no-images svg:not([data-a11y-keep]),
+.a11y-no-images [style*="background-image"] { visibility: hidden !important; }
+/* Keep a11y panel icons visible */
+.a11y-no-images [data-a11y-keep] { visibility: visible !important; }
+
+/* ── Color: White on black ── */
+.a11y-color-white-on-black,
+.a11y-color-white-on-black body {
+  background: #000 !important;
+  color: #fff !important;
+}
+.a11y-color-white-on-black *:not([data-a11y-panel] *) {
+  background-color: transparent !important;
+  color: #fff !important;
+  border-color: #555 !important;
+  box-shadow: none !important;
+}
+.a11y-color-white-on-black a { color: #ffff00 !important; text-decoration: underline !important; }
+.a11y-color-white-on-black button { border: 1px solid #888 !important; }
+.a11y-color-white-on-black input,
+.a11y-color-white-on-black textarea,
+.a11y-color-white-on-black select {
+  background: #111 !important;
+  color: #fff !important;
+  border: 1px solid #666 !important;
+}
+
+/* ── Color: Black on white ── */
+.a11y-color-black-on-white,
+.a11y-color-black-on-white body {
+  background: #fff !important;
+  color: #000 !important;
+}
+.a11y-color-black-on-white *:not([data-a11y-panel] *) {
+  background-color: transparent !important;
+  color: #000 !important;
+  border-color: #999 !important;
+  box-shadow: none !important;
+}
+.a11y-color-black-on-white a { color: #0000cc !important; text-decoration: underline !important; }
+.a11y-color-black-on-white button { border: 1px solid #666 !important; }
+.a11y-color-black-on-white input,
+.a11y-color-black-on-white textarea,
+.a11y-color-black-on-white select {
+  background: #f0f0f0 !important;
+  color: #000 !important;
+  border: 1px solid #999 !important;
+}
+
+/* ── Color: Blue (dark blue bg, light blue text) ── */
+.a11y-color-blue,
+.a11y-color-blue body {
+  background: #063462 !important;
+  color: #8CADD6 !important;
+}
+.a11y-color-blue *:not([data-a11y-panel] *) {
+  background-color: transparent !important;
+  color: #8CADD6 !important;
+  border-color: #3a6d9e !important;
+  box-shadow: none !important;
+}
+.a11y-color-blue a { color: #BEE0FF !important; text-decoration: underline !important; }
+.a11y-color-blue button { border: 1px solid #5a8db6 !important; }
+.a11y-color-blue input,
+.a11y-color-blue textarea,
+.a11y-color-blue select {
+  background: #0a2a4a !important;
+  color: #8CADD6 !important;
+  border: 1px solid #3a6d9e !important;
+}
+
+/* ── Color: Beige (warm, low contrast) ── */
+.a11y-color-beige,
+.a11y-color-beige body {
+  background: #F7F3D6 !important;
+  color: #4D4B43 !important;
+}
+.a11y-color-beige *:not([data-a11y-panel] *) {
+  background-color: transparent !important;
+  color: #4D4B43 !important;
+  border-color: #B8B5A0 !important;
+  box-shadow: none !important;
+}
+.a11y-color-beige a { color: #6B4226 !important; text-decoration: underline !important; }
+.a11y-color-beige button { border: 1px solid #A8A590 !important; }
+.a11y-color-beige input,
+.a11y-color-beige textarea,
+.a11y-color-beige select {
+  background: #EEEACC !important;
+  color: #4D4B43 !important;
+  border: 1px solid #B8B5A0 !important;
+}

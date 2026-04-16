@@ -13,6 +13,7 @@ import { useCityStore } from '@/stores/city.store';
 import { useGastroStore } from '@/stores/gastro.store';
 import { AuthModal } from '@/components/auth/AuthModal';
 import { LanguageSwitcher } from './LanguageSwitcher';
+import { AccessibilityToggle } from './AccessibilityPanel';
 import { chatApi, ownerApi, referenceApi } from '@/lib/api';
 
 function NavLink({ href, label, isActive }: { href: string; label: string; isActive: boolean }) {
@@ -344,6 +345,7 @@ export function Header() {
             </Link>
 
             <span className="max-lg:hidden"><LanguageSwitcher /></span>
+            <span className="max-lg:hidden flex-shrink-0"><AccessibilityToggle /></span>
             <span className="max-lg:hidden flex-shrink-0"><HeaderCityPicker /></span>
           </div>
 
@@ -593,8 +595,9 @@ export function Header() {
             className="absolute top-[56px] sm:top-[64px] left-3 right-3 sm:right-auto sm:w-[280px] p-3 flex flex-col gap-1 rounded-2xl border"
             style={{ background: 'var(--dropdown-bg)', borderColor: 'var(--dropdown-border)', boxShadow: 'var(--dropdown-shadow)', backdropFilter: 'blur(24px)' }}
             onClick={(e) => e.stopPropagation()}>
-            <div className="px-2 pb-1.5 mb-1 border-b" style={{ borderColor: 'var(--card-border)' }}>
+            <div className="px-2 pb-1.5 mb-1 border-b flex items-center justify-between" style={{ borderColor: 'var(--card-border)' }}>
               <LanguageSwitcher />
+              <AccessibilityToggle />
             </div>
             {NAV_ITEMS.map((item) => (
               <Link

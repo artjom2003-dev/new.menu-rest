@@ -8,6 +8,7 @@ import { Footer } from '@/components/layout/Footer';
 import { ChatWidget } from '@/components/chat/ChatWidget';
 import { ToastProvider } from '@/components/ui/Toast';
 import { CookieBanner } from '@/components/ui/CookieBanner';
+import { AccessibilityPanel } from '@/components/layout/AccessibilityPanel';
 import '../styles/globals.css';
 
 export const viewport: Viewport = {
@@ -68,6 +69,7 @@ export default async function RootLayout({
         <NextIntlClientProvider messages={messages}>
           <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
             <ToastProvider>
+              <AccessibilityPanel />
               <Header />
               <main className="pt-[72px] max-sm:pt-[60px]">{children}</main>
 
