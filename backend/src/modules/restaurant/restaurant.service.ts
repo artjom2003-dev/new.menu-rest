@@ -159,6 +159,19 @@ export class RestaurantService implements OnModuleInit {
         .whereInIds(orderedIds)
         .getMany();
 
+      // Load one photo per restaurant (cover preferred, fallback to first)
+      const geoPhotos: Array<{ id: number; restaurant_id: number; url: string; is_cover: boolean; sort_order: number }> = await this.photoRepo.manager.query(`
+        SELECT DISTINCT ON (p.restaurant_id) p.id, p.restaurant_id, p.url, p.is_cover, p.sort_order
+        FROM photos p
+        WHERE p.restaurant_id = ANY($1)
+        ORDER BY p.restaurant_id, p.is_cover DESC, p.sort_order ASC
+      `, [orderedIds]);
+      const geoPhotoMap = new Map(geoPhotos.map(p => [p.restaurant_id, p]));
+      for (const e of entities) {
+        const photo = geoPhotoMap.get(e.id);
+        (e as any).photos = photo ? [{ id: photo.id, url: photo.url, isCover: photo.is_cover, restaurantId: photo.restaurant_id, sortOrder: photo.sort_order }] : [];
+      }
+
       // Reorder to match distance sort
       const entityMap = new Map(entities.map(e => [e.id, e]));
       const items = orderedIds
