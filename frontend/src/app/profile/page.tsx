@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense, type ReactNode } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useAuthStore } from '@/stores/auth.store';
+import { useAuthStore, getVerifiedUser } from '@/stores/auth.store';
 import { useFavoritesStore } from '@/stores/favorites.store';
 import { useWishlistStore } from '@/stores/wishlist.store';
 import { userApi, referenceApi, bookingApi, ownerApi, photoApi } from '@/lib/api';
@@ -174,7 +174,8 @@ export default function ProfilePage() {
 
 function ProfileContent() {
   const t = useTranslations('profile');
-  const { user, isLoggedIn, logout, updateUser, _hydrated } = useAuthStore();
+  const { isLoggedIn, logout, updateUser, _hydrated } = useAuthStore();
+  const user = useAuthStore(getVerifiedUser);
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();

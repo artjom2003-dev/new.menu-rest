@@ -17,6 +17,7 @@ import { ContactsPanel } from '@/components/chat/ContactsPanel';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { AccessibilityToggle } from './AccessibilityPanel';
 import { chatApi, ownerApi, referenceApi } from '@/lib/api';
+import { getVerifiedUser } from '@/stores/auth.store';
 
 function NavLink({ href, label, isActive }: { href: string; label: string; isActive: boolean }) {
   return (
@@ -245,7 +246,8 @@ export function Header() {
   const [mounted, setMounted] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { theme, setTheme } = useTheme();
-  const { isLoggedIn, user } = useAuthStore();
+  const { isLoggedIn } = useAuthStore();
+  const user = useAuthStore(getVerifiedUser);
   const pathname = usePathname();
   const router = useRouter();
   const t = useTranslations('header');

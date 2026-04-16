@@ -33,14 +33,29 @@ interface AuthState {
   updateUser: (partial: Partial<User>) => void;
 }
 
-/** Decode JWT payload without library */
-function decodeJwtPayload(token: string): { sub?: number; email?: string } | null {
+/** Decode JWT payload synchronously — returns user id from token */
+function getTokenUserId(): number | null {
+  if (typeof window === 'undefined') return null;
   try {
+    const token = localStorage.getItem('access_token');
+    if (!token) return null;
     const parts = token.split('.');
     if (parts.length !== 3) return null;
     const payload = parts[1].replace(/-/g, '+').replace(/_/g, '/');
-    return JSON.parse(atob(payload));
+    const decoded = JSON.parse(atob(payload));
+    return decoded.sub ?? null;
   } catch { return null; }
+}
+
+/**
+ * Returns the verified user: if stored user.id doesn't match JWT sub, returns null.
+ * This prevents showing stale user data from a previous login session.
+ */
+export function getVerifiedUser(state: AuthState): User | null {
+  if (!state.user) return null;
+  const tokenUid = getTokenUserId();
+  if (tokenUid !== null && tokenUid !== state.user.id) return null;
+  return state.user;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -52,18 +67,14 @@ export const useAuthStore = create<AuthState>()(
       _hydrated: false,
 
       setUser: (user, accessToken) => {
-        // Clear user-specific caches from previous session
         localStorage.removeItem('menurest-gastro');
-        // Write token and user id synchronously — source of truth for API calls
         localStorage.setItem('access_token', accessToken);
-        localStorage.setItem('menurest-uid', String(user.id));
         document.cookie = `access_token=${accessToken}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
         set({ user, accessToken, isLoggedIn: true });
       },
 
       logout: () => {
         localStorage.removeItem('access_token');
-        localStorage.removeItem('menurest-uid');
         localStorage.removeItem('menurest-gastro');
         document.cookie = 'access_token=; path=/; max-age=0';
         set({ user: null, accessToken: null, isLoggedIn: false });
@@ -85,29 +96,9 @@ export const useAuthStore = create<AuthState>()(
         if (state) {
           state._hydrated = true;
           const lsToken = localStorage.getItem('access_token');
-          const lsUid = localStorage.getItem('menurest-uid');
-
           if (lsToken) {
-            // localStorage token is the source of truth (written synchronously at login)
             state.accessToken = lsToken;
-
-            // Check if stored user matches the token
-            const jwtPayload = decodeJwtPayload(lsToken);
-            const tokenUid = jwtPayload?.sub;
-            const storeUid = state.user?.id;
-
-            if (tokenUid && storeUid && tokenUid !== storeUid) {
-              // Token belongs to a different user — clear stale user data
-              // AuthSync will fetch the correct user from server
-              state.user = null;
-              state.isLoggedIn = true; // keep logged in — token is valid
-            } else if (lsUid && storeUid && String(storeUid) !== lsUid) {
-              // uid mismatch — same treatment
-              state.user = null;
-              state.isLoggedIn = true;
-            }
           } else if (state.accessToken) {
-            // No token in localStorage but store has one — restore it
             localStorage.setItem('access_token', state.accessToken);
             document.cookie = `access_token=${state.accessToken}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
           }
