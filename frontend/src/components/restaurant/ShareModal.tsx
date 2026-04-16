@@ -77,7 +77,7 @@ export function ShareModal({ open, onClose, restaurantName, restaurantSlug }: Sh
   if (!open) return null;
 
   const url = `${typeof window !== 'undefined' ? window.location.origin : ''}/restaurants/${restaurantSlug}`;
-  const messageText = `🍽️ Посмотри ресторан: ${restaurantName}\n${url}`;
+  const messageText = `[restaurant:${restaurantSlug}:${restaurantName}]`;
 
   const handleSend = async (target: ShareTarget) => {
     try {
