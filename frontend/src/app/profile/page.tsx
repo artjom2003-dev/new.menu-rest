@@ -279,6 +279,11 @@ function ProfileContent() {
         }).finally(() => setRestLoading(false));
       }
     }).catch(() => {
+      // If token was cleared by 401 interceptor, redirect to login
+      if (!localStorage.getItem('access_token')) {
+        router.push('/login');
+        return;
+      }
       setNameInput(user?.name || '');
       setServerLoaded(true);
       setIsOwner(user?.role === 'owner' || user?.role === 'admin');

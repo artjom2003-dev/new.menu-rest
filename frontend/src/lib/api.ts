@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { useAuthStore } from '@/stores/auth.store';
 
 const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL || '/api',
@@ -42,10 +43,7 @@ api.interceptors.response.use(
         localStorage.removeItem('access_token');
         document.cookie = 'access_token=; path=/; max-age=0';
         // Clear zustand in-memory state to prevent stale user showing
-        try {
-          const { useAuthStore } = require('@/stores/auth.store');
-          useAuthStore.getState().logout();
-        } catch {}
+        useAuthStore.getState().logout();
         if (!window.location.pathname.startsWith('/login')) {
           window.location.href = '/login';
         }
