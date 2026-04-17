@@ -12,18 +12,18 @@ import { ConfigService } from '@nestjs/config';
 import * as jwt from 'jsonwebtoken';
 import { ChatService } from './chat.service';
 import { PickSessionService } from '@modules/pick-session/pick-session.service';
+import { NotificationService } from '@common/services/notification.service';
 
 @WebSocketGateway({ cors: { origin: '*' }, namespace: '/chat' })
 export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server: Server;
 
-  private userSockets = new Map<number, Socket>();
-
   constructor(
     private readonly chatService: ChatService,
     private readonly configService: ConfigService,
     private readonly pickSessionService: PickSessionService,
+    private readonly notificationService: NotificationService,
   ) {}
 
   handleConnection(client: Socket) {
@@ -42,7 +42,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       const userId = payload.sub;
 
       (client as any).userId = userId;
-      this.userSockets.set(userId, client);
+      this.notificationService.register(userId, client);
     } catch {
       client.disconnect();
     }
@@ -50,8 +50,8 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   handleDisconnect(client: Socket) {
     const userId = (client as any).userId as number | undefined;
-    if (userId && this.userSockets.get(userId) === client) {
-      this.userSockets.delete(userId);
+    if (userId) {
+      this.notificationService.unregister(userId, client);
     }
   }
 
@@ -75,7 +75,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     );
 
     if (otherUserId) {
-      const otherSocket = this.userSockets.get(otherUserId);
+      const otherSocket = this.notificationService.getSocket(otherUserId);
       if (otherSocket) {
         otherSocket.emit('newMessage', message);
       }
@@ -99,7 +99,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       userId,
     );
     if (otherUserId) {
-      const otherSocket = this.userSockets.get(otherUserId);
+      const otherSocket = this.notificationService.getSocket(otherUserId);
       if (otherSocket) {
         otherSocket.emit('messagesRead', { conversationId: data.conversationId });
       }
@@ -119,7 +119,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       userId,
     );
     if (otherUserId) {
-      const otherSocket = this.userSockets.get(otherUserId);
+      const otherSocket = this.notificationService.getSocket(otherUserId);
       if (otherSocket) {
         otherSocket.emit('userTyping', {
           conversationId: data.conversationId,
@@ -142,7 +142,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       const session = await this.pickSessionService.createSession(userId, data.conversationId, data.mode, data.filters, data.restaurantIds);
       client.emit('pickSession:created', { session });
       const otherId = await this.getOtherUserFromConversation(data.conversationId, userId);
-      if (otherId) this.userSockets.get(otherId)?.emit('pickSession:created', { session });
+      if (otherId) this.notificationService.getSocket(otherId)?.emit('pickSession:created', { session });
     } catch (e) {
       client.emit('pickSession:error', { message: (e as Error).message });
     }
@@ -160,11 +160,11 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       const session = await this.pickSessionService.getSession(data.sessionId, userId);
       const otherId = await this.getOtherUserFromConversation(session.conversationId, userId);
       if (otherId) {
-        this.userSockets.get(otherId)?.emit('pickSession:swiped', { sessionId: data.sessionId, restaurantId: data.restaurantId, userId });
+        this.notificationService.getSocket(otherId)?.emit('pickSession:swiped', { sessionId: data.sessionId, restaurantId: data.restaurantId, userId });
       }
       if (result.match) {
         client.emit('pickSession:match', { sessionId: data.sessionId, restaurant: result.match });
-        if (otherId) this.userSockets.get(otherId)?.emit('pickSession:match', { sessionId: data.sessionId, restaurant: result.match });
+        if (otherId) this.notificationService.getSocket(otherId)?.emit('pickSession:match', { sessionId: data.sessionId, restaurant: result.match });
       }
     } catch {}
   }
@@ -181,7 +181,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       const session = await this.pickSessionService.getSession(data.sessionId, userId);
       const otherId = await this.getOtherUserFromConversation(session.conversationId, userId);
       if (otherId) {
-        this.userSockets.get(otherId)?.emit('pickSession:voted', { sessionId: data.sessionId, restaurantId: data.restaurantId, userId, reaction: data.reaction });
+        this.notificationService.getSocket(otherId)?.emit('pickSession:voted', { sessionId: data.sessionId, restaurantId: data.restaurantId, userId, reaction: data.reaction });
       }
     } catch {}
   }
@@ -199,7 +199,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       const session = await this.pickSessionService.getSession(data.sessionId, userId);
       const otherId = await this.getOtherUserFromConversation(session.conversationId, userId);
       client.emit('pickSession:completed', { sessionId: data.sessionId, results });
-      if (otherId) this.userSockets.get(otherId)?.emit('pickSession:completed', { sessionId: data.sessionId, results });
+      if (otherId) this.notificationService.getSocket(otherId)?.emit('pickSession:completed', { sessionId: data.sessionId, results });
     } catch {}
   }
 
@@ -214,7 +214,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       const session = await this.pickSessionService.getSession(data.sessionId, userId);
       await this.pickSessionService.cancelSession(data.sessionId, userId);
       const otherId = await this.getOtherUserFromConversation(session.conversationId, userId);
-      if (otherId) this.userSockets.get(otherId)?.emit('pickSession:cancelled', { sessionId: data.sessionId, userId });
+      if (otherId) this.notificationService.getSocket(otherId)?.emit('pickSession:cancelled', { sessionId: data.sessionId, userId });
     } catch {}
   }
 

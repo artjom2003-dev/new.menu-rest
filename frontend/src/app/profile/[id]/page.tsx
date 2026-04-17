@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { userApi, companionApi } from '@/lib/api';
 import { useAuthStore } from '@/stores/auth.store';
 import { useChatStore } from '@/stores/chat.store';
+import { useCompanionNotifications } from '@/components/companion/CompanionNotifications';
 
 interface PublicProfile {
   id: number;
@@ -36,6 +37,7 @@ export default function PublicProfilePage() {
   const [loading, setLoading] = useState(true);
   const [compStatus, setCompStatus] = useState<{ status: string; id: number | null; direction?: string }>({ status: 'none', id: null });
   const [inviting, setInviting] = useState(false);
+  const { refreshCount } = useCompanionNotifications();
 
   useEffect(() => {
     const id = Number(params.id);
@@ -64,6 +66,7 @@ export default function PublicProfilePage() {
     try {
       await companionApi.accept(compStatus.id);
       setCompStatus({ ...compStatus, status: 'accepted' });
+      refreshCount();
     } catch {}
   };
 

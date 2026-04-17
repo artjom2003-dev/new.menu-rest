@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Companion } from '@database/entities/companion.entity';
 import { User } from '@database/entities/user.entity';
+import { NotificationService } from '@common/services/notification.service';
 
 @Injectable()
 export class CompanionService {
@@ -11,6 +12,7 @@ export class CompanionService {
     private readonly companionRepo: Repository<Companion>,
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
+    private readonly notificationService: NotificationService,
   ) {}
 
   async invite(userId: number, companionId: number) {
@@ -18,6 +20,8 @@ export class CompanionService {
 
     const target = await this.userRepo.findOneBy({ id: companionId });
     if (!target) throw new NotFoundException('Пользователь не найден');
+
+    const sender = await this.userRepo.findOneBy({ id: userId });
 
     // Check if already exists in either direction
     const existing = await this.companionRepo.findOne({
@@ -27,6 +31,7 @@ export class CompanionService {
       ],
     });
 
+    let record: Companion;
     if (existing) {
       if (existing.status === 'accepted') throw new ConflictException('Уже в компании');
       if (existing.status === 'pending') throw new ConflictException('Приглашение уже отправлено');
@@ -35,12 +40,28 @@ export class CompanionService {
         existing.status = 'pending';
         existing.userId = userId;
         existing.companionId = companionId;
-        return this.companionRepo.save(existing);
+        record = await this.companionRepo.save(existing);
+      } else {
+        record = existing;
       }
+    } else {
+      const companion = this.companionRepo.create({ userId, companionId, status: 'pending' });
+      record = await this.companionRepo.save(companion);
     }
 
-    const companion = this.companionRepo.create({ userId, companionId, status: 'pending' });
-    return this.companionRepo.save(companion);
+    // Send real-time notification to the target user
+    this.notificationService.emit(companionId, 'companion:request', {
+      id: record.id,
+      user: {
+        id: userId,
+        name: sender?.name || 'Пользователь',
+        avatarUrl: sender?.avatarUrl || null,
+        loyaltyLevel: sender?.loyaltyLevel || 'bronze',
+      },
+      createdAt: record.createdAt,
+    });
+
+    return record;
   }
 
   async accept(id: number, userId: number) {
@@ -50,7 +71,21 @@ export class CompanionService {
     if (record.status !== 'pending') throw new BadRequestException('Приглашение уже обработано');
 
     record.status = 'accepted';
-    return this.companionRepo.save(record);
+    const saved = await this.companionRepo.save(record);
+
+    // Notify the sender that their request was accepted
+    const acceptor = await this.userRepo.findOneBy({ id: userId });
+    this.notificationService.emit(record.userId, 'companion:accepted', {
+      id: saved.id,
+      user: {
+        id: userId,
+        name: acceptor?.name || 'Пользователь',
+        avatarUrl: acceptor?.avatarUrl || null,
+        loyaltyLevel: acceptor?.loyaltyLevel || 'bronze',
+      },
+    });
+
+    return saved;
   }
 
   async decline(id: number, userId: number) {
@@ -116,6 +151,12 @@ export class CompanionService {
     return { status: record.status, id: record.id, direction: record.userId === userId ? 'sent' : 'received' };
   }
 
+  async getPendingCount(userId: number): Promise<number> {
+    return this.companionRepo.count({
+      where: { companionId: userId, status: 'pending' },
+    });
+  }
+
   async searchUsers(query: string, currentUserId: number) {
     if (!query || query.length < 2) return [];
 
@@ -123,7 +164,7 @@ export class CompanionService {
       .createQueryBuilder('u')
       .where('u.id != :currentUserId', { currentUserId })
       .andWhere('LOWER(u.name) LIKE LOWER(:q)', { q: `%${query}%` })
-      .andWhere('u.block_messages = false')
+      .andWhere('u.blockMessages = false')
       .select(['u.id', 'u.name', 'u.avatarUrl', 'u.loyaltyLevel'])
       .limit(10)
       .getMany();

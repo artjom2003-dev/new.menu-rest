@@ -237,6 +237,7 @@ export const pickSessionApi = {
 export const companionApi = {
   getMyCompanions: () => api.get('/companions'),
   getPending: () => api.get('/companions/pending'),
+  getPendingCount: () => api.get('/companions/pending/count'),
   getStatus: (userId: number) => api.get(`/companions/status/${userId}`),
   invite: (userId: number) => api.post('/companions/invite', { userId }),
   accept: (id: number) => api.patch(`/companions/${id}/accept`),

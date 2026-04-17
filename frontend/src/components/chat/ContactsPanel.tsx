@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { companionApi } from '@/lib/api';
 import { useAuthStore } from '@/stores/auth.store';
 import { useChatStore } from '@/stores/chat.store';
+import { useCompanionNotifications } from '@/components/companion/CompanionNotifications';
 
 interface CompanionUser { id: number; name: string | null; avatarUrl?: string | null; loyaltyLevel?: string }
 interface CompanionRecord { id: number; user: CompanionUser; since?: string; createdAt?: string }
@@ -12,6 +13,7 @@ const LEVEL_COLORS: Record<string, string> = { bronze: '#cd7f32', silver: '#c0c0
 
 export function ContactsPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { isLoggedIn } = useAuthStore();
+  const { refreshCount } = useCompanionNotifications();
   const [companions, setCompanions] = useState<CompanionRecord[]>([]);
   const [pending, setPending] = useState<CompanionRecord[]>([]);
   const [loading, setLoading] = useState(true);
@@ -55,6 +57,7 @@ export function ContactsPanel({ open, onClose }: { open: boolean; onClose: () =>
     try {
       await companionApi.accept(id);
       setPending(p => p.filter(r => r.id !== id));
+      refreshCount();
       companionApi.getMyCompanions().then(r => setCompanions(r.data || [])).catch(() => {});
     } catch {}
   };
@@ -63,6 +66,7 @@ export function ContactsPanel({ open, onClose }: { open: boolean; onClose: () =>
     try {
       await companionApi.decline(id);
       setPending(p => p.filter(r => r.id !== id));
+      refreshCount();
     } catch {}
   };
 

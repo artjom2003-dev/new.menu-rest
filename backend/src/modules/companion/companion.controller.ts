@@ -50,6 +50,12 @@ export class CompanionController {
     return this.service.getPending(userId);
   }
 
+  @Get('pending/count')
+  @ApiOperation({ summary: 'Количество входящих приглашений' })
+  getPendingCount(@CurrentUser('id') userId: number) {
+    return this.service.getPendingCount(userId).then(count => ({ count }));
+  }
+
   @Get('status/:userId')
   @ApiOperation({ summary: 'Статус отношений с пользователем' })
   getStatus(@CurrentUser('id') userId: number, @Param('userId', ParseIntPipe) otherUserId: number) {

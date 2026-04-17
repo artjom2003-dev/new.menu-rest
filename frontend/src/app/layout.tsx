@@ -10,6 +10,7 @@ import { ToastProvider } from '@/components/ui/Toast';
 import { CookieBanner } from '@/components/ui/CookieBanner';
 import { AccessibilityPanel } from '@/components/layout/AccessibilityPanel';
 import { AuthSync } from '@/components/auth/AuthSync';
+import { CompanionNotificationsProvider } from '@/components/companion/CompanionNotifications';
 import '../styles/globals.css';
 
 export const viewport: Viewport = {
@@ -70,14 +71,16 @@ export default async function RootLayout({
         <NextIntlClientProvider messages={messages}>
           <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
             <ToastProvider>
-              <AuthSync />
-              <AccessibilityPanel />
-              <Header />
-              <main className="pt-[72px] max-sm:pt-[60px]">{children}</main>
+              <CompanionNotificationsProvider>
+                <AuthSync />
+                <AccessibilityPanel />
+                <Header />
+                <main className="pt-[72px] max-sm:pt-[60px]">{children}</main>
 
-              <ChatWidget />
-              <Footer />
-              <CookieBanner />
+                <ChatWidget />
+                <Footer />
+                <CookieBanner />
+              </CompanionNotificationsProvider>
             </ToastProvider>
           </ThemeProvider>
         </NextIntlClientProvider>

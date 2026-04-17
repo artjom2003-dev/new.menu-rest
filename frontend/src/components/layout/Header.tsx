@@ -14,6 +14,7 @@ import { useGastroStore } from '@/stores/gastro.store';
 import { useChatStore } from '@/stores/chat.store';
 import { AuthModal } from '@/components/auth/AuthModal';
 import { ContactsPanel } from '@/components/chat/ContactsPanel';
+import { useCompanionNotifications } from '@/components/companion/CompanionNotifications';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { AccessibilityToggle } from './AccessibilityPanel';
 import { chatApi, ownerApi, referenceApi } from '@/lib/api';
@@ -258,6 +259,7 @@ export function Header() {
   const wishlistLoaded = useWishlistStore(s => s.loaded);
   const [chatUnread, setChatUnread] = useState(0);
   const [ownerSlug, setOwnerSlug] = useState<string | null>(null);
+  const { pendingCount: companionPending, refreshCount: refreshCompanionCount } = useCompanionNotifications();
 
   useEffect(() => {
     setMounted(true);
@@ -493,7 +495,7 @@ export function Header() {
             {/* Contacts — guests only */}
             {mounted && isLoggedIn && !isOwner && (
               <button
-                onClick={() => setContactsOpen(true)}
+                onClick={() => { setContactsOpen(true); refreshCompanionCount(); }}
                 title="Контакты"
                 className="relative flex items-center justify-center w-[36px] h-[36px] rounded-full transition-all cursor-pointer"
                 style={{ background: 'var(--glass)', border: '1px solid var(--glass-border)' }}
@@ -502,6 +504,27 @@ export function Header() {
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text2)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4-4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 00-3-3.87" /><path d="M16 3.13a4 4 0 010 7.75" />
                 </svg>
+                {companionPending > 0 && (
+                  <span style={{
+                    position: 'absolute',
+                    top: -4,
+                    right: -4,
+                    minWidth: 18,
+                    height: 18,
+                    borderRadius: 9,
+                    background: '#22c55e',
+                    color: 'white',
+                    fontSize: 10,
+                    fontWeight: 700,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '0 5px',
+                    boxShadow: '0 2px 8px rgba(34,197,94,0.4)',
+                  }}>
+                    {companionPending > 99 ? '99+' : companionPending}
+                  </span>
+                )}
               </button>
             )}
 
