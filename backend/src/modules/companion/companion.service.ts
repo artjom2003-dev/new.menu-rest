@@ -160,15 +160,30 @@ export class CompanionService {
   async searchUsers(query: string, currentUserId: number) {
     if (!query || query.length < 2) return [];
 
-    const users = await this.userRepo
+    // Get IDs of users already connected (pending or accepted)
+    const existing = await this.companionRepo.find({
+      where: [
+        { userId: currentUserId },
+        { companionId: currentUserId },
+      ],
+      select: ['userId', 'companionId', 'status'],
+    });
+    const excludeIds = new Set<number>([currentUserId]);
+    for (const r of existing) {
+      if (r.status === 'accepted' || r.status === 'pending') {
+        excludeIds.add(r.userId === currentUserId ? r.companionId : r.userId);
+      }
+    }
+
+    const qb = this.userRepo
       .createQueryBuilder('u')
-      .where('u.id != :currentUserId', { currentUserId })
+      .where('u.id NOT IN (:...excludeIds)', { excludeIds: [...excludeIds] })
       .andWhere('LOWER(u.name) LIKE LOWER(:q)', { q: `%${query}%` })
       .andWhere('u.blockMessages = false')
       .select(['u.id', 'u.name', 'u.avatarUrl', 'u.loyaltyLevel'])
-      .limit(10)
-      .getMany();
+      .limit(10);
 
+    const users = await qb.getMany();
     return users.map(u => ({ id: u.id, name: u.name, avatarUrl: u.avatarUrl, loyaltyLevel: u.loyaltyLevel }));
   }
 }
