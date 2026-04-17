@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { companionApi } from '@/lib/api';
 import { useAuthStore } from '@/stores/auth.store';
 import { useChatStore } from '@/stores/chat.store';
@@ -21,16 +21,25 @@ export function ContactsPanel({ open, onClose }: { open: boolean; onClose: () =>
   const [searchResults, setSearchResults] = useState<CompanionUser[]>([]);
   const [searching, setSearching] = useState(false);
   const [invitedIds, setInvitedIds] = useState<Set<number>>(new Set());
+  const [loadKey, setLoadKey] = useState(0);
 
-  // Load contacts
-  useEffect(() => {
-    if (!open || !isLoggedIn) return;
+  // Load contacts — runs on open and on loadKey change
+  const loadContacts = useCallback(() => {
+    if (!isLoggedIn) return;
     setLoading(true);
     Promise.all([companionApi.getMyCompanions(), companionApi.getPending()])
-      .then(([c, p]) => { setCompanions(c.data || []); setPending(p.data || []); })
+      .then(([c, p]) => {
+        setCompanions(c.data || []);
+        setPending(p.data || []);
+      })
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, [open, isLoggedIn]);
+  }, [isLoggedIn]);
+
+  useEffect(() => {
+    if (!open) return;
+    loadContacts();
+  }, [open, loadKey, loadContacts]);
 
   // Search
   useEffect(() => {
@@ -49,16 +58,22 @@ export function ContactsPanel({ open, onClose }: { open: boolean; onClose: () =>
     try {
       await companionApi.invite(userId);
       setInvitedIds(p => new Set(p).add(userId));
-      setSearchResults(p => p.filter(u => u.id !== userId));
     } catch {}
   };
 
   const handleAccept = async (id: number) => {
+    const record = pending.find(r => r.id === id);
     try {
       await companionApi.accept(id);
+      // Immediately move from pending to companions
       setPending(p => p.filter(r => r.id !== id));
+      if (record) {
+        setCompanions(p => [
+          { id: record.id, user: record.user, since: new Date().toISOString() },
+          ...p,
+        ]);
+      }
       refreshCount();
-      companionApi.getMyCompanions().then(r => setCompanions(r.data || [])).catch(() => {});
     } catch {}
   };
 
@@ -82,6 +97,15 @@ export function ContactsPanel({ open, onClose }: { open: boolean; onClose: () =>
     useChatStore.getState().open({ userId });
   };
 
+  // Reset search on close
+  useEffect(() => {
+    if (!open) {
+      setSearchQ('');
+      setSearchResults([]);
+      setInvitedIds(new Set());
+    }
+  }, [open]);
+
   if (!open) return null;
 
   return (
@@ -92,8 +116,16 @@ export function ContactsPanel({ open, onClose }: { open: boolean; onClose: () =>
 
         {/* Header */}
         <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--card-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>👥 Контакты</h3>
-          <button onClick={onClose} style={{ width: 28, height: 28, borderRadius: 8, border: 'none', background: 'var(--bg3)', cursor: 'pointer', color: 'var(--text3)', fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+          <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>Контакты</h3>
+          <div style={{ display: 'flex', gap: 6 }}>
+            <button onClick={() => setLoadKey(k => k + 1)} title="Обновить"
+              style={{ width: 28, height: 28, borderRadius: 8, border: 'none', background: 'var(--bg3)', cursor: 'pointer', color: 'var(--text3)', fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M23 4v6h-6" /><path d="M1 20v-6h6" /><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15" />
+              </svg>
+            </button>
+            <button onClick={onClose} style={{ width: 28, height: 28, borderRadius: 8, border: 'none', background: 'var(--bg3)', cursor: 'pointer', color: 'var(--text3)', fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+          </div>
         </div>
 
         {/* Search */}
@@ -167,7 +199,9 @@ export function ContactsPanel({ open, onClose }: { open: boolean; onClose: () =>
 
           {/* My contacts */}
           <div>
-            <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.08em', padding: '4px 6px', marginBottom: 4 }}>Мои контакты</div>
+            <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.08em', padding: '4px 6px', marginBottom: 4 }}>
+              Мои контакты {companions.length > 0 && `(${companions.length})`}
+            </div>
             {loading ? (
               <div style={{ padding: 16, textAlign: 'center', color: 'var(--text3)', fontSize: 12 }}>Загрузка...</div>
             ) : companions.length === 0 ? (
