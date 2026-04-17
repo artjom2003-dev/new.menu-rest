@@ -44,6 +44,13 @@ export class CompanionController {
     return this.service.getMyCompanions(userId);
   }
 
+  @Get('search')
+  @ApiOperation({ summary: 'Поиск пользователей' })
+  @ApiQuery({ name: 'q', required: true })
+  searchUsers(@Query('q') query: string, @CurrentUser('id') userId: number) {
+    return this.service.searchUsers(query, userId);
+  }
+
   @Get('pending')
   @ApiOperation({ summary: 'Входящие приглашения' })
   getPending(@CurrentUser('id') userId: number) {
@@ -60,12 +67,5 @@ export class CompanionController {
   @ApiOperation({ summary: 'Статус отношений с пользователем' })
   getStatus(@CurrentUser('id') userId: number, @Param('userId', ParseIntPipe) otherUserId: number) {
     return this.service.getStatus(userId, otherUserId);
-  }
-
-  @Get('search')
-  @ApiOperation({ summary: 'Поиск пользователей' })
-  @ApiQuery({ name: 'q', required: true })
-  searchUsers(@Query('q') query: string, @CurrentUser('id') userId: number) {
-    return this.service.searchUsers(query, userId);
   }
 }
