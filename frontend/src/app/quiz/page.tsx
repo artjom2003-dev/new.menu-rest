@@ -279,6 +279,35 @@ function computeProfile(answers: Record<number, number[]>): GastroProfile {
   return { archetype, archetypeEmoji, archetypeDescription, axes, dietaryTags, topAxes };
 }
 
+/** Map API response (server format) to GastroProfile (frontend format) */
+function mapApiProfile(data: any): GastroProfile | null {
+  if (!data || !data.axes) return null;
+
+  const AXIS_LABELS: Record<string, string> = {
+    adventure: 'Авантюризм', intensity: 'Интенсивность', meal_tempo: 'Темп еды',
+    sweet_tooth: 'Сладкое', foodie_level: 'Фуди-уровень', texture_pref: 'Текстура',
+    health_vector: 'ЗОЖ', protein_focus: 'Белок', visual_weight: 'Визуал',
+    social_context: 'Социальность', alcohol_profile: 'Алкоголь', price_tolerance: 'Бюджет',
+  };
+
+  const sorted = Object.entries(data.axes as Record<string, number>).sort(([, a], [, b]) => b - a);
+  const topAxes = sorted.slice(0, 4).filter(([, v]) => v >= 5).map(([k]) => AXIS_LABELS[k] || k);
+
+  const dietaryTags = (data.dietary || []).map((d: string) => {
+    const labels: Record<string, string> = { vegetarian: 'Вегетарианство', vegan: 'Веган', gluten_free: 'Без глютена', lactose_free: 'Без лактозы', halal: 'Халяль' };
+    return labels[d] || d;
+  });
+
+  return {
+    archetype: data.archetypeInfo?.name || data.archetype || 'Гурман',
+    archetypeEmoji: data.archetypeInfo?.emoji || '🍽️',
+    archetypeDescription: data.archetypeInfo?.description || '',
+    axes: data.axes,
+    dietaryTags,
+    topAxes,
+  };
+}
+
 /* ═══════════════════════════════════════════════════════════
    Floating Emojis
    ═══════════════════════════════════════════════════════════ */
@@ -585,20 +614,24 @@ export default function QuizPage() {
   const [slideDir, setSlideDir] = useState<'left' | 'right'>('left');
   const [slideKey, setSlideKey] = useState(0);
 
-  // If user already has a profile, show result
+  // If user already has a profile (from store), show result
   useEffect(() => {
-    if (profile && stage === 'intro') {
+    if (profile && profile.archetypeEmoji && stage === 'intro') {
       setStage('result');
     }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [profile]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Try to load questions from API
+  // Try to load questions from API and existing profile
   useEffect(() => {
     gastroApi.getQuestions().catch(() => {});
-    // Also try to load existing profile
     if (isLoggedIn) {
       gastroApi.getProfile()
-        .then((r) => { if (r.data) setProfile(r.data); })
+        .then((r) => {
+          if (r.data) {
+            const mapped = mapApiProfile(r.data);
+            if (mapped) setProfile(mapped);
+          }
+        })
         .catch(() => {});
     }
   }, [isLoggedIn]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -647,7 +680,8 @@ export default function QuizPage() {
       try {
         const res = await gastroApi.submitQuiz(answers);
         if (res.data) {
-          setProfile(res.data);
+          const mapped = mapApiProfile(res.data);
+          setProfile(mapped || res.data);
           setSubmitting(false);
           setTimeout(() => setStage('result'), 2500);
           return;
