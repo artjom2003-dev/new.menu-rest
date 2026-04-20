@@ -879,6 +879,10 @@ ${relevant.length === 0 ? 'Честно скажи что по запросу н
 
     const hasDistance = restaurants.some(r => r.distanceKm !== undefined);
     const wantsNearbyPrompt = /поблизости|рядом|ближайш|недалеко|близко/i.test(qLower);
+    const closestKm = hasDistance
+      ? Math.min(...restaurants.filter(r => r.distanceKm !== undefined).map(r => r.distanceKm!))
+      : undefined;
+    const nearbyButFar = wantsNearbyPrompt && hasDistance && closestKm !== undefined && closestKm > 5;
     const systemMessage = `Ты — MenuRest AI, персональный помощник в выборе ресторана. Отвечай как опытный друг-гурман: тепло, конкретно, по делу. Пиши на русском. Обращайся на "вы" (решили, захотели). Без женского/мужского рода.
 ${funOpener ? `\n${funOpener}` : ''}
 ПРАВИЛА:
@@ -888,7 +892,7 @@ ${funOpener ? `\n${funOpener}` : ''}
 4. Не используй эмодзи. НЕ выдумывай информацию — только данные из списка.
 5. НЕ делай предположений: бар НЕ значит пиво, кофейня НЕ значит латте. Только если ЯВНО указано в описании или меню.
 6. НЕ упоминай рейтинг. Средний чек — только если спрашивают про цену/бюджет.
-${hasDistance ? '7. Список УЖЕ отсортирован по расстоянию — сначала самые близкие. Рекомендуй в том же порядке (первые 2-4 из списка). Не вытаскивай дальний ресторан вперёд, даже если тематически он подходит лучше. Упомяни расстояние (например "всего в 1.2 км от вас").' : '7. ЗАПРЕЩЕНО писать любое расстояние (км, метры, "в N км от вас", "недалеко", "близко к метро X"). Геолокация пользователя НЕ получена. Любая цифра расстояния = галлюцинация. Просто перечисли варианты по адресам без упоминания расстояния.'}
+${hasDistance ? `7. Список УЖЕ отсортирован по расстоянию — сначала самые близкие. Рекомендуй в том же порядке (первые 2-4 из списка). Не вытаскивай дальний ресторан вперёд. Упомяни расстояние (например "всего в 1.2 км от вас").${nearbyButFar ? ` Пользователь просил "поблизости", но ближе ${closestKm!.toFixed(1)} км ничего не нашлось — честно начни с этого ("К сожалению, совсем рядом ничего не подошло, но в ${closestKm!.toFixed(0)}-${Math.ceil(closestKm! + 10)} км есть хорошие варианты:"), потом рекомендации.` : ''}` : '7. ЗАПРЕЩЕНО писать любое расстояние (км, метры, "в N км от вас", "недалеко", "близко к метро X"). Геолокация пользователя НЕ получена. Любая цифра расстояния = галлюцинация. Просто перечисли варианты по адресам без упоминания расстояния.'}
 ${!hasDistance && wantsNearbyPrompt ? '8. Пользователь спросил "поблизости", но разрешение на геолокацию не получено. Начни ответ с короткой просьбы включить геолокацию или указать район/метро, и только потом кратко перечисли 2-3 интересных варианта без километров.' : ''}
 ${!hasDistance && !wantsNearbyPrompt ? '8. В конце добавь: "Хотите уточнить район или найти что-то ближе к вам?"' : ''}
 9. СЕТЬ: упомяни "сеть с N точками", НЕ перечисляй все адреса.
@@ -1288,15 +1292,27 @@ ${isBroadSocial ? '11. Запрос общий — после основных 2
     if (userLat && userLng && restaurants.length > 0 && (wantsNearby || wantsPreciseLocation || wantsDistance)) {
       restaurants = this.sortByDistance(restaurants, userLat, userLng);
 
-      // For "nearby" queries: hard-drop far-away results. A thematic match 30 km away must never
-      // surface when the user asked for "поблизости" — even if it means zero results.
+      // For "nearby" queries: progressive radius. Prefer the tightest tier that still gives
+      // at least 3 results. If nothing close, fall back to the 3 closest overall — so the LLM
+      // can honestly say "ближе ничего нет, вот самые близкие варианты".
       if (wantsNearby) {
-        const MAX_NEARBY_KM = 10;
-        const before = restaurants.length;
-        restaurants = restaurants.filter(r => r.distanceKm !== undefined && r.distanceKm <= MAX_NEARBY_KM);
-        if (before !== restaurants.length) {
-          this.logger.log(`[AI-Stream] nearby filter: dropped ${before - restaurants.length} results > ${MAX_NEARBY_KM} km (kept ${restaurants.length})`);
+        const TIERS = [5, 10, 20];
+        let chosen: RestaurantSummary[] = [];
+        let tierUsed = 0;
+        for (const km of TIERS) {
+          const within = restaurants.filter(r => r.distanceKm !== undefined && r.distanceKm <= km);
+          if (within.length >= 3) {
+            chosen = within;
+            tierUsed = km;
+            break;
+          }
         }
+        if (chosen.length === 0) {
+          chosen = restaurants.filter(r => r.distanceKm !== undefined).slice(0, 3);
+          tierUsed = chosen.length > 0 ? Math.ceil(chosen[chosen.length - 1].distanceKm!) : 0;
+        }
+        this.logger.log(`[AI-Stream] nearby radius: ${tierUsed}km (${chosen.length}/${restaurants.length} kept)`);
+        restaurants = chosen;
       }
     }
 
