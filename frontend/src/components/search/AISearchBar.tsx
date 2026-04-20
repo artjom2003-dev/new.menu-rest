@@ -320,6 +320,26 @@ export function AISearchBar() {
   const handleSearch = useCallback(async (overrideQuery?: string) => {
     const q = overrideQuery ?? query;
     if (!q.trim() || q.length < 3 || isAnalyzing) return;
+
+    // If the query asks for nearby/proximity results and we don't yet have
+    // the user's location, request geolocation before sending. Otherwise the
+    // backend will silently search nationwide and can surface distant places.
+    const wantsNearby = /поблизости|рядом|ближайш|недалеко|близко|nearby/i.test(q);
+    let lat = geoLat;
+    let lng = geoLng;
+    if (wantsNearby && (!lat || !lng)) {
+      const result = await useGeoStore.getState().requestLocation();
+      if (result === 'granted') {
+        const s = useGeoStore.getState();
+        lat = s.lat;
+        lng = s.lng;
+      } else if (result === 'denied') {
+        toast('Чтобы искать поблизости, разрешите доступ к геолокации или укажите район в запросе.', 'info');
+      } else if (result === 'unavailable') {
+        toast('Геолокация недоступна. Укажите город или район в запросе.', 'info');
+      }
+    }
+
     setChatHistory(prev => [...prev, { role: 'user', text: q }]);
     setQuery('');
     setIsAnalyzing(true);
@@ -331,7 +351,7 @@ export function AISearchBar() {
       const response = await fetch(`${apiUrl}/search/ai-stream`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: q, ...(geoLat && geoLng ? { lat: geoLat, lng: geoLng } : {}), ...(savedCitySlug ? { city: savedCitySlug, cityName: savedCityName } : {}), ...(context.length > 0 ? { context } : {}) }),
+        body: JSON.stringify({ query: q, ...(lat && lng ? { lat, lng } : {}), ...(savedCitySlug ? { city: savedCitySlug, cityName: savedCityName } : {}), ...(context.length > 0 ? { context } : {}) }),
       });
       if (!response.ok || !response.body) throw new Error('Stream failed');
       const reader = response.body.getReader();

@@ -1,11 +1,13 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
+type GeoStatus = 'idle' | 'requesting' | 'granted' | 'denied' | 'unavailable';
+
 interface GeoState {
   lat: number | null;
   lng: number | null;
-  status: 'idle' | 'requesting' | 'granted' | 'denied' | 'unavailable';
-  requestLocation: () => void;
+  status: GeoStatus;
+  requestLocation: () => Promise<GeoStatus>;
   clearLocation: () => void;
 }
 
@@ -19,26 +21,27 @@ export const useGeoStore = create<GeoState>()(
       requestLocation: () => {
         if (!navigator.geolocation) {
           set({ status: 'unavailable' });
-          return;
+          return Promise.resolve('unavailable');
         }
         set({ status: 'requesting' });
-        navigator.geolocation.getCurrentPosition(
-          (pos) => {
-            set({
-              lat: pos.coords.latitude,
-              lng: pos.coords.longitude,
-              status: 'granted',
-            });
-          },
-          (err) => {
-            set({
-              status: err.code === 1 ? 'denied' : 'unavailable',
-              lat: null,
-              lng: null,
-            });
-          },
-          { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 },
-        );
+        return new Promise<GeoStatus>((resolve) => {
+          navigator.geolocation.getCurrentPosition(
+            (pos) => {
+              set({
+                lat: pos.coords.latitude,
+                lng: pos.coords.longitude,
+                status: 'granted',
+              });
+              resolve('granted');
+            },
+            (err) => {
+              const status: GeoStatus = err.code === 1 ? 'denied' : 'unavailable';
+              set({ status, lat: null, lng: null });
+              resolve(status);
+            },
+            { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 },
+          );
+        });
       },
 
       clearLocation: () => set({ lat: null, lng: null, status: 'idle' }),
