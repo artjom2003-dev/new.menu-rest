@@ -883,8 +883,11 @@ ${relevant.length === 0 ? 'Честно скажи что по запросу н
       ? Math.min(...restaurants.filter(r => r.distanceKm !== undefined).map(r => r.distanceKm!))
       : undefined;
     const nearbyButFar = wantsNearbyPrompt && hasDistance && closestKm !== undefined && closestKm > 5;
+    // Suppress the fun opener when we need to lead with an honest "nothing truly nearby" message —
+    // otherwise the joke runs first and the LLM ignores the apology instruction.
+    const effectiveFunOpener = nearbyButFar ? '' : funOpener;
     const systemMessage = `Ты — MenuRest AI, персональный помощник в выборе ресторана. Отвечай как опытный друг-гурман: тепло, конкретно, по делу. Пиши на русском. Обращайся на "вы" (решили, захотели). Без женского/мужского рода.
-${funOpener ? `\n${funOpener}` : ''}
+${effectiveFunOpener ? `\n${effectiveFunOpener}` : ''}
 ПРАВИЛА:
 1. Рекомендуй СТРОГО по запросу. НЕ приписывай намерения, которых пользователь не высказывал.
 2. Выбери 2-4 лучших варианта. Для каждого — 2-3 предложения: почему подходит + факты (адрес/метро, кухня, особенности из описания).
@@ -1292,24 +1295,21 @@ ${isBroadSocial ? '11. Запрос общий — после основных 2
     if (userLat && userLng && restaurants.length > 0 && (wantsNearby || wantsPreciseLocation || wantsDistance)) {
       restaurants = this.sortByDistance(restaurants, userLat, userLng);
 
-      // For "nearby" queries: progressive radius. Prefer the tightest tier that still gives
-      // at least 3 results. If nothing close, fall back to the 3 closest overall — so the LLM
-      // can honestly say "ближе ничего нет, вот самые близкие варианты".
+      // For "nearby" queries: progressive radius. Prefer the tightest tier with ≥3 results;
+      // otherwise take whatever we have in the widest acceptable tier. Never include results
+      // further than 50 km — a 632 km place must never appear under "поблизости".
       if (wantsNearby) {
-        const TIERS = [5, 10, 20];
+        const TIERS = [5, 10, 20, 50];
         let chosen: RestaurantSummary[] = [];
         let tierUsed = 0;
         for (const km of TIERS) {
           const within = restaurants.filter(r => r.distanceKm !== undefined && r.distanceKm <= km);
+          tierUsed = km;
           if (within.length >= 3) {
             chosen = within;
-            tierUsed = km;
             break;
           }
-        }
-        if (chosen.length === 0) {
-          chosen = restaurants.filter(r => r.distanceKm !== undefined).slice(0, 3);
-          tierUsed = chosen.length > 0 ? Math.ceil(chosen[chosen.length - 1].distanceKm!) : 0;
+          chosen = within;
         }
         this.logger.log(`[AI-Stream] nearby radius: ${tierUsed}km (${chosen.length}/${restaurants.length} kept)`);
         restaurants = chosen;
