@@ -1034,6 +1034,14 @@ ${isBroadSocial ? '11. Запрос общий — после основных 2
     // Current query params take priority; fill gaps from context
     this.logger.log(`[AI-Stream] currentParams=${JSON.stringify(currentParams)}`);
     const params = { ...currentParams };
+    // Pure proximity adverbs (поблизости, рядом, ...) are NOT locations — drop them from
+    // rawLocation so they don't end up as `address ILIKE '%поблизости%'` (always empty) and
+    // don't disable the broad-text-search fallback via the hasExplicitLocation gate.
+    const PROXIMITY_ONLY = /^(поблизости|рядом|близко|недалеко|ближайш[еий]е?|вокруг)$/i;
+    if (params.rawLocation && !params.location && PROXIMITY_ONLY.test(params.rawLocation.trim())) {
+      this.logger.log(`[AI-Stream] stripping proximity adverb "${params.rawLocation}" from rawLocation`);
+      params.rawLocation = undefined;
+    }
     if (!params.location && contextParams.location) params.location = contextParams.location;
     if (!params.rawLocation && contextParams.rawLocation) params.rawLocation = contextParams.rawLocation;
     if (!params.cuisine && contextParams.cuisine) params.cuisine = contextParams.cuisine;
@@ -1052,8 +1060,8 @@ ${isBroadSocial ? '11. Запрос общий — после основных 2
       params.rawLocation = llmParsed.location;
     }
     const llmVenueTypes = Array.isArray(llmParsed.impliedVenueTypes) ? llmParsed.impliedVenueTypes as string[] : [];
+    const llmDishes = Array.isArray(llmParsed.dishes) ? llmParsed.dishes as string[] : [];
     if (!hasStructuredIntent) {
-      const llmDishes = Array.isArray(llmParsed.dishes) ? llmParsed.dishes as string[] : [];
       if (llmDishes.length && !params.dish) {
         params.dish = llmDishes[0];
         params.relatedDishes = [...(params.relatedDishes || []), ...llmDishes.slice(1)];
@@ -1062,7 +1070,19 @@ ${isBroadSocial ? '11. Запрос общий — после основных 2
         params.venueType = llmVenueTypes[0];
       }
     } else {
-      this.logger.log(`[AI-Stream] skipping LLM dish/venue — keyword-extractor already has intent: occasion=${params.occasion}, atmosphere=${params.atmosphere}, dish=${params.dish}`);
+      // Even with a keyword-extractor dish, merge LLM's extra dishes as related terms. A query
+      // like "мясо и красное вино" lands dish="вино" here, but "мясо" from the LLM is a valid
+      // second axis — losing it means we only search wine and miss obvious steakhouses.
+      const extraDishes = llmDishes.filter(d => d && d.toLowerCase() !== (params.dish || '').toLowerCase());
+      if (extraDishes.length) {
+        const existing = new Set((params.relatedDishes || []).map(d => d.toLowerCase()));
+        const added = extraDishes.filter(d => !existing.has(d.toLowerCase()));
+        if (added.length) {
+          params.relatedDishes = [...(params.relatedDishes || []), ...added];
+          this.logger.log(`[AI-Stream] merged LLM extra dishes into relatedDishes: ${added.join(', ')}`);
+        }
+      }
+      this.logger.log(`[AI-Stream] kept keyword-extractor intent: occasion=${params.occasion}, atmosphere=${params.atmosphere}, dish=${params.dish}`);
     }
     const extraSearchTerms = Array.isArray(llmParsed.searchTerms) ? llmParsed.searchTerms as string[] : [];
 
