@@ -831,7 +831,7 @@ ${funOpener ? `\n${funOpener}` : ''}
 3. "ПОХОЖЕЕ БЛЮДО В МЕНЮ" — честно скажи что "${searchingDish}" нет, но есть [название]. Объясни почему подойдёт.
 4. НЕ делай предположений. Бар НЕ значит пиво. Кофейня НЕ значит латте. Только факты из данных.
 5. Без эмодзи. Без списков. Названия без кавычек. Между ресторанами — пустая строка.
-6. Упомяни адрес/метро.${hasDistance ? ' Упомяни расстояние (например "в 1.2 км от вас").' : ' НЕ выдумывай расстояние.'}
+6. Упомяни адрес/метро.${hasDistance ? ' Список отсортирован по расстоянию — сначала ближние. Рекомендуй в таком же порядке, не вытаскивай дальний ресторан вперёд. Упомяни расстояние (например "в 1.2 км от вас").' : ' НЕ выдумывай расстояние.'}
 7. Средний чек — только если спрашивают про бюджет/цену.
 ${!hasDistance ? '8. В конце добавь: "Хотите уточнить район или найти что-то ближе к вам?"' : ''}
 9. СЕТЬ: упомяни "сеть с N точками", НЕ перечисляй адреса.
@@ -887,7 +887,7 @@ ${funOpener ? `\n${funOpener}` : ''}
 4. Не используй эмодзи. НЕ выдумывай информацию — только данные из списка.
 5. НЕ делай предположений: бар НЕ значит пиво, кофейня НЕ значит латте. Только если ЯВНО указано в описании или меню.
 6. НЕ упоминай рейтинг. Средний чек — только если спрашивают про цену/бюджет.
-${hasDistance ? '7. Расстояние указано — упомяни (например "всего в 1.2 км от вас").' : '7. Расстояние НЕ указано — НЕ выдумывай.'}
+${hasDistance ? '7. Список УЖЕ отсортирован по расстоянию — сначала самые близкие. Рекомендуй в том же порядке (первые 2-4 из списка). Не вытаскивай дальний ресторан вперёд, даже если тематически он подходит лучше. Упомяни расстояние (например "всего в 1.2 км от вас").' : '7. Расстояние НЕ указано — НЕ выдумывай.'}
 ${!hasDistance ? '8. В конце добавь: "Хотите уточнить район или найти что-то ближе к вам?"' : ''}
 9. СЕТЬ: упомяни "сеть с N точками", НЕ перечисляй все адреса.
 10. Пропускай рестораны без описания или конкретных фактов.
@@ -1285,6 +1285,18 @@ ${isBroadSocial ? '11. Запрос общий — после основных 2
     // Only sort by distance and show km when user explicitly asks for nearby/proximity/distance
     if (userLat && userLng && restaurants.length > 0 && (wantsNearby || wantsPreciseLocation || wantsDistance)) {
       restaurants = this.sortByDistance(restaurants, userLat, userLng);
+
+      // For "nearby" queries: drop far-away results when we have enough close ones.
+      // Otherwise a thematic match 30 km away can outrank local options in the LLM's choice.
+      if (wantsNearby) {
+        const MAX_NEARBY_KM = 10;
+        const within = restaurants.filter(r => r.distanceKm !== undefined && r.distanceKm <= MAX_NEARBY_KM);
+        if (within.length >= 3) {
+          const dropped = restaurants.length - within.length;
+          restaurants = within;
+          if (dropped > 0) this.logger.log(`[AI-Stream] nearby filter: dropped ${dropped} results > ${MAX_NEARBY_KM} km`);
+        }
+      }
     }
 
     // Deduplicate chain restaurants — keep best branch, mark as chain
@@ -1340,8 +1352,14 @@ ${isBroadSocial ? '11. Запрос общий — после основных 2
         const name = r.name.toLowerCase();
         return queryWords.filter(w => name.includes(w)).length;
       };
-      // Only prioritize non-generic name matches when user has broader intent
-      const shouldPrioritize = (r: RestaurantSummary) => nameMatchIds.has(r.id) && !(queryHasIntent && this.isGenericName(r.name));
+      // Only prioritize non-generic name matches when user has broader intent.
+      // When user asked for "nearby", never promote a far-away name match above closer options.
+      const NEARBY_PROMOTE_KM = 10;
+      const isTooFarForNearby = (r: RestaurantSummary) =>
+        wantsNearby && userLat !== undefined && userLng !== undefined &&
+        r.distanceKm !== undefined && r.distanceKm > NEARBY_PROMOTE_KM;
+      const shouldPrioritize = (r: RestaurantSummary) =>
+        nameMatchIds.has(r.id) && !(queryHasIntent && this.isGenericName(r.name)) && !isTooFarForNearby(r);
       const named = restaurants.filter(r => shouldPrioritize(r)).sort((a, b) => nameScore(b) - nameScore(a));
       const rest = restaurants.filter(r => !shouldPrioritize(r));
       restaurants = [...named, ...rest];
