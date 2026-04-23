@@ -292,8 +292,7 @@ export function AISearchBar() {
     recognition.onend = () => {
       setIsListening(false);
       if (finalTranscript.trim()) {
-        // Auto-focus input so user can hit Enter or edit
-        setTimeout(() => inputRef.current?.focus(), 100);
+        setTimeout(() => inputRef.current?.focus({ preventScroll: true }), 100);
       }
     };
 
@@ -380,7 +379,12 @@ export function AISearchBar() {
       toast(t('aiUnavailable'), 'error');
     } finally {
       setIsAnalyzing(false);
-      setTimeout(() => inputRef.current?.focus(), 100);
+      // Re-focus input without scrolling the page (was throwing mobile users to bottom).
+      // On narrow viewports skip focus entirely so the keyboard doesn't pop over the answer.
+      setTimeout(() => {
+        const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
+        if (!isMobile) inputRef.current?.focus({ preventScroll: true });
+      }, 100);
     }
   }, [query, isAnalyzing, chatHistory, geoLat, geoLng, savedCitySlug, savedCityName, toast, t]);
 

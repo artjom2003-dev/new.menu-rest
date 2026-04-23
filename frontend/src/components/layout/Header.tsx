@@ -661,6 +661,53 @@ export function Header() {
                 {item.label}
               </Link>
             ))}
+
+            {/* Messages + Contacts — mobile only, for logged-in guests */}
+            {mounted && isLoggedIn && !isOwner && (
+              <div className="mt-1 pt-2 border-t flex flex-col gap-1" style={{ borderColor: 'var(--card-border)' }}>
+                <button
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    useChatStore.getState().open();
+                  }}
+                  className="flex items-center justify-between px-3 py-2 rounded-lg text-[13px] font-semibold border-0 cursor-pointer transition-all bg-transparent text-left w-full"
+                  style={{ color: 'var(--text2)' }}>
+                  <span className="flex items-center gap-2">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
+                    </svg>
+                    Сообщения
+                  </span>
+                  {chatUnread > 0 && (
+                    <span className="min-w-[20px] h-5 px-1.5 rounded-full text-[10px] font-bold text-white inline-flex items-center justify-center"
+                      style={{ background: 'var(--accent)' }}>
+                      {chatUnread > 99 ? '99+' : chatUnread}
+                    </span>
+                  )}
+                </button>
+                <button
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    setContactsOpen(true);
+                    refreshCompanionCount();
+                  }}
+                  className="flex items-center justify-between px-3 py-2 rounded-lg text-[13px] font-semibold border-0 cursor-pointer transition-all bg-transparent text-left w-full"
+                  style={{ color: 'var(--text2)' }}>
+                  <span className="flex items-center gap-2">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4-4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 00-3-3.87" /><path d="M16 3.13a4 4 0 010 7.75" />
+                    </svg>
+                    Контакты
+                  </span>
+                  {companionPending > 0 && (
+                    <span className="min-w-[20px] h-5 px-1.5 rounded-full text-[10px] font-bold text-white inline-flex items-center justify-center"
+                      style={{ background: '#22c55e' }}>
+                      {companionPending > 99 ? '99+' : companionPending}
+                    </span>
+                  )}
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}

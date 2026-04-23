@@ -209,6 +209,23 @@ function RestaurantsPageInner() {
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const activeFilterCount = [city, cuisine, priceLevelMin, features, metro, district, venueType, lat].filter(Boolean).length;
 
+  const loadReco = useCallback(async () => {
+    setRecoLoading(true);
+    setShowReco(true);
+    try {
+      let res = await gastroApi.getRecoRestaurants(citySlug || city || undefined, 12);
+      if ((!res.data?.items || res.data.items.length === 0) && useGastroStore.getState().answers && Object.keys(useGastroStore.getState().answers).length > 0) {
+        try {
+          await gastroApi.submitQuiz(useGastroStore.getState().answers);
+          res = await gastroApi.getRecoRestaurants(citySlug || city || undefined, 12);
+        } catch {}
+      }
+      const items = (res.data?.items || []).map((r: any) => ({ ...adaptRestaurant(r), matchPercent: r.matchPercent, matchReason: r.matchReason }));
+      setRecoRestaurants(items);
+    } catch { setRecoRestaurants([]); }
+    setRecoLoading(false);
+  }, [citySlug, city]);
+
   return (
     <>
       <AddRestaurantModal open={showAddModal} onClose={() => setShowAddModal(false)} />
@@ -358,9 +375,65 @@ function RestaurantsPageInner() {
         <div className="flex gap-6 items-start">
           {/* Main content */}
           <div className="flex-1 min-w-0">
-            {/* Reco header when showing personalized picks */}
+            {/* Mobile/tablet gastro reco entry — sidebar version is hidden below lg */}
+            <div className="hidden max-lg:block mb-3">
+              {gastroProfile ? (
+                <div className="relative overflow-hidden rounded-2xl p-3 border flex items-center gap-3"
+                  style={{
+                    background: 'linear-gradient(135deg, rgba(255,92,40,0.1), rgba(255,140,66,0.05))',
+                    borderColor: 'rgba(255,92,40,0.25)',
+                  }}>
+                  <span className="text-[26px] flex-shrink-0">🎯</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-serif text-[14px] font-bold text-[var(--text)] m-0 leading-tight">
+                      {showReco ? 'Подобрано для вас' : 'Рестораны под ваш вкус'}
+                    </p>
+                    <p className="text-[11px] text-[var(--text3)] m-0 mt-0.5 leading-tight truncate">
+                      {showReco
+                        ? `На основе гастро-профиля${citySlug || city ? ' в ' + (citySlug || city) : ''}`
+                        : 'По вашему гастро-профилю'}
+                    </p>
+                  </div>
+                  {!showReco ? (
+                    <button
+                      onClick={loadReco}
+                      disabled={recoLoading}
+                      className="px-3 py-2 rounded-full text-[11px] font-bold text-white cursor-pointer border-none flex-shrink-0 transition-all"
+                      style={{ background: 'linear-gradient(135deg, var(--accent), #ff8c42)', boxShadow: '0 2px 12px var(--accent-glow)' }}>
+                      {recoLoading ? '...' : 'Подобрать'}
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => setShowReco(false)}
+                      className="px-3 py-2 rounded-full text-[11px] font-medium border cursor-pointer flex-shrink-0 transition-all"
+                      style={{ background: 'var(--bg3)', color: 'var(--text2)', borderColor: 'var(--card-border)' }}>
+                      Все
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <Link href="/quiz"
+                  className="flex items-center gap-3 p-3 rounded-2xl border no-underline transition-all"
+                  style={{
+                    background: 'linear-gradient(135deg, rgba(255,92,40,0.08), rgba(186,255,57,0.04))',
+                    borderColor: 'var(--card-border)',
+                  }}>
+                  <span className="text-[26px] flex-shrink-0">🍽️</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-serif text-[14px] font-bold text-[var(--text)] m-0 leading-tight">Гастро-квиз</p>
+                    <p className="text-[11px] text-[var(--text3)] m-0 mt-0.5 leading-tight truncate">Подберём под ваш вкус</p>
+                  </div>
+                  <span className="px-3 py-2 rounded-full text-[11px] font-bold text-white flex-shrink-0"
+                    style={{ background: 'linear-gradient(135deg, var(--accent), #ff8c42)' }}>
+                    Пройти
+                  </span>
+                </Link>
+              )}
+            </div>
+
+            {/* Reco header when showing personalized picks (desktop) */}
             {showReco && (
-              <div className="mb-4 flex items-center gap-3">
+              <div className="mb-4 flex items-center gap-3 max-lg:hidden">
                 <span className="text-[20px]">🎯</span>
                 <div>
                   <h2 className="font-serif text-[20px] font-bold text-[var(--text)] m-0">Подобрано для вас</h2>
@@ -370,7 +443,7 @@ function RestaurantsPageInner() {
             )}
 
             {(showReco ? recoLoading : loading) ? (
-              <div className="grid grid-cols-4 gap-4 max-xl:grid-cols-3 max-lg:grid-cols-2 max-sm:grid-cols-1">
+              <div className="grid grid-cols-4 gap-4 max-xl:grid-cols-3 max-lg:grid-cols-2 max-sm:grid-cols-2 max-sm:gap-2">
                 {Array.from({ length: 12 }).map((_, i) => (
                   <div key={i} className="h-[300px] rounded-[20px] animate-pulse" style={{ background: 'var(--bg3)' }} />
                 ))}
@@ -382,7 +455,7 @@ function RestaurantsPageInner() {
                 <p className="text-[13px] text-[var(--text3)]">{showReco ? 'Попробуйте выбрать другой город' : 'Попробуйте изменить фильтры'}</p>
               </div>
             ) : (
-              <div className="grid grid-cols-4 gap-4 max-xl:grid-cols-3 max-lg:grid-cols-2 max-sm:grid-cols-1">
+              <div className="grid grid-cols-4 gap-4 max-xl:grid-cols-3 max-lg:grid-cols-2 max-sm:grid-cols-2 max-sm:gap-2">
                 {(showReco ? recoRestaurants : restaurants.map(adaptRestaurant)).map((r: any) => (
                   <div key={r.slug} className="relative">
                     {showReco && r.matchPercent && (
@@ -420,23 +493,7 @@ function RestaurantsPageInner() {
 
                   {!showReco ? (
                     <button
-                      onClick={async () => {
-                        setRecoLoading(true);
-                        setShowReco(true);
-                        try {
-                          let res = await gastroApi.getRecoRestaurants(citySlug || city || undefined, 12);
-                          // If no items and user has local answers — sync profile to server first
-                          if ((!res.data?.items || res.data.items.length === 0) && useGastroStore.getState().answers && Object.keys(useGastroStore.getState().answers).length > 0) {
-                            try {
-                              await gastroApi.submitQuiz(useGastroStore.getState().answers);
-                              res = await gastroApi.getRecoRestaurants(citySlug || city || undefined, 12);
-                            } catch {}
-                          }
-                          const items = (res.data?.items || []).map((r: any) => ({ ...adaptRestaurant(r), matchPercent: r.matchPercent, matchReason: r.matchReason }));
-                          setRecoRestaurants(items);
-                        } catch { setRecoRestaurants([]); }
-                        setRecoLoading(false);
-                      }}
+                      onClick={loadReco}
                       className="relative z-10 w-full py-2.5 rounded-full text-[12px] font-bold text-white cursor-pointer border-none transition-all"
                       style={{ background: 'linear-gradient(135deg, var(--accent), #ff8c42)', boxShadow: '0 4px 20px var(--accent-glow)' }}>
                       {recoLoading ? '...' : '🎯 Подобрать для вас'}
@@ -573,7 +630,7 @@ export default function RestaurantsPage() {
     <Suspense fallback={
       <div className="max-w-[1400px] mx-auto px-10 max-md:px-4 max-sm:px-3 pt-10 pb-20">
         <div className="h-8 w-48 rounded bg-[var(--bg3)] animate-pulse mb-6" />
-        <div className="grid grid-cols-4 gap-4 max-xl:grid-cols-3 max-lg:grid-cols-2 max-sm:grid-cols-1">
+        <div className="grid grid-cols-4 gap-4 max-xl:grid-cols-3 max-lg:grid-cols-2 max-sm:grid-cols-2 max-sm:gap-2">
           {Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className="h-[300px] rounded-[20px] animate-pulse" style={{ background: 'var(--bg3)' }} />
           ))}
