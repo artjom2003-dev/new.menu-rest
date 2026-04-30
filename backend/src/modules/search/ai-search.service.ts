@@ -1146,12 +1146,14 @@ ${isBroadSocial ? '12. Запрос общий — после основных 4
     const extraSearchTerms = Array.isArray(llmParsed.searchTerms) ? llmParsed.searchTerms as string[] : [];
 
     // Динамический поиск станции в индексе из БД — покрывает ВСЕ метро всех городов, любые падежи/регистры.
-    // Если станция найдена и город ещё не определён, проставляем его из индекса. Это бьёт savedCity.
-    if (params.rawLocation && !params.location) {
+    // Если станция найдена, проставляем её город (поверх district-slug'а вроде 'kitay-gorod'),
+    // но НЕ перезаписываем уже распознанный city slug ('moscow'/'spb' — это явное указание).
+    if (params.rawLocation) {
       const metroHit = this.metroIndex.lookup(params.rawLocation);
-      if (metroHit) {
+      if (metroHit && (!params.location || !CITY_SLUGS_SET.has(params.location))) {
+        const wasLoc = params.location;
         params.location = metroHit.city;
-        this.logger.log(`[AI-Stream] metro index resolved "${params.rawLocation}" → ${metroHit.name} (${metroHit.city})`);
+        this.logger.log(`[AI-Stream] metro index resolved "${params.rawLocation}" → ${metroHit.name} (${metroHit.city})${wasLoc ? `, replaced "${wasLoc}"` : ''}`);
       }
     }
 
