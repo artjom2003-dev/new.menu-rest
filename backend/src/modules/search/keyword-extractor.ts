@@ -19,7 +19,7 @@ export interface ExtractedParams {
 }
 
 const LOCATION_MAP: Record<string, string> = {
-  // Московские районы / метро
+  // Московские районы (НЕ метро — метро вынесены в METRO_TO_CITY ниже)
   'центр': 'center', 'центре': 'center',
   'тверской': 'tverskoy', 'тверская': 'tverskoy', 'тверскую': 'tverskoy',
   'патриарши': 'patriarshie', 'патриаршие': 'patriarshie', 'патриках': 'patriarshie',
@@ -29,51 +29,187 @@ const LOCATION_MAP: Record<string, string> = {
   'остоженка': 'ostozhenka', 'остоженке': 'ostozhenka',
   'замоскворечье': 'zamoskvorechye', 'замоскворечьe': 'zamoskvorechye',
   'хамовники': 'khamovniki', 'хамовниках': 'khamovniki',
-  'бауманская': 'baumanskaya', 'бауманской': 'baumanskaya',
   'красные ворота': 'krasnye-vorota', 'красных воротах': 'krasnye-vorota', 'красных ворот': 'krasnye-vorota',
   'сретенка': 'sretenka', 'сретенке': 'sretenka',
   'чистые пруды': 'chistye-prudy', 'чистых прудов': 'chistye-prudy', 'чистых прудах': 'chistye-prudy',
   'кузнецкий мост': 'kuznetsky-most', 'кузнецком мосту': 'kuznetsky-most',
-  'парк культуры': 'park-kultury', 'парке культуры': 'park-kultury',
-  'проспект мира': 'prospekt-mira', 'проспекте мира': 'prospekt-mira',
   'цветной бульвар': 'tsvetnoy-bulvar', 'цветном бульваре': 'tsvetnoy-bulvar',
-  'пушкинская': 'pushkinskaya', 'пушкинской': 'pushkinskaya',
-  'маяковская': 'mayakovskaya', 'маяковской': 'mayakovskaya',
-  'новослободская': 'novoslobodskaya',
-  'сухаревская': 'sukharevskaya',
-  'лубянка': 'lubyanka', 'лубянке': 'lubyanka',
-  'кропоткинская': 'kropotkinskaya',
-  'октябрьская': 'oktyabrskaya',
-  'добрынинская': 'dobryninskaya',
-  'павелецкая': 'paveletskaya',
-  'курская': 'kurskaya', 'курской': 'kurskaya',
-  'комсомольская': 'komsomolskaya',
-  'сокол': 'sokol', 'соколе': 'sokol',
-  'аэропорт': 'aeroport',
-  'динамо': 'dinamo',
-  'белорусская': 'belorusskaya', 'белорусской': 'belorusskaya',
-  'менделеевская': 'mendeleevskaya',
-  'трубная': 'trubnaya',
   'сокольники': 'sokolniki', 'сокольниках': 'sokolniki',
-  'красносельская': 'krasnoselskaya',
-  'нагатинская': 'nagatinskaya',
-  'автозаводская': 'avtozavodskaya',
-  'полянка': 'polyanka', 'полянке': 'polyanka',
-  // Города
+  // Города — slug ОБЯЗАТЕЛЬНО совпадает с city.slug в БД (см. cities.seed.ts)
   'москва': 'moscow', 'москве': 'moscow', 'мск': 'moscow',
   'спб': 'spb', 'питер': 'spb', 'питере': 'spb', 'петербург': 'spb', 'санкт-петербург': 'spb',
   'казань': 'kazan', 'казани': 'kazan',
   'сочи': 'sochi',
-  'нижний новгород': 'nizhny-novgorod', 'нижнем новгороде': 'nizhny-novgorod',
-  'екатеринбург': 'yekaterinburg', 'екатеринбурге': 'yekaterinburg',
+  'нижний новгород': 'nnov', 'нижнем новгороде': 'nnov', 'нижний': 'nnov',
+  'екатеринбург': 'ekb', 'екатеринбурге': 'ekb', 'екб': 'ekb',
   'новосибирск': 'novosibirsk', 'новосибирске': 'novosibirsk',
   'краснодар': 'krasnodar', 'краснодаре': 'krasnodar',
-  'ростов-на-дону': 'rostov-na-donu', 'ростове': 'rostov-na-donu',
+  'красноярск': 'krasnoyarsk', 'красноярске': 'krasnoyarsk',
+  'ростов-на-дону': 'rostov', 'ростове': 'rostov', 'ростов': 'rostov',
   'самара': 'samara', 'самаре': 'samara',
   'воронеж': 'voronezh', 'воронеже': 'voronezh',
   'уфа': 'ufa', 'уфе': 'ufa',
-  'калининград': 'kaliningrad', 'калининграде': 'kaliningrad',
 };
+
+// Метро → город. Используется когда пользователь упоминает станцию метро без указания города:
+// "хочу пиво на шаболовской" → city='moscow'. Покрывает большинство станций МСК и СПБ.
+// Для уникальных в одном городе названий — однозначное соответствие. Для омонимов (Тверская,
+// Маяковская, Спортивная, Парк Победы, Балтийская, Чкаловская и т.п.) НЕ ставим город,
+// чтобы не схватить ошибочный — пусть либо savedCity, либо явное "москва"/"питер" решит.
+const METRO_TO_CITY: Record<string, string> = {
+  // ─── Москва (уникальные станции) ───
+  // Сокольническая (1)
+  'охотный ряд': 'moscow', 'воробьёвы горы': 'moscow', 'воробьевы горы': 'moscow',
+  'юго-западная': 'moscow', 'тропарёво': 'moscow', 'тропарево': 'moscow',
+  'румянцево': 'moscow', 'саларьево': 'moscow', 'филатов луг': 'moscow',
+  'прокшино': 'moscow', 'ольховая': 'moscow', 'коммунарка': 'moscow',
+  // Замоскворецкая (2)
+  'речной вокзал': 'moscow', 'водный стадион': 'moscow', 'войковская': 'moscow',
+  'сокол': 'moscow', 'аэропорт': 'moscow', 'динамо': 'moscow',
+  'белорусская': 'moscow', 'белорусской': 'moscow',
+  'театральная': 'moscow', 'новокузнецкая': 'moscow', 'павелецкая': 'moscow',
+  'автозаводская': 'moscow', 'технопарк': 'moscow', 'коломенская': 'moscow',
+  'каширская': 'moscow', 'кантемировская': 'moscow', 'царицыно': 'moscow',
+  'орехово': 'moscow', 'домодедовская': 'moscow', 'красногвардейская': 'moscow',
+  'алма-атинская': 'moscow',
+  // Арбатско-Покровская (3)
+  'щёлковская': 'moscow', 'щелковская': 'moscow', 'первомайская': 'moscow',
+  'измайловская': 'moscow', 'партизанская': 'moscow', 'семёновская': 'moscow',
+  'семеновская': 'moscow', 'электрозаводская': 'moscow', 'бауманская': 'moscow',
+  'площадь революции': 'moscow', 'смоленская': 'moscow',
+  'славянский бульвар': 'moscow', 'кунцевская': 'moscow', 'молодёжная': 'moscow',
+  'молодежная': 'moscow', 'крылатское': 'moscow', 'строгино': 'moscow',
+  'мякинино': 'moscow', 'волоколамская': 'moscow', 'митино': 'moscow',
+  'пятницкое шоссе': 'moscow',
+  // Филёвская (4)
+  'студенческая': 'moscow', 'кутузовская': 'moscow', 'фили': 'moscow',
+  'багратионовская': 'moscow', 'филёвский парк': 'moscow', 'филевский парк': 'moscow',
+  // Кольцевая (5)
+  'краснопресненская': 'moscow', 'новослободская': 'moscow',
+  'добрынинская': 'moscow', 'таганская': 'moscow',
+  // Калужско-Рижская (6)
+  'медведково': 'moscow', 'бабушкинская': 'moscow', 'свиблово': 'moscow',
+  'ботанический сад': 'moscow', 'вднх': 'moscow', 'вднх метро': 'moscow',
+  'алексеевская': 'moscow', 'рижская': 'moscow', 'сухаревская': 'moscow',
+  'тургеневская': 'moscow', 'третьяковская': 'moscow',
+  'шаболовская': 'moscow', 'шаболовской': 'moscow',
+  'ленинский проспект': 'moscow', 'академическая': 'moscow',
+  'профсоюзная': 'moscow', 'новые черёмушки': 'moscow', 'новые черемушки': 'moscow',
+  'калужская': 'moscow', 'беляево': 'moscow', 'коньково': 'moscow',
+  'тёплый стан': 'moscow', 'теплый стан': 'moscow',
+  'ясенево': 'moscow', 'новоясеневская': 'moscow',
+  // Таганско-Краснопресненская (7)
+  'планерная': 'moscow', 'сходненская': 'moscow', 'тушинская': 'moscow',
+  'спартак': 'moscow', 'щукинская': 'moscow', 'октябрьское поле': 'moscow',
+  'полежаевская': 'moscow', 'улица 1905 года': 'moscow', 'баррикадная': 'moscow',
+  'кузнецкий мост': 'moscow', 'выхино': 'moscow', 'рязанский проспект': 'moscow',
+  'кузьминки': 'moscow', 'текстильщики': 'moscow', 'волгоградский проспект': 'moscow',
+  'пролетарская': 'moscow', 'котельники': 'moscow', 'жулебино': 'moscow',
+  'лермонтовский проспект': 'moscow',
+  // Калининская (8)
+  'новокосино': 'moscow', 'новогиреево': 'moscow', 'перово': 'moscow',
+  'шоссе энтузиастов': 'moscow', 'авиамоторная': 'moscow',
+  // Серпуховско-Тимирязевская (9)
+  'алтуфьево': 'moscow', 'бибирево': 'moscow', 'отрадное': 'moscow',
+  'владыкино': 'moscow', 'петровско-разумовская': 'moscow', 'тимирязевская': 'moscow',
+  'дмитровская': 'moscow', 'савёловская': 'moscow', 'савеловская': 'moscow',
+  'менделеевская': 'moscow', 'цветной бульвар': 'moscow', 'чеховская': 'moscow',
+  'боровицкая': 'moscow', 'полянка': 'moscow', 'серпуховская': 'moscow',
+  'тульская': 'moscow', 'нагатинская': 'moscow', 'нагорная': 'moscow',
+  'нахимовский проспект': 'moscow', 'севастопольская': 'moscow',
+  'чертановская': 'moscow', 'южная': 'moscow', 'пражская': 'moscow',
+  'улица академика янгеля': 'moscow', 'аннино': 'moscow',
+  'бульвар дмитрия донского': 'moscow',
+  // Люблинско-Дмитровская (10)
+  'марьина роща': 'moscow', 'трубная': 'moscow', 'сретенский бульвар': 'moscow',
+  'чкаловская': 'moscow', 'римская': 'moscow', 'крестьянская застава': 'moscow',
+  'дубровка': 'moscow', 'кожуховская': 'moscow', 'печатники': 'moscow',
+  'волжская': 'moscow', 'люблино': 'moscow', 'братиславская': 'moscow',
+  'марьино': 'moscow', 'борисово': 'moscow', 'шипиловская': 'moscow',
+  'зябликово': 'moscow',
+  // БКЛ + Солнцевская
+  'деловой центр': 'moscow', 'выставочная': 'moscow',
+  'хорошёвская': 'moscow', 'хорошевская': 'moscow', 'шелепиха': 'moscow',
+  'петровский парк': 'moscow', 'минская': 'moscow', 'ломоносовский проспект': 'moscow',
+  'раменки': 'moscow', 'мичуринский проспект': 'moscow', 'озёрная': 'moscow',
+  'озерная': 'moscow', 'говорово': 'moscow', 'солнцево': 'moscow',
+  'боровское шоссе': 'moscow', 'новопеределкино': 'moscow', 'рассказовка': 'moscow',
+  'аминьевская': 'moscow', 'давыдково': 'moscow', 'мнёвники': 'moscow',
+  'мневники': 'moscow', 'терехово': 'moscow', 'кунцевская бкл': 'moscow',
+  'нагатинский затон': 'moscow', 'кленовый бульвар': 'moscow',
+  // Некрасовская
+  'нижегородская': 'moscow', 'стахановская': 'moscow', 'юго-восточная': 'moscow',
+  'окская': 'moscow', 'улица дмитриевского': 'moscow', 'лухмановская': 'moscow',
+  'некрасовка': 'moscow', 'косино': 'moscow',
+
+  // ─── Санкт-Петербург (уникальные станции) ───
+  // Кировско-Выборгская (1)
+  'девяткино': 'spb', 'гражданский проспект': 'spb', 'политехническая': 'spb',
+  'площадь мужества': 'spb', 'лесная': 'spb', 'выборгская': 'spb',
+  'площадь ленина': 'spb', 'чернышевская': 'spb', 'площадь восстания': 'spb',
+  'владимирская': 'spb', 'технологический институт': 'spb', 'нарвская': 'spb',
+  'кировский завод': 'spb', 'автово': 'spb', 'проспект ветеранов': 'spb',
+  // Московско-Петроградская (2)
+  'парнас': 'spb', 'проспект просвещения': 'spb', 'озерки': 'spb', 'удельная': 'spb',
+  'чёрная речка': 'spb', 'черная речка': 'spb', 'петроградская': 'spb',
+  'горьковская': 'spb', 'невский проспект': 'spb', 'сенная площадь': 'spb',
+  'московские ворота': 'spb', 'электросила': 'spb', 'московская': 'spb',
+  'звёздная': 'spb', 'звездная': 'spb', 'купчино': 'spb',
+  // Невско-Василеостровская (3)
+  'беговая спб': 'spb', 'новокрестовская': 'spb', 'зенит': 'spb',
+  'приморская': 'spb', 'василеостровская': 'spb', 'гостиный двор': 'spb',
+  'площадь александра невского': 'spb', 'елизаровская': 'spb',
+  'ломоносовская': 'spb', 'обухово': 'spb', 'рыбацкое': 'spb',
+  // Правобережная (4)
+  'комендантский проспект': 'spb', 'старая деревня': 'spb', 'крестовский остров': 'spb',
+  'спасская': 'spb', 'достоевская': 'spb', 'лиговский проспект': 'spb',
+  'новочеркасская': 'spb', 'ладожская': 'spb', 'проспект большевиков': 'spb',
+  'улица дыбенко': 'spb',
+  // Фрунзенско-Приморская (5)
+  'адмиралтейская': 'spb', 'садовая': 'spb', 'звенигородская': 'spb',
+  'пушкинская спб': 'spb', 'обводный канал': 'spb', 'волковская': 'spb',
+  'бухарестская': 'spb', 'международная спб': 'spb', 'проспект славы': 'spb',
+  'дунайская': 'spb', 'шушары': 'spb',
+};
+
+// Канонические city.slug из БД (cities.seed.ts) — единственный источник правды
+export const CITY_SLUGS_SET = new Set([
+  'moscow', 'spb', 'kazan', 'ekb', 'novosibirsk', 'sochi', 'krasnodar',
+  'nnov', 'samara', 'ufa', 'rostov', 'voronezh', 'krasnoyarsk',
+]);
+
+// Алиасы → канонический slug. Используется чтобы старые/чужие варианты слугов
+// (например в localStorage у юзеров) приводить к актуальным значениям из БД.
+const CITY_SLUG_ALIASES: Record<string, string> = {
+  'saint-petersburg': 'spb',
+  'sankt-peterburg': 'spb',
+  'saint_petersburg': 'spb',
+  'st-petersburg': 'spb',
+  'piter': 'spb',
+  'spb': 'spb',
+  'yekaterinburg': 'ekb',
+  'ekaterinburg': 'ekb',
+  'ekb': 'ekb',
+  'nizhny-novgorod': 'nnov',
+  'nizhniy-novgorod': 'nnov',
+  'nizhniynovgorod': 'nnov',
+  'nnov': 'nnov',
+  'rostov-na-donu': 'rostov',
+  'rostov': 'rostov',
+};
+
+/**
+ * Привести входящий city slug к канонической форме из БД.
+ * Возвращает undefined если slug не похож ни на один известный город — это значит
+ * лучше совсем не применять фильтр, чем применить заведомо нерабочий.
+ */
+export function normalizeCitySlug(slug: string | undefined | null): string | undefined {
+  if (!slug) return undefined;
+  const s = slug.toLowerCase().trim();
+  if (CITY_SLUGS_SET.has(s)) return s;
+  if (CITY_SLUG_ALIASES[s]) return CITY_SLUG_ALIASES[s];
+  return undefined;
+}
 
 const CUISINE_MAP: Record<string, string> = {
   'итальян': 'italian', 'пицц': 'italian', 'пасту': 'italian', 'паста': 'italian', 'ризотто': 'italian', 'карбонар': 'italian', 'спагетти': 'italian', 'лазань': 'italian', 'равиоли': 'italian', 'пенне': 'italian', 'феттучин': 'italian', 'болоньез': 'italian', 'тальятел': 'italian',
@@ -272,7 +408,24 @@ function matchAllMap(text: string, map: Record<string, string>): string[] {
 function extractMetro(query: string): string | undefined {
   const metroMatch = query.match(/(?:(?:метро|м\.)\s+)([А-ЯЁ][а-яё\-]+(?:\s+[А-ЯЁа-яё\-]+)?)/i);
   if (metroMatch) {
-    return metroMatch[1].toLowerCase().replace(/\s+/g, '-');
+    return metroMatch[1].toLowerCase().trim();
+  }
+}
+
+/**
+ * Найти город по названию станции метро (или производному, типа "шаболовской").
+ * Возвращает city slug ('moscow' / 'spb' / ...) или undefined.
+ * Делает простое стеммирование окончаний: "шаболовской"→"шаболовская".
+ */
+function metroToCity(metroName: string): string | undefined {
+  const m = metroName.toLowerCase().trim();
+  if (METRO_TO_CITY[m]) return METRO_TO_CITY[m];
+  // Поиск по подстрочному совпадению — например "на шаболовской" уже как ключ есть,
+  // но окончания типа "ой/ом/ке" проверим стеммингом
+  for (const [key, city] of Object.entries(METRO_TO_CITY)) {
+    if (m === key || m.startsWith(key) || key.startsWith(m.slice(0, Math.max(m.length - 3, 4)))) {
+      return city;
+    }
   }
 }
 
@@ -322,38 +475,66 @@ export function extractKeywords(query: string): ExtractedParams {
   const params: ExtractedParams = { confidence: 0 };
   let hits = 0;
 
-  // Location: try metro first, then general map, then fuzzy phrase extraction
+  // Location: try metro first, then cities, then metro→city map, then districts, then fuzzy phrase
+  const q = query.toLowerCase();
+
+  // 1) Явное "метро X" / "м. X" — название станции
   const metro = extractMetro(query);
   if (metro) {
-    params.location = metro;
-    params.rawLocation = metro;
+    const cityFromMetro = metroToCity(metro);
+    if (cityFromMetro) {
+      // Знаем город — фильтруем по городу + уточняем по станции
+      params.location = cityFromMetro;
+      params.rawLocation = metro;
+    } else {
+      // Не знаем город — оставляем только название для ILIKE поиска
+      params.rawLocation = metro;
+    }
     hits++;
   } else {
-    const q = query.toLowerCase();
-    // Find which key matched to preserve original Russian text for DB search
-    // Cities take priority over districts/areas (e.g. "центр екатеринбурга" → ekaterinburg, not center)
-    const CITY_SLUGS = new Set(['moscow', 'spb', 'kazan', 'sochi', 'nizhny-novgorod', 'yekaterinburg', 'novosibirsk', 'krasnodar', 'rostov-na-donu', 'samara', 'voronezh', 'ufa', 'kaliningrad']);
     let matchedKey: string | undefined;
     let matchedSlug: string | undefined;
-    // First pass: look for cities
+    // 2) Сначала ищем явные города (Москва, СПб и т.д.)
     for (const [key, value] of Object.entries(LOCATION_MAP)) {
-      if (q.includes(key) && CITY_SLUGS.has(value)) { matchedKey = key; matchedSlug = value; break; }
+      if (q.includes(key) && CITY_SLUGS_SET.has(value)) {
+        matchedKey = key; matchedSlug = value; break;
+      }
     }
-    // Second pass: if no city found, look for any location (metro, district, etc.)
+    // 3) Если города нет — ищем станцию метро через METRO_TO_CITY
+    if (!matchedSlug) {
+      for (const [key, city] of Object.entries(METRO_TO_CITY)) {
+        if (q.includes(key)) {
+          params.location = city;
+          params.rawLocation = key;
+          hits++;
+          matchedSlug = city; // помечаем что нашли — пропускаем следующий шаг
+          break;
+        }
+      }
+    }
+    // 4) Если ни города, ни метро — ищем район (Арбат, Патрики и т.п.)
     if (!matchedSlug) {
       for (const [key, value] of Object.entries(LOCATION_MAP)) {
         if (q.includes(key)) { matchedKey = key; matchedSlug = value; break; }
       }
-    }
-    if (matchedSlug) {
+      if (matchedSlug && matchedKey) {
+        params.location = matchedSlug;
+        params.rawLocation = matchedKey;
+        hits++;
+      }
+    } else if (matchedKey && !params.location) {
+      // Город найден напрямую (шаг 2)
       params.location = matchedSlug;
-      // Store the original Russian key for ILIKE search in DB
       params.rawLocation = matchedKey;
       hits++;
-    } else {
-      // Try to extract location phrase for fuzzy DB search
+    }
+    // 5) Фолбэк: фразы типа "на преображенской площади"
+    if (!params.location && !params.rawLocation) {
       const phrase = extractLocationPhrase(query);
       if (phrase) {
+        // Возможно эта фраза — стеммированная станция метро ("шаболовской"→"шаболовская")
+        const cityFromPhrase = metroToCity(phrase);
+        if (cityFromPhrase) params.location = cityFromPhrase;
         params.rawLocation = phrase;
         hits++;
       }

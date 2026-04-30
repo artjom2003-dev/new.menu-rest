@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Restaurant } from '@database/entities/restaurant.entity';
-import { extractKeywords, extractLocationWords, ExtractedParams } from './keyword-extractor';
+import { extractKeywords, extractLocationWords, ExtractedParams, normalizeCitySlug, CITY_SLUGS_SET } from './keyword-extractor';
 import Redis from 'ioredis';
 
 export interface AiRecommendation {
@@ -253,12 +253,28 @@ export class AiSearchService {
       hasFilters = true;
     }
     if (params.location) {
+      const locIsCity = CITY_SLUGS_SET.has(params.location);
+      const hasSubLocation = !!params.rawLocation && params.rawLocation !== params.location;
       const locText = params.rawLocation || params.location;
       const locStem = locText.length > 5 ? locText.replace(/[еуаыоиях]{1,2}$/, '') : locText;
-      qb.andWhere(
-        '(city.slug = :loc OR city.name ILIKE :locLike OR r.metro_station ILIKE :locLike OR r.metro_station ILIKE :locStem OR r.address ILIKE :locLike)',
-        { loc: params.location, locLike: `%${locText}%`, locStem: `%${locStem}%` },
-      );
+
+      if (locIsCity && hasSubLocation) {
+        // Город + уточнение (метро/район) — AND, чтобы не вытащить случайные совпадения из других городов
+        qb.andWhere('city.slug = :loc', { loc: params.location });
+        qb.andWhere(
+          '(r.metro_station ILIKE :locLike OR r.metro_station ILIKE :locStem OR r.address ILIKE :locLike)',
+          { locLike: `%${locText}%`, locStem: `%${locStem}%` },
+        );
+      } else if (locIsCity) {
+        // Только город — фильтр строго по городу
+        qb.andWhere('city.slug = :loc', { loc: params.location });
+      } else {
+        // location это не реальный slug города (район типа 'arbat') — старая OR-логика
+        qb.andWhere(
+          '(city.slug = :loc OR city.name ILIKE :locLike OR r.metro_station ILIKE :locLike OR r.metro_station ILIKE :locStem OR r.address ILIKE :locLike)',
+          { loc: params.location, locLike: `%${locText}%`, locStem: `%${locStem}%` },
+        );
+      }
       hasFilters = true;
     } else if (params.rawLocation) {
       const locWords = params.rawLocation.split(/\s+/).filter(w => w.length > 3);
@@ -886,21 +902,34 @@ ${relevant.length === 0 ? 'Честно скажи что по запросу н
     // Suppress the fun opener when we need to lead with an honest "nothing truly nearby" message —
     // otherwise the joke runs first and the LLM ignores the apology instruction.
     const effectiveFunOpener = nearbyButFar ? '' : funOpener;
+
+    // Доминирующий город в выдаче — нужен чтобы запретить LLM придумывать адреса из других городов.
+    // Считаем самый частый город среди первых 10 ресторанов.
+    const cityCounts = new Map<string, number>();
+    for (const r of restaurants.slice(0, 10)) {
+      if (r.city) cityCounts.set(r.city, (cityCounts.get(r.city) || 0) + 1);
+    }
+    const dominantCity = [...cityCounts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0];
+    const cityLockLine = dominantCity
+      ? `\nВАЖНО: ВСЕ рекомендации — только из города "${dominantCity}". НЕ упоминай рестораны из других городов. НЕ выдумывай адреса. Если пользователь спросил про другой город — честно скажи что подходящих в "${dominantCity}" нет, и предложи уточнить запрос.`
+      : '';
+
     const systemMessage = `Ты — MenuRest AI, персональный помощник в выборе ресторана. Отвечай как опытный друг-гурман: тепло, конкретно, по делу. Пиши на русском. Обращайся на "вы" (решили, захотели). Без женского/мужского рода.
-${effectiveFunOpener ? `\n${effectiveFunOpener}` : ''}
+${effectiveFunOpener ? `\n${effectiveFunOpener}` : ''}${cityLockLine}
 ПРАВИЛА:
 1. Рекомендуй СТРОГО по запросу. НЕ приписывай намерения, которых пользователь не высказывал.
-2. Выбери 2-4 лучших варианта. Для каждого — 2-3 предложения: почему подходит + факты (адрес/метро, кухня, особенности из описания).
-3. Пиши живым языком, как друг. Без списков и буллетов. Названия без кавычек. Между ресторанами — пустая строка.
-4. Не используй эмодзи. НЕ выдумывай информацию — только данные из списка.
-5. НЕ делай предположений: бар НЕ значит пиво, кофейня НЕ значит латте. Только если ЯВНО указано в описании или меню.
-6. НЕ упоминай рейтинг. Средний чек — только если спрашивают про цену/бюджет.
-${hasDistance ? `7. Список УЖЕ отсортирован по расстоянию — сначала самые близкие. Рекомендуй в том же порядке (первые 2-4 из списка). Не вытаскивай дальний ресторан вперёд. Упомяни расстояние (например "всего в 1.2 км от вас").${nearbyButFar ? ` Пользователь просил "поблизости", но ближе ${closestKm!.toFixed(1)} км ничего не нашлось — честно начни с этого ("К сожалению, совсем рядом ничего не подошло, но в ${closestKm!.toFixed(0)}-${Math.ceil(closestKm! + 10)} км есть хорошие варианты:"), потом рекомендации.` : ''}` : '7. ЗАПРЕЩЕНО писать любое расстояние (км, метры, "в N км от вас", "недалеко", "близко к метро X"). Геолокация пользователя НЕ получена. Любая цифра расстояния = галлюцинация. Просто перечисли варианты по адресам без упоминания расстояния.'}
-${!hasDistance && wantsNearbyPrompt ? '8. Пользователь спросил "поблизости", но разрешение на геолокацию не получено. Начни ответ с короткой просьбы включить геолокацию или указать район/метро, и только потом кратко перечисли 2-3 интересных варианта без километров.' : ''}
-${!hasDistance && !wantsNearbyPrompt ? '8. В конце добавь: "Хотите уточнить район или найти что-то ближе к вам?"' : ''}
-9. СЕТЬ: упомяни "сеть с N точками", НЕ перечисляй все адреса.
-10. Пропускай рестораны без описания или конкретных фактов.
-${isBroadSocial ? '11. Запрос общий — после основных 2-4 добавь "А ещё обратите внимание:" и коротко порекомендуй 1-2 места другого формата.' : ''}
+2. Выбери 2-4 лучших варианта ИСКЛЮЧИТЕЛЬНО из списка ресторанов ниже. НЕ упоминай заведения, которых нет в списке. НЕ изобретай названия, адреса, улицы, проспекты — это галлюцинация.
+3. Адрес и метро бери ДОСЛОВНО из поля "Адрес:" / "Метро:" — буква в букву, не переписывай по памяти. Если нет адреса в данных — не упоминай адрес.
+4. Пиши живым языком, как друг. Без списков и буллетов. Названия без кавычек. Между ресторанами — пустая строка.
+5. Не используй эмодзи. НЕ выдумывай информацию — только данные из списка.
+6. НЕ делай предположений: бар НЕ значит пиво, кофейня НЕ значит латте. Только если ЯВНО указано в описании или меню.
+7. НЕ упоминай рейтинг. Средний чек — только если спрашивают про цену/бюджет.
+${hasDistance ? `8. Список УЖЕ отсортирован по расстоянию — сначала самые близкие. Рекомендуй в том же порядке (первые 2-4 из списка). Не вытаскивай дальний ресторан вперёд. Упомяни расстояние (например "всего в 1.2 км от вас").${nearbyButFar ? ` Пользователь просил "поблизости", но ближе ${closestKm!.toFixed(1)} км ничего не нашлось — честно начни с этого ("К сожалению, совсем рядом ничего не подошло, но в ${closestKm!.toFixed(0)}-${Math.ceil(closestKm! + 10)} км есть хорошие варианты:"), потом рекомендации.` : ''}` : '8. ЗАПРЕЩЕНО писать любое расстояние (км, метры, "в N км от вас", "недалеко", "близко к метро X"). Геолокация пользователя НЕ получена. Любая цифра расстояния = галлюцинация. Просто перечисли варианты по адресам без упоминания расстояния.'}
+${!hasDistance && wantsNearbyPrompt ? '9. Пользователь спросил "поблизости", но разрешение на геолокацию не получено. Начни ответ с короткой просьбы включить геолокацию или указать район/метро, и только потом кратко перечисли 2-3 интересных варианта без километров.' : ''}
+${!hasDistance && !wantsNearbyPrompt ? '9. В конце добавь: "Хотите уточнить район или найти что-то ближе к вам?"' : ''}
+10. СЕТЬ: упомяни "сеть с N точками", НЕ перечисляй все адреса.
+11. Пропускай рестораны без описания или конкретных фактов.
+${isBroadSocial ? '12. Запрос общий — после основных 2-4 добавь "А ещё обратите внимание:" и коротко порекомендуй 1-2 места другого формата.' : ''}
 
 Описание ресторана — главный источник информации. Опирайся только на то, что в нём написано.`;
 
@@ -1086,19 +1115,27 @@ ${isBroadSocial ? '11. Запрос общий — после основных 2
     }
     const extraSearchTerms = Array.isArray(llmParsed.searchTerms) ? llmParsed.searchTerms as string[] : [];
 
-    // Apply saved city from frontend CityDetector — but only if query doesn't mention a specific city
-    const CITY_SLUGS_SET = new Set(['moscow', 'spb', 'kazan', 'sochi', 'nizhny-novgorod', 'yekaterinburg', 'novosibirsk', 'krasnodar', 'rostov-na-donu', 'samara', 'voronezh', 'ufa', 'kaliningrad']);
+    // Apply saved city from frontend CityDetector — но только если запрос НЕ содержит ни города,
+    // ни станции метро/района. rawLocation = пользовательское уточнение (метро, улица) — оно
+    // СИЛЬНЕЕ savedCity, потому что свежее. "Я на шаболовской" должно бить prior choice "Питер".
+    // ВАЖНО: нормализуем savedCity к канонической форме из БД (saint-petersburg → spb и т.д.) —
+    // иначе старые записи в localStorage юзеров дают пустую выдачу.
+    const normalizedSavedCity = normalizeCitySlug(savedCity);
+    if (savedCity && !normalizedSavedCity) {
+      this.logger.warn(`[AI-Stream] unknown savedCity slug "${savedCity}" — ignoring`);
+    }
     const queryMentionsCity = params.location && CITY_SLUGS_SET.has(params.location);
 
-    if (!params.location && savedCity) {
-      params.location = savedCity;
-      if (params.rawLocation) {
-        this.logger.log(`[AI-Stream] overriding rawLocation="${params.rawLocation}" with savedCity="${savedCity}"`);
-        params.rawLocation = undefined;
-      }
-      this.logger.log(`[AI-Stream] applied saved city: ${savedCity} (${savedCityName || 'no name'})`);
-    } else if (queryMentionsCity && params.location !== savedCity) {
-      this.logger.log(`[AI-Stream] query mentions city "${params.location}" — overriding savedCity "${savedCity}"`);
+    if (!params.location && !params.rawLocation && normalizedSavedCity) {
+      // Запрос вообще без локации — берём сохранённый город пользователя
+      params.location = normalizedSavedCity;
+      this.logger.log(`[AI-Stream] applied saved city: ${normalizedSavedCity} (${savedCityName || 'no name'})`);
+    } else if (!params.location && params.rawLocation && normalizedSavedCity) {
+      // У нас есть только rawLocation (район/станция, но без города) — добавим savedCity как контекст
+      params.location = normalizedSavedCity;
+      this.logger.log(`[AI-Stream] kept rawLocation="${params.rawLocation}", added savedCity="${normalizedSavedCity}" as city context`);
+    } else if (queryMentionsCity && normalizedSavedCity && params.location !== normalizedSavedCity) {
+      this.logger.log(`[AI-Stream] query mentions city "${params.location}" — overriding savedCity "${normalizedSavedCity}"`);
     }
 
     // Detect if user wants nearby/proximity results (specific location, not just a city)
