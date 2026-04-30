@@ -256,7 +256,13 @@ export class AiSearchService {
       const locIsCity = CITY_SLUGS_SET.has(params.location);
       const hasSubLocation = !!params.rawLocation && params.rawLocation !== params.location;
       const locText = params.rawLocation || params.location;
-      const locStem = locText.length > 5 ? locText.replace(/[еуаыоиях]{1,2}$/, '') : locText;
+      // Стеммируем русские окончания: "шаболовской" → "шаболов" (матчит и метро "Шаболовская",
+      // и улицу "Шаболовка"). Старая регулярка [еуаыоиях] не включала 'й' и пропускала
+      // окончание "ой", из-за чего поиск "на шаболовской" возвращал 0.
+      // Длинные окончания идут первыми — JS regex alternation matches left-to-right.
+      const locStem = locText.length > 5
+        ? locText.replace(/(?:ского|скому|скими|скую|ская|ское|ский|ской|ого|ому|ыми|ими|ые|ых|их|ой|ая|ую|ое|ам|ям|ах|ях|ом|ем|ы|и|а|е|у|о|й)$/, '')
+        : locText;
 
       if (locIsCity && hasSubLocation) {
         // Город + уточнение (метро/район) — AND, чтобы не вытащить случайные совпадения из других городов
