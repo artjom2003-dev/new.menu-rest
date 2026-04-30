@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Restaurant } from '@database/entities/restaurant.entity';
-import { extractKeywords, extractLocationWords, ExtractedParams, normalizeCitySlug, CITY_SLUGS_SET } from './keyword-extractor';
+import { extractKeywords, extractLocationWords, ExtractedParams, normalizeCitySlug, CITY_SLUGS_SET, getMetroCoords } from './keyword-extractor';
 import Redis from 'ioredis';
 
 export interface AiRecommendation {
@@ -679,7 +679,7 @@ export class AiSearchService {
   /**
    * Build system + user messages for LLM prompt (single source of truth)
    */
-  private buildPromptMessages(query: string, restaurants: RestaurantSummary[], params?: ExtractedParams, context?: { role: string; text: string }[]): { role: string; content: string }[] {
+  private buildPromptMessages(query: string, restaurants: RestaurantSummary[], params?: ExtractedParams, context?: { role: string; text: string }[], usingMetroAnchor?: boolean): { role: string; content: string }[] {
     const wantsTop = /лучш|топ|top|рейтинг|популярн/i.test(query);
     const searchingDish = params?.dish;
     const qLower = query.toLowerCase();
@@ -874,7 +874,7 @@ ${relevant.length === 0 ? 'Честно скажи что по запросу н
     }
 
     // Non-dish search: general recommendation
-    const restaurantContext = restaurants.slice(0, 10).map((r, i) => {
+    const restaurantContext = restaurants.slice(0, 15).map((r, i) => {
       const parts = [`${i + 1}. ${r.name}`];
       if (r.city) parts.push(`Город: ${r.city}`);
       if (r.address) parts.push(`Адрес: ${r.address}`);
@@ -906,7 +906,7 @@ ${relevant.length === 0 ? 'Честно скажи что по запросу н
     // Доминирующий город в выдаче — нужен чтобы запретить LLM придумывать адреса из других городов.
     // Считаем самый частый город среди первых 10 ресторанов.
     const cityCounts = new Map<string, number>();
-    for (const r of restaurants.slice(0, 10)) {
+    for (const r of restaurants.slice(0, 15)) {
       if (r.city) cityCounts.set(r.city, (cityCounts.get(r.city) || 0) + 1);
     }
     const dominantCity = [...cityCounts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0];
@@ -922,15 +922,17 @@ ${relevant.length === 0 ? 'Честно скажи что по запросу н
       : requestedRawLoc;
     const isMetroLikeRequest = !!requestedRawLoc && !!params?.location && CITY_SLUGS_SET.has(params.location) && requestedRawLoc !== params.location;
     const anyResultMatchesMetro = isMetroLikeRequest && requestedLocStem
-      ? restaurants.slice(0, 10).some(r => {
+      ? restaurants.slice(0, 15).some(r => {
           const m = (r.metroStation || '').toLowerCase();
           const a = (r.address || '').toLowerCase();
           return m.includes(requestedLocStem!) || a.includes(requestedLocStem!);
         })
       : true;
     const metroMismatch = isMetroLikeRequest && !anyResultMatchesMetro;
+    // Имя станции в именительном для текста: "шаболовской" → "Шаболовской/Шаболовская"
+    // Просто показываем как написал пользователь — модель сама поймёт.
     const metroMismatchLine = metroMismatch
-      ? `\nВАЖНО: Пользователь спрашивал про "${requestedRawLoc}", но НИ ОДИН ресторан в списке не находится на этой станции/в этом районе. Начни ответ с ЧЕСТНОГО признания: "Прямо на ${requestedRawLoc} ничего подходящего не нашлось, но рядом есть варианты:" — потом рекомендации с указанием реального метро из данных. НЕ пиши "на ${requestedRawLoc} есть [ресторан]" — это вранье.`
+      ? `\nВАЖНО: Пользователь упомянул станцию "${requestedRawLoc}", но НИ ОДИН ресторан в списке не находится прямо на этой станции. Список отсортирован по расстоянию ОТ ЭТОЙ СТАНЦИИ — это ближайшие к ней варианты. Начни ответ ЧЕСТНО: "Прямо на ${requestedRawLoc} подходящего не нашлось, зато ближайшие к этой станции — вот:" — и дальше рекомендации с указанием реального метро из данных и расстояния (поле "Расстояние:"). НЕ пиши "на ${requestedRawLoc} есть [ресторан]" — это вранье. Расстояние "от вас" НЕ упоминай — это от станции метро, не от пользователя.`
       : '';
     const effectiveFunOpener = (nearbyButFar || metroMismatch) ? '' : funOpener;
 
@@ -938,18 +940,18 @@ ${relevant.length === 0 ? 'Честно скажи что по запросу н
 ${effectiveFunOpener ? `\n${effectiveFunOpener}` : ''}${cityLockLine}${metroMismatchLine}
 ПРАВИЛА:
 1. Рекомендуй СТРОГО по запросу. НЕ приписывай намерения, которых пользователь не высказывал.
-2. Выбери 2-4 лучших варианта ИСКЛЮЧИТЕЛЬНО из списка ресторанов ниже. НЕ упоминай заведения, которых нет в списке. НЕ изобретай названия, адреса, улицы, проспекты — это галлюцинация.
+2. Выбери от 4 до 7 лучших вариантов ИСКЛЮЧИТЕЛЬНО из списка ресторанов ниже (если в списке меньше — все). НЕ упоминай заведения, которых нет в списке. НЕ изобретай названия, адреса, улицы, проспекты — это галлюцинация.
 3. Адрес и метро бери ДОСЛОВНО из поля "Адрес:" / "Метро:" — буква в букву, не переписывай по памяти. Если нет адреса в данных — не упоминай адрес.
 4. Пиши живым языком, как друг. Без списков и буллетов. Названия без кавычек. Между ресторанами — пустая строка.
 5. Не используй эмодзи. НЕ выдумывай информацию — только данные из списка.
 6. НЕ делай предположений: бар НЕ значит пиво, кофейня НЕ значит латте. Только если ЯВНО указано в описании или меню.
 7. НЕ упоминай рейтинг. Средний чек — только если спрашивают про цену/бюджет.
-${hasDistance ? `8. Список УЖЕ отсортирован по расстоянию — сначала самые близкие. Рекомендуй в том же порядке (первые 2-4 из списка). Не вытаскивай дальний ресторан вперёд. Упомяни расстояние (например "всего в 1.2 км от вас").${nearbyButFar ? ` Пользователь просил "поблизости", но ближе ${closestKm!.toFixed(1)} км ничего не нашлось — честно начни с этого ("К сожалению, совсем рядом ничего не подошло, но в ${closestKm!.toFixed(0)}-${Math.ceil(closestKm! + 10)} км есть хорошие варианты:"), потом рекомендации.` : ''}` : '8. ЗАПРЕЩЕНО писать любое расстояние (км, метры, "в N км от вас", "недалеко", "близко к метро X"). Геолокация пользователя НЕ получена. Любая цифра расстояния = галлюцинация. Просто перечисли варианты по адресам без упоминания расстояния.'}
+${hasDistance ? `8. Список УЖЕ отсортирован по расстоянию — сначала самые близкие. Рекомендуй в том же порядке (первые 4-7 из списка). Не вытаскивай дальний ресторан вперёд. Упомяни расстояние (например "всего в 1.2 км"${usingMetroAnchor ? ` — это от станции "${requestedRawLoc}", не от пользователя` : ' от вас'}).${nearbyButFar ? ` Пользователь просил "поблизости", но ближе ${closestKm!.toFixed(1)} км ничего не нашлось — честно начни с этого ("К сожалению, совсем рядом ничего не подошло, но в ${closestKm!.toFixed(0)}-${Math.ceil(closestKm! + 10)} км есть хорошие варианты:"), потом рекомендации.` : ''}` : '8. ЗАПРЕЩЕНО писать любое расстояние (км, метры, "в N км от вас", "недалеко", "близко к метро X"). Геолокация пользователя НЕ получена. Любая цифра расстояния = галлюцинация. Просто перечисли варианты по адресам без упоминания расстояния.'}
 ${!hasDistance && wantsNearbyPrompt ? '9. Пользователь спросил "поблизости", но разрешение на геолокацию не получено. Начни ответ с короткой просьбы включить геолокацию или указать район/метро, и только потом кратко перечисли 2-3 интересных варианта без километров.' : ''}
 ${!hasDistance && !wantsNearbyPrompt ? '9. В конце добавь: "Хотите уточнить район или найти что-то ближе к вам?"' : ''}
 10. СЕТЬ: упомяни "сеть с N точками", НЕ перечисляй все адреса.
 11. Пропускай рестораны без описания или конкретных фактов.
-${isBroadSocial ? '12. Запрос общий — после основных 2-4 добавь "А ещё обратите внимание:" и коротко порекомендуй 1-2 места другого формата.' : ''}
+${isBroadSocial ? '12. Запрос общий — после основных 4-7 добавь "А ещё обратите внимание:" и коротко порекомендуй 1-2 места другого формата.' : ''}
 
 Описание ресторана — главный источник информации. Опирайся только на то, что в нём написано.`;
 
@@ -1163,7 +1165,18 @@ ${isBroadSocial ? '12. Запрос общий — после основных 2
     const wantsDistance = /далеко|сколько.*км|сколько.*ехать|как.*добраться|расстояни/i.test(query.toLowerCase());
     const wantsPreciseLocation = /метро |м\. |улиц|район|у дома|рядом|поблизости|недалеко|близко/i.test(query.toLowerCase());
 
-    this.logger.log(`[AI-Stream] merged params=${JSON.stringify(params)}, extraTerms=${extraSearchTerms}, wantsNearby=${wantsNearby}`);
+    // Metro anchor: если юзер упомянул станцию метро и у нас есть её координаты,
+    // используем их как "якорь" для сортировки по расстоянию (если нет реальной геолокации).
+    // Это даёт fallback "ближайшие к Шаболовской" когда на самой Шаболовской ничего нет.
+    const metroCoords = (!userLat || !userLng) ? getMetroCoords(params.rawLocation) : undefined;
+    const anchorLat = userLat ?? metroCoords?.[0];
+    const anchorLng = userLng ?? metroCoords?.[1];
+    const usingMetroAnchor = !userLat && !!metroCoords;
+    if (usingMetroAnchor) {
+      this.logger.log(`[AI-Stream] metro anchor: "${params.rawLocation}" → [${anchorLat}, ${anchorLng}]`);
+    }
+
+    this.logger.log(`[AI-Stream] merged params=${JSON.stringify(params)}, extraTerms=${extraSearchTerms}, wantsNearby=${wantsNearby}, anchor=${usingMetroAnchor ? 'metro' : userLat ? 'geo' : 'none'}`);
 
     // Step 1.5: Direct restaurant name search (works for any query, not just follow-ups)
     // Handles: "Burger King", "бургер кинг", "mastersuit далеко?", etc.
@@ -1355,6 +1368,29 @@ ${isBroadSocial ? '12. Запрос общий — после основных 2
         this.logger.log(`[AI-Stream] location-only search: ${restaurants.length} results`);
       }
 
+      // Metro-anchor fallback: если есть координаты станции, выдача < 7 и город известен —
+      // подтянем рестораны в этом городе с dish/relatedDishes БЕЗ фильтра по метро,
+      // потом отсортируем по расстоянию от станции. Это "ближайшие к Шаболовской"
+      // когда на самой станции ничего нет.
+      if (usingMetroAnchor && restaurants.length < 7 && params.location && CITY_SLUGS_SET.has(params.location)) {
+        const cityWideParams: ExtractedParams = {
+          ...params,
+          rawLocation: undefined, // снимаем фильтр по метро — иначе снова 0
+        };
+        const more = await this.findRelevantRestaurants(query, cityWideParams, false, anchorLat, anchorLng);
+        mergeResults(restaurants, more);
+        // И ещё с relatedDishes если основное блюдо ничего не дало
+        if (restaurants.length < 7 && params.relatedDishes?.length) {
+          for (const related of params.relatedDishes.slice(0, 4)) {
+            const rp: ExtractedParams = { ...cityWideParams, dish: related, relatedDishes: undefined };
+            const more2 = await this.findRelevantRestaurants(query, rp, false, anchorLat, anchorLng);
+            mergeResults(restaurants, more2);
+            if (restaurants.length >= 12) break;
+          }
+        }
+        this.logger.log(`[AI-Stream] metro-anchor city-wide search: ${restaurants.length} results total`);
+      }
+
       // Try implied venue types from LLM — but respect location
       if (restaurants.length < 5 && llmVenueTypes.length) {
         const venueParams = { ...params, dish: undefined, relatedDishes: undefined };
@@ -1384,13 +1420,15 @@ ${isBroadSocial ? '12. Запрос общий — после основных 2
       // Continue with whatever restaurants we already found
     }
 
-    // Only sort by distance and show km when user explicitly asks for nearby/proximity/distance
-    if (userLat && userLng && restaurants.length > 0 && (wantsNearby || wantsPreciseLocation || wantsDistance)) {
-      restaurants = this.sortByDistance(restaurants, userLat, userLng);
+    // Сортировка по расстоянию: либо от реальной геолокации (wantsNearby/precise/distance),
+    // либо от якорной станции метро (если упомянули станцию а гео не получили).
+    const shouldSortByDist =
+      (anchorLat !== undefined && anchorLng !== undefined && restaurants.length > 0) &&
+      (usingMetroAnchor || wantsNearby || wantsPreciseLocation || wantsDistance);
+    if (shouldSortByDist) {
+      restaurants = this.sortByDistance(restaurants, anchorLat!, anchorLng!);
 
-      // For "nearby" queries: progressive radius. Prefer the tightest tier with ≥3 results;
-      // otherwise take whatever we have in the widest acceptable tier. Never include results
-      // further than 50 km — a 632 km place must never appear under "поблизости".
+      // Для "поблизости" (явная просьба) — прогрессивный радиус от 5 до 50 км.
       if (wantsNearby) {
         const TIERS = [5, 10, 20, 50];
         let chosen: RestaurantSummary[] = [];
@@ -1406,6 +1444,16 @@ ${isBroadSocial ? '12. Запрос общий — после основных 2
         }
         this.logger.log(`[AI-Stream] nearby radius: ${tierUsed}km (${chosen.length}/${restaurants.length} kept)`);
         restaurants = chosen;
+      } else if (usingMetroAnchor) {
+        // Для упоминания метро без "поблизости" — мягче: оставляем всё в пределах 5 км от станции,
+        // если такого мало (<3) — расширяем до 10 км.
+        const within5 = restaurants.filter(r => r.distanceKm !== undefined && r.distanceKm <= 5);
+        if (within5.length >= 3) {
+          restaurants = within5;
+        } else {
+          restaurants = restaurants.filter(r => r.distanceKm !== undefined && r.distanceKm <= 10);
+        }
+        this.logger.log(`[AI-Stream] metro-anchor radius: ${restaurants.length} kept within ${within5.length >= 3 ? 5 : 10}km of metro`);
       }
     }
 
@@ -1485,7 +1533,7 @@ ${isBroadSocial ? '12. Запрос общий — после основных 2
 
     // Step 3: Stream LLM recommendation
     if (this.ollamaUrl && restaurants.length > 0) {
-      yield* this.streamRecommendation(query, restaurants, params, context);
+      yield* this.streamRecommendation(query, restaurants, params, context, usingMetroAnchor);
     } else if (restaurants.length > 0) {
       // Fallback: send entire text as one token event
       const text = this.buildFallbackRecommendation(query, restaurants);
@@ -1508,8 +1556,9 @@ ${isBroadSocial ? '12. Запрос общий — после основных 2
     restaurants: RestaurantSummary[],
     params?: ExtractedParams,
     context?: { role: string; text: string }[],
+    usingMetroAnchor?: boolean,
   ): AsyncGenerator<string> {
-    const messages = this.buildPromptMessages(query, restaurants, params, context);
+    const messages = this.buildPromptMessages(query, restaurants, params, context, usingMetroAnchor);
 
     try {
       const controller = new AbortController();
