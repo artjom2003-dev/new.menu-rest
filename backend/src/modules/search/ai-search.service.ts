@@ -899,9 +899,9 @@ ${relevant.length === 0 ? 'Честно скажи что по запросу н
       ? Math.min(...restaurants.filter(r => r.distanceKm !== undefined).map(r => r.distanceKm!))
       : undefined;
     const nearbyButFar = wantsNearbyPrompt && hasDistance && closestKm !== undefined && closestKm > 5;
-    // Suppress the fun opener when we need to lead with an honest "nothing truly nearby" message —
-    // otherwise the joke runs first and the LLM ignores the apology instruction.
-    const effectiveFunOpener = nearbyButFar ? '' : funOpener;
+    // Suppress the fun opener when we need to lead with an honest "nothing truly nearby" / "metro mismatch"
+    // message — otherwise the joke runs first and the LLM ignores the apology instruction.
+    // (metroMismatch вычисляется ниже — учитываем через placeholder, перепишем после)
 
     // Доминирующий город в выдаче — нужен чтобы запретить LLM придумывать адреса из других городов.
     // Считаем самый частый город среди первых 10 ресторанов.
@@ -914,8 +914,28 @@ ${relevant.length === 0 ? 'Честно скажи что по запросу н
       ? `\nВАЖНО: ВСЕ рекомендации — только из города "${dominantCity}". НЕ упоминай рестораны из других городов. НЕ выдумывай адреса. Если пользователь спросил про другой город — честно скажи что подходящих в "${dominantCity}" нет, и предложи уточнить запрос.`
       : '';
 
+    // Проверка: пользователь упомянул конкретное метро/район, но НИ ОДИН результат туда не попадает.
+    // Тогда LLM должен честно сказать "на X не нашлось, но рядом есть Y", а не делать вид что Тульская — это Шаболовская.
+    const requestedRawLoc = params?.rawLocation?.toLowerCase().trim();
+    const requestedLocStem = requestedRawLoc && requestedRawLoc.length > 4
+      ? requestedRawLoc.replace(/(?:ой|ая|ую|ом|ем|ах|ях|ке|не|те|де|ой)$/, '').slice(0, Math.max(requestedRawLoc.length - 2, 5))
+      : requestedRawLoc;
+    const isMetroLikeRequest = !!requestedRawLoc && !!params?.location && CITY_SLUGS_SET.has(params.location) && requestedRawLoc !== params.location;
+    const anyResultMatchesMetro = isMetroLikeRequest && requestedLocStem
+      ? restaurants.slice(0, 10).some(r => {
+          const m = (r.metroStation || '').toLowerCase();
+          const a = (r.address || '').toLowerCase();
+          return m.includes(requestedLocStem!) || a.includes(requestedLocStem!);
+        })
+      : true;
+    const metroMismatch = isMetroLikeRequest && !anyResultMatchesMetro;
+    const metroMismatchLine = metroMismatch
+      ? `\nВАЖНО: Пользователь спрашивал про "${requestedRawLoc}", но НИ ОДИН ресторан в списке не находится на этой станции/в этом районе. Начни ответ с ЧЕСТНОГО признания: "Прямо на ${requestedRawLoc} ничего подходящего не нашлось, но рядом есть варианты:" — потом рекомендации с указанием реального метро из данных. НЕ пиши "на ${requestedRawLoc} есть [ресторан]" — это вранье.`
+      : '';
+    const effectiveFunOpener = (nearbyButFar || metroMismatch) ? '' : funOpener;
+
     const systemMessage = `Ты — MenuRest AI, персональный помощник в выборе ресторана. Отвечай как опытный друг-гурман: тепло, конкретно, по делу. Пиши на русском. Обращайся на "вы" (решили, захотели). Без женского/мужского рода.
-${effectiveFunOpener ? `\n${effectiveFunOpener}` : ''}${cityLockLine}
+${effectiveFunOpener ? `\n${effectiveFunOpener}` : ''}${cityLockLine}${metroMismatchLine}
 ПРАВИЛА:
 1. Рекомендуй СТРОГО по запросу. НЕ приписывай намерения, которых пользователь не высказывал.
 2. Выбери 2-4 лучших варианта ИСКЛЮЧИТЕЛЬНО из списка ресторанов ниже. НЕ упоминай заведения, которых нет в списке. НЕ изобретай названия, адреса, улицы, проспекты — это галлюцинация.
