@@ -4,6 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Restaurant } from '@database/entities/restaurant.entity';
 import { extractKeywords, extractLocationWords, ExtractedParams, normalizeCitySlug, CITY_SLUGS_SET, getMetroCoords } from './keyword-extractor';
+import { MetroIndexService } from './metro-index.service';
 import Redis from 'ioredis';
 
 export interface AiRecommendation {
@@ -51,6 +52,7 @@ export class AiSearchService {
     private readonly config: ConfigService,
     @InjectRepository(Restaurant)
     private readonly restaurantRepo: Repository<Restaurant>,
+    private readonly metroIndex: MetroIndexService,
   ) {
     const url = config.get<string>('OLLAMA_URL');
     this.ollamaUrl = url || null;
@@ -1143,6 +1145,16 @@ ${isBroadSocial ? '12. Запрос общий — после основных 4
     }
     const extraSearchTerms = Array.isArray(llmParsed.searchTerms) ? llmParsed.searchTerms as string[] : [];
 
+    // Динамический поиск станции в индексе из БД — покрывает ВСЕ метро всех городов, любые падежи/регистры.
+    // Если станция найдена и город ещё не определён, проставляем его из индекса. Это бьёт savedCity.
+    if (params.rawLocation && !params.location) {
+      const metroHit = this.metroIndex.lookup(params.rawLocation);
+      if (metroHit) {
+        params.location = metroHit.city;
+        this.logger.log(`[AI-Stream] metro index resolved "${params.rawLocation}" → ${metroHit.name} (${metroHit.city})`);
+      }
+    }
+
     // Apply saved city from frontend CityDetector — но только если запрос НЕ содержит ни города,
     // ни станции метро/района. rawLocation = пользовательское уточнение (метро, улица) — оно
     // СИЛЬНЕЕ savedCity, потому что свежее. "Я на шаболовской" должно бить prior choice "Питер".
@@ -1173,13 +1185,28 @@ ${isBroadSocial ? '12. Запрос общий — после основных 4
 
     // Metro anchor: если юзер упомянул станцию метро и у нас есть её координаты,
     // используем их как "якорь" для сортировки по расстоянию (если нет реальной геолокации).
-    // Это даёт fallback "ближайшие к Шаболовской" когда на самой Шаболовской ничего нет.
-    const metroCoords = (!userLat || !userLng) ? getMetroCoords(params.rawLocation) : undefined;
+    // Координаты берём из динамического индекса (центроид ресторанов на станции),
+    // с фолбэком на хардкод-список для редких случаев когда индекс ещё не прогружен.
+    let metroCoords: [number, number] | undefined;
+    let metroAnchorName: string | undefined;
+    if (!userLat || !userLng) {
+      const hit = this.metroIndex.lookup(params.rawLocation);
+      if (hit) {
+        metroCoords = [hit.lat, hit.lng];
+        metroAnchorName = hit.name;
+      } else {
+        const hardcoded = getMetroCoords(params.rawLocation);
+        if (hardcoded) {
+          metroCoords = hardcoded;
+          metroAnchorName = params.rawLocation;
+        }
+      }
+    }
     const anchorLat = userLat ?? metroCoords?.[0];
     const anchorLng = userLng ?? metroCoords?.[1];
     const usingMetroAnchor = !userLat && !!metroCoords;
     if (usingMetroAnchor) {
-      this.logger.log(`[AI-Stream] metro anchor: "${params.rawLocation}" → [${anchorLat}, ${anchorLng}]`);
+      this.logger.log(`[AI-Stream] metro anchor: "${params.rawLocation}" → ${metroAnchorName} [${anchorLat}, ${anchorLng}]`);
     }
 
     this.logger.log(`[AI-Stream] merged params=${JSON.stringify(params)}, extraTerms=${extraSearchTerms}, wantsNearby=${wantsNearby}, anchor=${usingMetroAnchor ? 'metro' : userLat ? 'geo' : 'none'}`);

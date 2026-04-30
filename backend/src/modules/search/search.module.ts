@@ -4,11 +4,12 @@ import { Restaurant } from '@database/entities/restaurant.entity';
 import { SearchController } from './search.controller';
 import { SearchService } from './search.service';
 import { AiSearchService } from './ai-search.service';
+import { MetroIndexService } from './metro-index.service';
 
 @Module({
   imports: [TypeOrmModule.forFeature([Restaurant])],
   controllers: [SearchController],
-  providers: [SearchService, AiSearchService],
+  providers: [SearchService, AiSearchService, MetroIndexService],
   exports: [SearchService],
 })
 export class SearchModule implements OnModuleInit {
