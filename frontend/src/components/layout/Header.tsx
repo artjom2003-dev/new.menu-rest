@@ -181,7 +181,7 @@ function HeaderCityPicker() {
           <div className="flex flex-wrap gap-1.5 mb-2">
             {[
               { slug: 'moscow', name: 'Москва' },
-              { slug: 'saint-petersburg', name: 'СПб' },
+              { slug: 'spb', name: 'СПб' },
               { slug: 'kazan', name: 'Казань' },
               { slug: 'novosibirsk', name: 'Новосибирск' },
             ].map((c) => (

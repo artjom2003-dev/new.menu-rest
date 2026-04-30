@@ -150,7 +150,7 @@ export function CityDetector() {
       <div className="flex flex-wrap gap-1.5 mb-2.5">
         {[
           { slug: 'moscow', name: 'Москва' },
-          { slug: 'saint-petersburg', name: 'Санкт-Петербург' },
+          { slug: 'spb', name: 'Санкт-Петербург' },
           { slug: 'kazan', name: 'Казань' },
           { slug: 'novosibirsk', name: 'Новосибирск' },
         ].map((c) => (
